@@ -29,7 +29,8 @@ public class PlanPlace {
 
     @Column(name = "visit_date")
     private LocalDateTime visitDate;
-    private Integer order;
+    @Column(name = "visit_order")
+    private Integer visitOrder;
     private Integer cost;
     
     @Column(columnDefinition = "TEXT")

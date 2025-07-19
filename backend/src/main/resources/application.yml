@@ -1,9 +1,8 @@
 spring:
-  config:
-    import: optional:file:.env[.properties]
-
   application:
     name: backend
+  profiles:
+    active: local  # default profile (로컬 기준)
 
   datasource:
     url: ${MYSQL_URL}

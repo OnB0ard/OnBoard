@@ -1,0 +1,7 @@
+spring:
+  config:
+    activate:
+      on-profile: ci
+  jpa:
+    hibernate:
+      ddl-auto: create

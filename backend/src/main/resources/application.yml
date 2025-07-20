@@ -1,3 +1,32 @@
 spring:
   application:
     name: backend
+  profiles:
+    active: local  # default profile (로컬 기준)
+
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # create / update / validate / none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database: mysql
+
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+
+      region:
+        static: ${AWS_REGION}
+
+server:
+  port: 8080

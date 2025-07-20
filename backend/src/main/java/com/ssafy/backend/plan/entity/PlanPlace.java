@@ -2,6 +2,7 @@ package com.ssafy.backend.plan.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,9 +10,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @Table(name = "plan_place")
-@Getter
+@Data
 public class PlanPlace {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +29,8 @@ public class PlanPlace {
 
     @Column(name = "visit_date")
     private LocalDateTime visitDate;
-    private Integer order;
+    @Column(name = "visit_order")
+    private Integer visitOrder;
     private Integer cost;
     
     @Column(columnDefinition = "TEXT")

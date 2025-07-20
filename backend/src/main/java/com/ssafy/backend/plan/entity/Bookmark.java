@@ -2,13 +2,14 @@ package com.ssafy.backend.plan.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @Table(name = "bookmark")
-@Getter
+@Data
 public class Bookmark {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

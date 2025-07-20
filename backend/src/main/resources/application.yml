@@ -28,5 +28,9 @@ spring:
       region:
         static: ${AWS_REGION}
 
+      s3:
+        region: ${AWS_REGION}
+        bucket: ${AWS_S3_BUCKET}
+
 server:
   port: 8080

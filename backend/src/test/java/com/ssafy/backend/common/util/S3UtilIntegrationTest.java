@@ -72,7 +72,7 @@ public class S3UtilIntegrationTest {
 
         // Then
         assertThat(outputStream).isNotNull();
-        String content = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
+        String content = outputStream.toString(StandardCharsets.UTF_8);
         assertThat(content).isEqualTo(testContent);
     }
 

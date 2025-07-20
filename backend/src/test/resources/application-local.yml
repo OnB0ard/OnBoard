@@ -28,5 +28,3 @@ spring:
         static: ${AWS_REGION:ap-northeast-2}
       s3:
         bucket: ${AWS_S3_BUCKET:test-bucket}
-      stack:
-        auto: false

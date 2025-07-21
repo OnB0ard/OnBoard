@@ -1,7 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.common.util.S3Util;
-import com.ssafy.backend.plan.dto.request.CreatePlanReq;
+import com.ssafy.backend.plan.dto.request.CreatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -17,7 +17,7 @@ public class PlanService {
     private final S3Util s3Util;
     private final PlanRepository planRepository;
 
-    public CreatePlanResponseDTO createPlan(CreatePlanReq createPlanReq, MultipartFile image) throws IOException {
+    public CreatePlanResponseDTO createPlan(CreatePlanRequestDTO createPlanRequestDTO, MultipartFile image) throws IOException {
         String imageKey = null;
 
         if (image != null && !image.isEmpty()) {
@@ -32,12 +32,12 @@ public class PlanService {
             }
         }
         Plan plan = Plan.builder()
-                .planName(createPlanReq.getName())
-                .planDescription(createPlanReq.getDescription())
-                .startDate(createPlanReq.getStartDate())
-                .endDate(createPlanReq.getEndDate())
+                .planName(createPlanRequestDTO.getName())
+                .planDescription(createPlanRequestDTO.getDescription())
+                .startDate(createPlanRequestDTO.getStartDate())
+                .endDate(createPlanRequestDTO.getEndDate())
                 .planImage(imageKey)
-                .hashTage(createPlanReq.getHashTag())
+                .hashTage(createPlanRequestDTO.getHashTag())
                 .build();
 
         planRepository.save(plan);

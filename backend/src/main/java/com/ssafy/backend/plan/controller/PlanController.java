@@ -1,7 +1,7 @@
 package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
-import com.ssafy.backend.plan.dto.request.CreatePlanReq;
+import com.ssafy.backend.plan.dto.request.CreatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
 import com.ssafy.backend.plan.service.PlanService;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +18,17 @@ import java.io.IOException;
 public class PlanController {
     private final PlanService planService;
     @PostMapping("/create")
-    public CommonResponse<CreatePlanResponseDTO> createPlan(@RequestPart CreatePlanReq createPlanReq, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
+    public CommonResponse<CreatePlanResponseDTO> createPlan(@RequestPart CreatePlanRequestDTO createPlanRequestDTO, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
 
-        return new CommonResponse<>(planService.createPlan(createPlanReq,image), HttpStatus.OK);
+        return new CommonResponse<>(planService.createPlan(createPlanRequestDTO,image), HttpStatus.OK);
+    }
+
+    @PutMapping("/{planId}")
+    public CommonResponse<CreatePlanResponseDTO> updatePlan(
+            @PathVariable Long planId,
+            @RequestPart CreatePlanRequestDTO updatePlanReq,
+            @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
+
+        return new CommonResponse<>(planService.updatePlan(planId, updatePlanReq, image), HttpStatus.OK);
     }
 }

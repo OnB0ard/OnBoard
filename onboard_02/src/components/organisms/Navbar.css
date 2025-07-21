@@ -1,0 +1,49 @@
+.Header {
+  position: fixed;  /* 스크롤해도 고정 */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;    /* 다른 요소 위에 표시되도록 설정 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: transparent;    /* 투명 배경 */
+  backdrop-filter: blur(4px);
+  height: 50px;
+  padding: 0 20px;
+}
+
+.left, .center, .right {
+  display: flex;
+  align-items: flex-start; 
+  justify-content: flex-start;
+}
+
+.left {
+  flex-basis: 25%;
+  display: flex;
+  align-items:center;
+  justify-content: center;
+}
+
+.center {
+  flex-basis: 40%;
+}
+
+.right {
+  flex-basis: 35%;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 50px; /* temp 간 간격 */
+}
+
+/* 텍스트 스타일 */
+.Home {
+  font-weight: bold;
+  color: #333;
+}
+
+.temp {
+  color: #0000FF;
+  font-size: 16px;
+}

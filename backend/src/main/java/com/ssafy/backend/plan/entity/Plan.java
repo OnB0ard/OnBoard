@@ -2,15 +2,11 @@ package com.ssafy.backend.plan.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
 import com.ssafy.backend.user.entity.UserPlan;
-import com.ssafy.backend.whiteBoard.entity.WhiteBoard;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity

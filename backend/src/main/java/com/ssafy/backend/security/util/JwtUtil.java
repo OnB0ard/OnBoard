@@ -79,7 +79,7 @@ public class JwtUtil {
                 .getPayload();
 
         return new JwtUserInfo(
-                claims.get("userId", Integer.class),        // PK
+                claims.get("userId", Long.class),        // PK
                 claims.get("googleEmail", String.class),    //  구글 이메일
                 claims.get("userName", String.class)        // 이름
         );

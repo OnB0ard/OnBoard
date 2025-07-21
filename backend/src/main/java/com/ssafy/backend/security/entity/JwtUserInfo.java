@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class JwtUserInfo {
 
-    private final int userId;
+    private final Long userId;
     private final String googleEmail;
     private final String userName;
 }

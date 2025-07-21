@@ -2,7 +2,9 @@ package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.plan.dto.request.CreatePlanRequestDTO;
+import com.ssafy.backend.plan.dto.request.UpdatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
+import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.service.PlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,11 +26,11 @@ public class PlanController {
     }
 
     @PutMapping("/{planId}")
-    public CommonResponse<CreatePlanResponseDTO> updatePlan(
+    public CommonResponse<UpdatePlanResponseDTO> updatePlan(
             @PathVariable Long planId,
-            @RequestPart CreatePlanRequestDTO updatePlanReq,
+            @RequestPart UpdatePlanRequestDTO updatePlanRequestDTO,
             @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
 
-        return new CommonResponse<>(planService.updatePlan(planId, updatePlanReq, image), HttpStatus.OK);
+        return new CommonResponse<>(planService.updatePlan(planId, updatePlanRequestDTO, image), HttpStatus.OK);
     }
 }

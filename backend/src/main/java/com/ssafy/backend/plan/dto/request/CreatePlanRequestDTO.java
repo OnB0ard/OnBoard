@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.time.LocalDate;
 
 @Getter
-public class CreatePlanReq {
+public class CreatePlanRequestDTO {
     private String name;
     private String description;
     private LocalDate startDate;

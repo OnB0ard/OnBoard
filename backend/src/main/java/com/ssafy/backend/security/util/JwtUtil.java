@@ -59,7 +59,7 @@ public class JwtUtil {
     /**
      * Refresh Token 생성
      */
-    public String generateRefreshToken(Integer userId) {
+    public String generateRefreshToken(Long userId) {
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
@@ -88,21 +88,21 @@ public class JwtUtil {
     /**
      * 토큰에서 userId 추출
      */
-    public int getUserId(String token) {
+    public Long getUserId(String token) {
         return getJwtParser()
                 .parseSignedClaims(token)
                 .getPayload()
-                .get("userId", Integer.class);
+                .get("userId", Long.class);
     }
 
     /**
      * 토큰에서 google email 추출
      */
-    public int getGoogleEmail(String token) {
+    public String getGoogleEmail(String token) {
         return getJwtParser()
                 .parseSignedClaims(token)
                 .getPayload()
-                .get("googleEmail", Integer.class);
+                .get("googleEmail", String.class);
     }
 
     /**

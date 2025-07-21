@@ -1,4 +1,4 @@
-package com.ssafy.backend.security.entity;
+package com.ssafy.backend.security.dto;
 
 import lombok.Data;
 import lombok.Getter;

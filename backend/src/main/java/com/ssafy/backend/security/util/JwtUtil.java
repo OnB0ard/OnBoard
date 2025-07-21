@@ -1,6 +1,6 @@
 package com.ssafy.backend.security.util;
 
-import com.ssafy.backend.security.entity.JwtUserInfo;
+import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.repository.TokenRepository;
 import com.ssafy.backend.user.entity.User;

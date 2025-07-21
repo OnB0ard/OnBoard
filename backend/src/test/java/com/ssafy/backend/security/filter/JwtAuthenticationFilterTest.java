@@ -1,7 +1,7 @@
 package com.ssafy.backend.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ssafy.backend.security.entity.JwtUserInfo;
+import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.util.JwtUtil;
 import jakarta.servlet.FilterChain;

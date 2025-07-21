@@ -1,6 +1,7 @@
 package com.ssafy.backend.user.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
+import com.ssafy.backend.security.entity.Token;
 import jakarta.persistence.*;
 import lombok.*;
 

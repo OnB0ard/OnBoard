@@ -17,13 +17,13 @@ public class PlanQueryRepositoryImpl implements PlanQueryRepository {
     @Override
     public List<Plan> findByWriter(Long userId){
         QUser qUser = QUser.user;
-        QUserPlan userPlan = QUserPlan.userPlan;
+        QUserPlan qUserPlan = QUserPlan.userPlan;
         QPlan qPlan = QPlan.plan;
 
         return jpaQueryFactory
                 .selectFrom(qPlan)
-                .join(qPlan.userPlans, userPlan).fetchJoin()
-                .join(userPlan.user, qUser).fetchJoin()
+                .join(qPlan.userPlans, qUserPlan).fetchJoin()
+                .join(qUserPlan.user, qUser).fetchJoin()
                 .where(qUser.userId.eq(userId))
                 .fetch();
     }

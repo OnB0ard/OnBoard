@@ -29,6 +29,8 @@ public class Plan extends DateEntity {
     private LocalDate endDate;
     @Column(name = "plan_image", length = 1000)
     private String planImage;
+    @Column(name = "hash_tage")
+    private String hashTage;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserPlan> userPlans;

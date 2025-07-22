@@ -1,4 +1,4 @@
-- 제목 : feat(지라 코드): 기능명
+- 제목 : [BE/FEAT] or  [FE/FEAT] 기능명
 
 ## 🔘Part
 

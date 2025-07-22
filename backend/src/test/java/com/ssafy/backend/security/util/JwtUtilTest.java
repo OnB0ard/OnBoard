@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -48,8 +49,9 @@ class JwtUtilTest {
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException {
         // JwtUtil 직접 생성
-        key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8),
-                Jwts.SIG.HS256.key().build().getAlgorithm());
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(secretKey.getBytes(StandardCharsets.UTF_8));
+        key = new SecretKeySpec(hashBytes, Jwts.SIG.HS256.key().build().getAlgorithm());
         jwtUtil = new JwtUtil(secretKey, accessExpirationTime, refreshExpirationTime, tokenRepository);
 
         // 테스트 유저 생성
@@ -266,7 +268,7 @@ class JwtUtilTest {
                 .build();
 
         // When
-        jwtUtil.addToWhiteList(validToken);
+        jwtUtil.deleteFromWhiteList(validToken);
 
         // Then
         verify(tokenRepository).deleteByTokenTypeAndTokenString(validToken.getTokenType(), validToken.getTokenString());

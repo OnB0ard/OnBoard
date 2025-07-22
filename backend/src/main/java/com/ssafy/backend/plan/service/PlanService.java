@@ -1,5 +1,6 @@
 package com.ssafy.backend.plan.service;
 
+import com.ssafy.backend.common.exception.S3UploadFailedException;
 import com.ssafy.backend.common.util.S3Util;
 import com.ssafy.backend.plan.dto.request.CreatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdatePlanRequestDTO;
@@ -7,6 +8,7 @@ import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
 import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
+import com.ssafy.backend.plan.exception.CreatorCannotLeaveException;
 import com.ssafy.backend.plan.exception.PlanNotExistException;
 import com.ssafy.backend.plan.exception.UserCannotApproveException;
 import com.ssafy.backend.plan.exception.UserNotExistException;
@@ -35,8 +37,9 @@ public class PlanService {
 
     @Transactional
     public CreatePlanResponseDTO createPlan(Long userId, CreatePlanRequestDTO createPlanRequestDTO, MultipartFile image) throws IOException {
-        String imageKey = null;
+        User user = validateUserExistence(userId);
 
+        String imageKey = null;
         if (image != null && !image.isEmpty()) {
 
             String fileName = "plans/" + System.currentTimeMillis() + "_" + image.getOriginalFilename();
@@ -45,7 +48,7 @@ public class PlanService {
             if (uploaded) {
                 imageKey = fileName;
             } else {
-                throw new RuntimeException("S3 업로드 실패");
+                throw new S3UploadFailedException("S3 업로드 실패하였습니다.");
             }
         }
         Plan plan = Plan.builder()
@@ -59,7 +62,7 @@ public class PlanService {
 
         planRepository.save(plan);
         // user_plan 생성
-        User user = validateUserExistence(userId);
+
 
         UserPlan userPlan = UserPlan.builder()
                 .user(user)
@@ -176,7 +179,10 @@ public class PlanService {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
-
+        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        if (userPlan.getUserType() == UserType.CREATOR) {
+            throw new CreatorCannotLeaveException("방 생성자는 나갈 수 없습니다.");
+        }
         userPlanRepository.deleteByPlanAndUser(plan, user);
     }
 

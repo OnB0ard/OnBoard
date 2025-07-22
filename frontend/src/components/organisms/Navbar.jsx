@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import './Navbar.css';
-import {Button} from "@/components/ui/button"
 
 const Navbar = () => {
   return (
@@ -18,8 +17,11 @@ const Navbar = () => {
         <Link to="/temp">
           <div className="temp">temp</div>
         </Link>
+        <Link to="/test">
+          <div className="temp">test</div>
+        </Link>
         <Link to="/temp">
-          <Button variant="outline">temp</Button>
+          <div className="temp">temp</div>
         </Link>
       </div>
     </div>

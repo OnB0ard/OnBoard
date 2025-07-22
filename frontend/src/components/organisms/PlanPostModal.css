@@ -1,0 +1,291 @@
+/* 모달 backdrop */
+.plan-post-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* 모달 본문 */
+.plan-post-modal {
+  background-color: white;
+  border-radius: 0.375rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 315px;
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* 헤더 */
+.plan-post-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.plan-post-modal__title {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.plan-post-modal__subtitle {
+  font-size: 0.75rem; /* 12px */
+  color: #6b7280;
+  margin-top: 0.0875rem;
+}
+
+/* 대표 이미지 영역 */
+.plan-post-modal__image {
+  width: 100%;
+  height: 4.2rem; 
+  background-color: #f1f5f9; /* 약간 더 밝은 회색 */
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.6125rem;
+  margin-top: 0.175rem;
+}
+
+/* 폼 라벨 */
+.plan-post-modal__label {
+  display: flex;
+  align-items: center;
+  gap: 0.175rem;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 500;
+  color: #374151;
+}
+
+/* 입력 필드 크기 조정 */
+.plan-post-modal input,
+.plan-post-modal textarea {
+  font-size: 0.75rem !important; /* 12px */
+  line-height: 1.4;
+  padding: 0.35rem 0.5rem !important;
+  min-height: 1.75rem !important;
+  height: auto !important;
+}
+
+.plan-post-modal textarea {
+  min-height: 2.8rem !important;
+  resize: none;
+}
+
+/* 버튼 크기 조정 */
+.plan-post-modal button {
+  height: 1.75rem !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  min-height: auto !important;
+}
+
+/* 폼 입력 그룹 */
+.plan-post-modal__form-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* 반응형 디자인 */
+/* 태블릿 크기 (768px 이하) */
+@media (max-width: 768px) {
+  .plan-post-modal__backdrop {
+    padding: 0.5rem;
+  }
+  
+  .plan-post-modal {
+    max-width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 0.525rem;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  
+  .plan-post-modal__form-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .plan-post-modal__header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .plan-post-modal__title {
+    font-size: 0.9375rem;
+  }
+  
+  .plan-post-modal input,
+  .plan-post-modal textarea {
+    font-size: 0.8125rem !important; /* 13px */
+    padding: 0.4rem 0.55rem !important;
+    min-height: 2rem !important;
+    height: auto !important;
+  }
+  
+  .plan-post-modal textarea {
+    min-height: 3.2rem !important;
+  }
+  
+  .plan-post-modal button {
+    height: 2rem !important;
+    padding: 0.3rem 0.8rem !important;
+    font-size: 0.8125rem !important;
+  }
+}
+
+/* 모바일 크기 (480px 이하) */
+@media (max-width: 480px) {
+  .plan-post-modal__backdrop {
+    padding: 0.25rem;
+    align-items: flex-start;
+    padding-top: 1.5rem;
+  }
+  
+  .plan-post-modal {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    border-radius: 0.6125rem;
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+  
+  .plan-post-modal input,
+  .plan-post-modal textarea {
+    font-size: 0.875rem !important; /* 14px */
+    padding: 0.45rem 0.6rem !important;
+    min-height: 2.2rem !important;
+    height: auto !important;
+  }
+  
+  .plan-post-modal textarea {
+    min-height: 3.5rem !important;
+  }
+  
+  .plan-post-modal button {
+    height: 2.2rem !important;
+    padding: 0.35rem 0.85rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .plan-post-modal__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  
+  .plan-post-modal__header button {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  
+  .plan-post-modal__title {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  
+  .plan-post-modal__subtitle {
+    font-size: 0.8125rem;
+    margin-top: 0.175rem;
+  }
+  
+  .plan-post-modal__footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  
+  .plan-post-modal__footer button {
+    width: 100%;
+  }
+}
+
+/* 큰 화면 (1024px 이상) */
+@media (min-width: 1024px) {
+  .plan-post-modal {
+    max-width: 364px;
+    padding: 1rem;
+    gap: 0.5rem;
+    /* 컴팩트한 디자인으로 스크롤 없이 모든 콘텐츠 표시 */
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .plan-post-modal__header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .plan-post-modal__title {
+    font-size: 0.9375rem;
+    line-height: 1.3;
+  }
+  
+  .plan-post-modal__subtitle {
+    font-size: 0.75rem;
+    margin-top: 0.0875rem;
+  }
+  
+  .plan-post-modal__label {
+    font-size: 0.6875rem;
+  }
+  
+  .plan-post-modal__footer {
+    margin-top: 0.75rem;
+  }
+  
+  .plan-post-modal input,
+  .plan-post-modal textarea {
+    font-size: 0.6875rem !important; /* 11px */
+    padding: 0.3rem 0.45rem !important;
+    min-height: 1.6rem !important;
+    height: auto !important;
+  }
+  
+  .plan-post-modal textarea {
+    min-height: 2.5rem !important;
+  }
+  
+  .plan-post-modal button {
+    height: 1.6rem !important;
+    padding: 0.2rem 0.6rem !important;
+    font-size: 0.6875rem !important;
+  }
+}
+
+/* 중간 화면 (769px ~ 1023px) */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .plan-post-modal {
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+}
+
+/* 설명 textarea 카운터 */
+.plan-post-modal__counter {
+  font-size: 0.6875rem;
+  text-align: right;
+  color: #374151;
+  margin-top: 0.175rem;
+}
+
+/* 하단 버튼 영역 */
+.plan-post-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

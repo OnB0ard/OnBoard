@@ -1,4 +1,4 @@
-package com.ssafy.backend.user.entity;
+package com.ssafy.backend.security.entity;
 
 public enum TokenType {
     ACCESS, REFRESH

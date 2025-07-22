@@ -1,6 +1,7 @@
 package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
+import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.plan.dto.request.CreatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
@@ -32,5 +33,10 @@ public class PlanController {
             @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
 
         return new CommonResponse<>(planService.updatePlan(planId, updatePlanRequestDTO, image), HttpStatus.OK);
+    }
+    @DeleteMapping("/{planId}")
+    public CommonResponse<SuccessResponseDTO> deletePlan(@PathVariable Long planId) {
+        planService.deletePlan(planId);
+        return new CommonResponse<>(new SuccessResponseDTO(true),HttpStatus.OK);
     }
 }

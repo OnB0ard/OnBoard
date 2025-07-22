@@ -7,6 +7,8 @@ import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
 import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.repository.PlanRepository;
+import com.ssafy.backend.user.entity.UserPlan;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,7 +56,7 @@ public class PlanService {
                 .imageUrl(imageKey != null ? s3Util.getUrl(imageKey) : null)
                 .build();
     }
-
+    @Transactional
     public UpdatePlanResponseDTO updatePlan(Long planId, UpdatePlanRequestDTO updatePlanReq, MultipartFile image) throws IOException{
         Plan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 계획이 존재하지 않습니다."));
@@ -96,5 +98,14 @@ public class PlanService {
                 .hashTag(plan.getHashTage())
                 .imageUrl(imageKey != null ? s3Util.getUrl(imageKey) : null)
                 .build();
+    }
+
+    @Transactional
+    public void deletePlan(Long planId) {
+        // 존재 여부 확인
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 계획이 존재하지 않습니다."));
+
+        planRepository.delete(plan);
     }
 }

@@ -14,9 +14,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, Long> {
     boolean existsByPlanAndUser(Plan plan, User user);
     UserPlan getUserPlanByPlanAndUser(Plan plan, User user);
 
-    @Modifying
-    @Query("DELETE FROM UserPlan up WHERE up.plan.planId = :planId AND up.user.userId = :userId")
-    void deleteByPlanAndUser(@Param("planId") Long planId, @Param("userId") Long userId);
+    void deleteByPlanAndUser(Plan plan, User user);
     boolean existsByPlan(Plan plan);
     boolean existsByUser(User user);
     void deleteUserPlanByPlanAndUser(Plan plan, User user);

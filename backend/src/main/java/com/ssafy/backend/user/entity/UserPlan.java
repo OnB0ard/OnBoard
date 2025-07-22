@@ -2,6 +2,8 @@ package com.ssafy.backend.user.entity;
 
 import com.ssafy.backend.plan.entity.Plan;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Table(name = "user_plan")
 @Data
+@Builder
+@AllArgsConstructor
 public class UserPlan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -25,28 +25,29 @@ import java.util.List;
 public class PlanController {
     private final PlanService planService;
     @PostMapping("/create")
-    public CommonResponse<CreatePlanResponseDTO> createPlan(@RequestPart CreatePlanRequestDTO createPlanRequestDTO, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
+    public CommonResponse<CreatePlanResponseDTO> createPlan(@AuthenticationPrincipal JwtUserInfo jwtUserInfo,@RequestPart CreatePlanRequestDTO createPlanRequestDTO, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
 
-        return new CommonResponse<>(planService.createPlan(createPlanRequestDTO,image), HttpStatus.OK);
+        return new CommonResponse<>(planService.createPlan(jwtUserInfo.getUserId(),createPlanRequestDTO,image), HttpStatus.OK);
     }
 
     @PutMapping("/{planId}")
     public CommonResponse<UpdatePlanResponseDTO> updatePlan(
+            @AuthenticationPrincipal JwtUserInfo jwtUserInfo,
             @PathVariable Long planId,
             @RequestPart UpdatePlanRequestDTO updatePlanRequestDTO,
             @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
 
-        return new CommonResponse<>(planService.updatePlan(planId, updatePlanRequestDTO, image), HttpStatus.OK);
+        return new CommonResponse<>(planService.updatePlan(jwtUserInfo.getUserId(), planId, updatePlanRequestDTO, image), HttpStatus.OK);
     }
     @DeleteMapping("/{planId}")
-    public CommonResponse<SuccessResponseDTO> deletePlan(@PathVariable Long planId) {
-        planService.deletePlan(planId);
+    public CommonResponse<SuccessResponseDTO> deletePlan(@AuthenticationPrincipal JwtUserInfo jwtUserInfo, @PathVariable Long planId) {
+        planService.deletePlan(jwtUserInfo.getUserId(),planId);
         return new CommonResponse<>(new SuccessResponseDTO(true),HttpStatus.OK);
     }
-    @GetMapping("/list/{userId}")
-    public CommonResponse<List<RetrievePlanResponse>> retrievePlanList(@PathVariable Long userId) {
+    @GetMapping("/list")
+    public CommonResponse<List<RetrievePlanResponse>> retrievePlanList(@AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
 
-        return new CommonResponse<>(planService.retrievePlanList(userId),HttpStatus.OK);
+        return new CommonResponse<>(planService.retrievePlanList(jwtUserInfo.getUserId()),HttpStatus.OK);
     }
     @PostMapping("/{planId}/leave")
     public CommonResponse<SuccessResponseDTO> leavePlan(@PathVariable Long planId,@AuthenticationPrincipal JwtUserInfo jwtUserInfo) {

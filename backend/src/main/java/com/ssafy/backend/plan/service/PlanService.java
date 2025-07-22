@@ -7,12 +7,18 @@ import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
 import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
+import com.ssafy.backend.plan.exception.PlanNotExistException;
+import com.ssafy.backend.plan.exception.UserCannotApproveException;
+import com.ssafy.backend.plan.exception.UserNotExistException;
 import com.ssafy.backend.plan.repository.PlanRepository;
 import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.user.entity.User;
-import jakarta.transaction.Transactional;
+import com.ssafy.backend.user.entity.UserPlan;
+import com.ssafy.backend.user.entity.UserType;
+import com.ssafy.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -20,12 +26,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PlanService {
     private final S3Util s3Util;
     private final PlanRepository planRepository;
     private final UserPlanRepository userPlanRepository;
+    private final UserRepository userRepository;
 
-    public CreatePlanResponseDTO createPlan(CreatePlanRequestDTO createPlanRequestDTO, MultipartFile image) throws IOException {
+    @Transactional
+    public CreatePlanResponseDTO createPlan(Long userId, CreatePlanRequestDTO createPlanRequestDTO, MultipartFile image) throws IOException {
         String imageKey = null;
 
         if (image != null && !image.isEmpty()) {
@@ -49,7 +58,18 @@ public class PlanService {
                 .build();
 
         planRepository.save(plan);
-        //user_plan에도 넣어주기
+        // user_plan 생성
+        User user = validateUserExistence(userId);
+
+        UserPlan userPlan = UserPlan.builder()
+                .user(user)
+                .plan(plan)
+                .userType(UserType.CREATOR)
+                .build();
+
+        userPlanRepository.save(userPlan);
+
+
         return CreatePlanResponseDTO.builder()
                 .planId(plan.getPlanId())
                 .name(plan.getPlanName())
@@ -60,10 +80,19 @@ public class PlanService {
                 .imageUrl(imageKey != null ? s3Util.getUrl(imageKey) : null)
                 .build();
     }
+
     @Transactional
-    public UpdatePlanResponseDTO updatePlan(Long planId, UpdatePlanRequestDTO updatePlanReq, MultipartFile image) throws IOException{
-        Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 계획이 존재하지 않습니다."));
+    public UpdatePlanResponseDTO updatePlan(Long userId, Long planId, UpdatePlanRequestDTO updatePlanReq, MultipartFile image) throws IOException {
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+        UserPlan  updateUserPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+
+        //방을 업데이트할 수 있는 사람인지 확인
+        if(updateUserPlan.getUserType() == UserType.USER) {
+            throw new UserCannotApproveException("참여자에게는 업데이트할 권한이 없습니다.");
+        }
+
+
         String imageKey = plan.getPlanImage();
         if (updatePlanReq.isImageModified()) {
             // 기존 이미지가 있으면 삭제
@@ -105,17 +134,30 @@ public class PlanService {
     }
 
     @Transactional
-    public void deletePlan(Long planId) {
+    public void deletePlan(Long userId, Long planId) {
         // 존재 여부 확인
-        Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 계획이 존재하지 않습니다."));
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
 
+        // 권한 확인 (방 생성자만 삭제 가능하도록)
+        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        if (userPlan.getUserType() == UserType.USER) {
+            throw new UserCannotApproveException("참여자에게는 삭제 권한이 없습니다.");
+        }
+        String imageKey = plan.getPlanImage();
+        if (imageKey != null && !imageKey.isBlank()) {
+            s3Util.deleteObject(imageKey); // 방을 만들때 만든 사진을 삭제한다.
+        }
         planRepository.delete(plan);
+
+
     }
 
     public List<RetrievePlanResponse> retrievePlanList(Long userId) {
-        List<Plan> plansByUserId = planRepository.findPlansByUserId(userId);
-        List<RetrievePlanResponse> planResponses = plansByUserId.stream().map(plan ->
+        User user = validateUserExistence(userId);
+        List<Plan> plansByUser = planRepository.findPlansByUser(user);
+
+        List<RetrievePlanResponse> planResponses = plansByUser.stream().map(plan ->
                 RetrievePlanResponse.builder()
                         .planId(plan.getPlanId())
                         .name(plan.getPlanName())
@@ -129,7 +171,23 @@ public class PlanService {
         return planResponses;
     }
 
+    @Transactional
     public void leavePlan(Long userId, Long planId) {
-        userPlanRepository.deleteByPlanAndUser(planId,userId);
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+
+
+        userPlanRepository.deleteByPlanAndUser(plan, user);
     }
+
+    private User validateUserExistence(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotExistException("존재하지 않는 사용자입니다. userId=" + userId));
+    }
+
+    private Plan validatePlanExistence(Long planId) {
+        return planRepository.findById(planId)
+                .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다. planId=" + planId));
+    }
+
 }

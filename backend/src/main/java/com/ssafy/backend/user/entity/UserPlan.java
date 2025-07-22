@@ -25,4 +25,7 @@ public class UserPlan {
 
     @Enumerated(EnumType.STRING)
     private UserType userType;
+
+    @Enumerated(EnumType.STRING)
+    private UserStatus userStatus;
 }

@@ -13,6 +13,7 @@ import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -54,6 +55,7 @@ public class JwtUtil {
     /**
      * Access Token 생성
      */
+    @Transactional
     public TokenDTO generateAccessToken(User user) {
 
         Date issuedAt = new Date(System.currentTimeMillis());
@@ -88,6 +90,7 @@ public class JwtUtil {
     /**
      * Refresh Token 생성
      */
+    @Transactional
     public TokenDTO generateRefreshToken(Long userId) {
 
         Date issuedAt = new Date(System.currentTimeMillis());
@@ -190,6 +193,7 @@ public class JwtUtil {
     /**
      * 토큰 유효성 검증
      */
+    @Transactional(readOnly = true)
     public boolean validateToken(String token, TokenType tokenType) {
         try {
             if (!isTokenAvailable(token, tokenType)) {
@@ -225,7 +229,7 @@ public class JwtUtil {
     /**
      * 토큰을 화이트리스트에서 제거 (로그아웃 시 사용)
      */
-    public void addToWhiteList(TokenDTO token) {
+    public void deleteFromWhiteList(TokenDTO token) {
         if (token != null && !token.getTokenString().isEmpty()) {
             tokenRepository.deleteByTokenTypeAndTokenString(token.getTokenType(), token.getTokenString());
         }

@@ -14,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class JwtUtilTest {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtUtilTest.class);
     private JwtUtil jwtUtil;
 
     @Mock
@@ -132,6 +135,8 @@ class JwtUtilTest {
 
         // When
         TokenDTO realAccessToken = jwtUtil.generateAccessToken(testUser);
+
+        log.info("생성된 토큰: {}", realAccessToken.getTokenString());
 
         // Then
         assertNotNull(realAccessToken);

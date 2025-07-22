@@ -4,16 +4,17 @@ import com.ssafy.backend.common.util.S3Util;
 import com.ssafy.backend.plan.dto.request.CreatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdatePlanRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
+import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.repository.PlanRepository;
-import com.ssafy.backend.user.entity.UserPlan;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class PlanService {
                 .build();
 
         planRepository.save(plan);
-
+        //user_plan에도 넣어주기
         return CreatePlanResponseDTO.builder()
                 .planId(plan.getPlanId())
                 .name(plan.getPlanName())
@@ -107,5 +108,21 @@ public class PlanService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 계획이 존재하지 않습니다."));
 
         planRepository.delete(plan);
+    }
+
+    public List<RetrievePlanResponse> retrievePlanList(Long userId) {
+        List<Plan> plansByUserId = planRepository.findPlansByUserId(userId);
+        List<RetrievePlanResponse> planResponses = plansByUserId.stream().map(plan ->
+                RetrievePlanResponse.builder()
+                        .planId(plan.getPlanId())
+                        .name(plan.getPlanName())
+                        .description(plan.getPlanDescription())
+                        .startDate(plan.getStartDate())
+                        .endDate(plan.getEndDate())
+                        .hashTag(plan.getHashTage())
+                        .imageUrl(plan.getPlanImage())
+                        .build()
+        ).toList();
+        return planResponses;
     }
 }

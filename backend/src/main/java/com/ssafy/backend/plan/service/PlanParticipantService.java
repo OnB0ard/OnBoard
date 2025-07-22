@@ -10,13 +10,16 @@ import com.ssafy.backend.user.entity.UserStatus;
 import com.ssafy.backend.user.entity.UserType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PlanParticipantService {
 
     private final UserPlanRepository planParticipantRepository;
 
+    @Transactional
     public boolean joinRequest(Long planId, JwtUserInfo jwtUserInfo) {
 
         UserPlan userPlan = new UserPlan();
@@ -51,6 +54,7 @@ public class PlanParticipantService {
         return true;
     }
 
+    @Transactional
     public boolean approveRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
 
         UserPlan creatorPlan = new UserPlan();
@@ -93,6 +97,7 @@ public class PlanParticipantService {
         return true;
     }
 
+    @Transactional
     public boolean denyRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
         UserPlan creatorPlan = new UserPlan();
 
@@ -131,6 +136,7 @@ public class PlanParticipantService {
         return true;
     }
 
+    @Transactional
     public boolean delegateRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
         UserPlan delegatorPlan = new UserPlan();
 

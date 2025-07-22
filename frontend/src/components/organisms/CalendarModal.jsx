@@ -61,31 +61,34 @@ function CalendarModal({ isOpen, onClose, onChange }) {
           </div>
         </div>
 
-        {/* 달력 */}
-        <div className="calendar-modal__calendar">
-          <CalendarRange onChange={handleRangeChange} />
-        </div>
+        {/* 달력과 버튼 컴테이너 */}
+        <div className="calendar-modal__content">
+          {/* 달력 */}
+          <div className="calendar-modal__calendar">
+            <CalendarRange onChange={handleRangeChange} />
+          </div>
 
-        {/* 버튼 */}
-        <div className="calendar-modal__footer">
-          <Button
-            background="white"
-            textColor="black"
-            border="gray"
-            shape="pill"
-            onClick={handleCancel}
-          >
-            취소
-          </Button>
-          <Button
-            background="dark"
-            textColor="white"
-            shape="pill"
-            onClick={handleComplete}
-            disabled={!selectedRange.from || !selectedRange.to}
-          >
-            완료
-          </Button>
+          {/* 버튼 */}
+          <div className="calendar-modal__footer">
+            <Button
+              background="white"
+              textColor="black"
+              border="gray"
+              shape="pill"
+              onClick={handleCancel}
+            >
+              취소
+            </Button>
+            <Button
+              background="dark"
+              textColor="white"
+              shape="pill"
+              onClick={handleComplete}
+              disabled={!selectedRange.from || !selectedRange.to}
+            >
+              완료
+            </Button>
+          </div>
         </div>
       </div>
     </div>

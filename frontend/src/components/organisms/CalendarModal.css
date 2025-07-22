@@ -14,9 +14,11 @@
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
-  max-width: 42rem;
-  width: 100%;
-  margin: 0 1rem;
+  /* 달력 두 개의 너비에 맞춰 크기 조정 */
+  width: auto;
+  max-width: none;
+  /* 컴팩트한 디자인을 위해 최소 여백만 유지 */
+  margin: 1rem;
 }
 
 .calendar-modal__header {
@@ -53,10 +55,22 @@
 
 .calendar-modal__calendar {
   margin-bottom: 1.5rem;
+  /* 달력 컴포넌트의 자연스러운 크기를 유지 */
+  display: inline-block;
+}
+
+/* 달력과 버튼을 포함하는 전체 레이아웃 */
+.calendar-modal__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* 오른쪽 정렬 */
 }
 
 .calendar-modal__footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  /* 오른쪽 달력의 끝에 맞춰 버튼 위치 조정 */
+  margin-top: 0;
+  align-self: flex-end;
 }

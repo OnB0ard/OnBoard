@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -33,8 +35,11 @@ public class JwtUtil {
             @Value("${jwt.secret}")String secret,
             @Value("${jwt.access-token.expiration}") int accessExpirationTime,
             @Value("${jwt.refresh-token.expiration}") int refreshExpirationTime,
-            TokenRepository tokenRepository) {
-        this.key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
+            TokenRepository tokenRepository) throws NoSuchAlgorithmException {
+        // 해싱으로 32바이트 고정
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+        this.key = new SecretKeySpec(hashBytes, Jwts.SIG.HS256.key().build().getAlgorithm());
         this.accessExpirationTime = accessExpirationTime;
         this.refreshExpirationTime = refreshExpirationTime;
         this.tokenRepository = tokenRepository;

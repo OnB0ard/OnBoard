@@ -1,11 +1,8 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.entity.Plan;
-import com.ssafy.backend.plan.exception.NotApplicantException;
-import com.ssafy.backend.plan.exception.NotInThisRoomException;
-import com.ssafy.backend.plan.exception.UserCannotApproveException;
-import com.ssafy.backend.plan.exception.UserPlanExistException;
-import com.ssafy.backend.plan.repository.PlanParticipantRepository;
+import com.ssafy.backend.plan.exception.*;
+import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
@@ -18,19 +15,23 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PlanParticipantService {
 
-    private final PlanParticipantRepository planParticipantRepository;
+    private final UserPlanRepository planParticipantRepository;
 
     public boolean joinRequest(Long planId, JwtUserInfo jwtUserInfo) {
+
         UserPlan userPlan = new UserPlan();
 
         Plan plan = new Plan();
-        // TODO : if > planID 가 없으면? > Exception
         plan.setPlanId(planId);
+        if(!planParticipantRepository.existsByPlan(plan)){
+            throw new PlanNotExistException("여행 계획이 존재하지 않습니다.");
+        }
 
-        // 여기서 유저는 "사용자"이다.
         User user = new User();
-        // TODO : if > token이 null이면? > Exception
         user.setUserId(jwtUserInfo.getUserId());
+        if(!planParticipantRepository.existsByUser(user)){
+            throw new UserNotExistException("사용자가 존재하지 않습니다.");
+        }
 
         if(planParticipantRepository.existsByPlanAndUser(plan, user)) {
             userPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, user);
@@ -51,28 +52,35 @@ public class PlanParticipantService {
     }
 
     public boolean approveRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
-        UserPlan deciderPlan = new UserPlan();
+
+        UserPlan creatorPlan = new UserPlan();
 
         Plan plan = new Plan();
-        // TODO : if > planID 가 없으면? > Exception
         plan.setPlanId(planId);
+        if(!planParticipantRepository.existsByPlan(plan)){
+            throw new PlanNotExistException("여행 계획이 존재하지 않습니다.");
+        }
 
-        User decider = new User();
-        // TODO : if > token이 null이면? > Exception
-        decider.setUserId(jwtUserInfo.getUserId());
+        User creator = new User();
+        creator.setUserId(jwtUserInfo.getUserId());
+        if(!planParticipantRepository.existsByUser(creator)){
+            throw new UserNotExistException("사용자가 존재하지 않습니다.");
+        }
 
-        if(!planParticipantRepository.existsByPlanAndUser(plan, decider)) {
+        if(!planParticipantRepository.existsByPlanAndUser(plan, creator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
-        deciderPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, decider);
+        creatorPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, creator);
 
-        if(deciderPlan.getUserType() == UserType.USER) {
+        if(creatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
         } // else if 작성 안하고, 생성자라고 생각 함
 
         User applicant = new User();
-        // TODO : if > userID가 없는 사람이면 > Exception
         applicant.setUserId(userId);
+        if(!planParticipantRepository.existsByUser(applicant)){
+            throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
+        }
 
         if(!planParticipantRepository.existsByPlanAndUser(plan, applicant)) {
             throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
@@ -85,16 +93,58 @@ public class PlanParticipantService {
         return true;
     }
 
+    public boolean denyRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
+        UserPlan creatorPlan = new UserPlan();
+
+        Plan plan = new Plan();
+        plan.setPlanId(planId);
+        if(!planParticipantRepository.existsByPlan(plan)){
+            throw new PlanNotExistException("여행 계획이 존재하지 않습니다.");
+        }
+
+        User creator = new User();
+        creator.setUserId(jwtUserInfo.getUserId());
+        if(!planParticipantRepository.existsByUser(creator)){
+            throw new UserNotExistException("사용자가 존재하지 않습니다.");
+        }
+
+        if(!planParticipantRepository.existsByPlanAndUser(plan, creator)) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+        creatorPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, creator);
+
+        if(creatorPlan.getUserType() == UserType.USER) {
+            throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
+        } // else if 작성 안하고, 생성자라고 생각 함
+
+        User applicant = new User();
+        applicant.setUserId(userId);
+        if(!planParticipantRepository.existsByUser(applicant)){
+            throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
+        }
+
+        if(!planParticipantRepository.existsByPlanAndUser(plan, applicant)) {
+            throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
+        }
+
+        planParticipantRepository.deleteUserPlanByPlanAndUser(plan, applicant);
+        return true;
+    }
+
     public boolean delegateRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
         UserPlan delegatorPlan = new UserPlan();
 
         Plan plan = new Plan();
-        // TODO : if > planID 가 없으면? > Exception
         plan.setPlanId(planId);
+        if(!planParticipantRepository.existsByPlan(plan)){
+            throw new PlanNotExistException("여행 계획이 존재하지 않습니다.");
+        }
 
         User delegator = new User();
-        // TODO : if > token이 null이면? > Exception
         delegator.setUserId(jwtUserInfo.getUserId());
+        if(!planParticipantRepository.existsByUser(delegator)){
+            throw new UserNotExistException("사용자가 존재하지 않습니다.");
+        }
 
         if (!planParticipantRepository.existsByPlanAndUser(plan, delegator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
@@ -106,8 +156,10 @@ public class PlanParticipantService {
         } // else if 작성 안하고, 생성자라고 생각 함
 
         User user = new User();
-        // TODO : if > userID가 없는 사람이면 > Exception
         user.setUserId(userId);
+        if(!planParticipantRepository.existsByUser(user)){
+            throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
+        }
 
         if(!planParticipantRepository.existsByPlanAndUser(plan, user)) {
             throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");

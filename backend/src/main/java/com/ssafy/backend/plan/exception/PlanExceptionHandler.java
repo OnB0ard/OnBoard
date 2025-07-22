@@ -39,4 +39,18 @@ public class PlanExceptionHandler {
         return new CommonResponse<>(new ErrorBody("PLAN-014", "참여 요청을 하지 않은 사용자입니다."),
                 HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(PlanNotExistException.class)
+    public  CommonResponse<ErrorBody> PlanNotExistException(PlanNotExistException e, HttpServletRequest request) {
+        log.warn("PLAN-015> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-015", "여행 계획방이 존재하지 않습니다."),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UserNotExistException.class)
+    public  CommonResponse<ErrorBody> UserNotExistException(UserNotExistException e, HttpServletRequest request) {
+        log.warn("PLAN-016> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-016", "사용자가 존재하지 않습니다."),
+                HttpStatus.BAD_REQUEST);
+    }
 }

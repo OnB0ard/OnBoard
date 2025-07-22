@@ -3,8 +3,10 @@ package com.ssafy.backend.plan.controller;
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.plan.service.PlanParticipantService;
+import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,8 +16,13 @@ public class PlanParticipantController {
 
     private final PlanParticipantService planParticipantService;
 
-    @PostMapping("{planId}/join")
-    public CommonResponse<SuccessResponseDTO> joinRequest(@PathVariable("planId") Long planId, @RequestBody Long userId) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.joinRequest(planId, userId)), HttpStatus.OK);
+    @PostMapping("/{planId}/join")
+    public CommonResponse<SuccessResponseDTO> joinRequest(@PathVariable("planId") Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.joinRequest(planId, jwtUserInfo)), HttpStatus.OK);
+    }
+
+    @PostMapping("/{planId}/approve")
+    public CommonResponse<SuccessResponseDTO> approveRequest(@PathVariable("planId") Long planId, @RequestBody Long userId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.approveRequest(planId, userId, jwtUserInfo)), HttpStatus.OK);
     }
 }

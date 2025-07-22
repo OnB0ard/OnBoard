@@ -1,6 +1,8 @@
 package com.ssafy.backend.security.util;
 
 import com.ssafy.backend.security.dto.JwtUserInfo;
+import com.ssafy.backend.security.dto.TokenDTO;
+import com.ssafy.backend.security.entity.Token;
 import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.repository.TokenRepository;
 import com.ssafy.backend.user.entity.User;
@@ -9,11 +11,14 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 @Component
@@ -44,30 +49,67 @@ public class JwtUtil {
     /**
      * Access Token 생성
      */
-    public String generateAccessToken(User user) {
-        return Jwts.builder()
+    public TokenDTO generateAccessToken(User user) {
+
+        Date issuedAt = new Date(System.currentTimeMillis());
+        Date expiration = new Date(System.currentTimeMillis() + accessExpirationTime * 1000L);
+
+        String accessToken = Jwts.builder()
                 .subject(String.valueOf(user.getUserId()))
                 .claim("userId", user.getUserId())
                 .claim("googleEmail", user.getGoogleEmail())
                 .claim("userName", user.getUserName())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + accessExpirationTime * 1000L))
+                .issuedAt(issuedAt)
+                .expiration(expiration)
                 .signWith(key)
                 .compact();
+
+        Token token = new Token();
+        token.setTokenType(TokenType.ACCESS);
+        token.setTokenString(accessToken);
+        LocalDateTime expirationDateTime = expiration.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();;
+        token.setExpireDate(expirationDateTime);
+
+        Token savedToken = tokenRepository.save(token);
+        return TokenDTO.builder()
+                .tokenString(savedToken.getTokenString())
+                .tokenType(savedToken.getTokenType())
+                .expireDate(savedToken.getExpireDate())
+                .build();
     }
 
     /**
      * Refresh Token 생성
      */
-    public String generateRefreshToken(Long userId) {
+    public TokenDTO generateRefreshToken(Long userId) {
 
-        return Jwts.builder()
+        Date issuedAt = new Date(System.currentTimeMillis());
+        Date expiration = new Date(System.currentTimeMillis() + refreshExpirationTime * 1000L);
+
+        String refreshToken = Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("userId", userId)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + refreshExpirationTime * 1000L))
+                .issuedAt(issuedAt)
+                .expiration(expiration)
                 .signWith(key)
                 .compact();
+
+        Token token = new Token();
+        token.setTokenType(TokenType.REFRESH);
+        token.setTokenString(refreshToken);
+        LocalDateTime expirationDateTime = expiration.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        token.setExpireDate(expirationDateTime);
+
+        Token savedToken = tokenRepository.save(token);
+        return TokenDTO.builder()
+                .tokenString(savedToken.getTokenString())
+                .tokenType(savedToken.getTokenType())
+                .expireDate(savedToken.getExpireDate())
+                .build();
     }
 
     /**
@@ -163,11 +205,24 @@ public class JwtUtil {
     }
 
     /**
+     * 토큰을 화이트리스트에 추가 (로그인 시 사용)
+     */
+    public void addToWhitelist(TokenDTO token) {
+        if (token != null && !token.getTokenString().isEmpty()) {
+            Token newToken = new Token();
+            newToken.setTokenType(token.getTokenType());
+            newToken.setTokenString(token.getTokenString());
+            newToken.setExpireDate(token.getExpireDate());
+            tokenRepository.save(newToken);
+        }
+    }
+
+    /**
      * 토큰을 화이트리스트에서 제거 (로그아웃 시 사용)
      */
-    public void addToBlacklist(String token, TokenType tokenType) {
-        if (token != null && !token.isEmpty()) {
-            tokenRepository.deleteByTokenTypeAndTokenString(tokenType, token);
+    public void addToWhiteList(TokenDTO token) {
+        if (token != null && !token.getTokenString().isEmpty()) {
+            tokenRepository.deleteByTokenTypeAndTokenString(token.getTokenType(), token.getTokenString());
         }
     }
 
@@ -179,5 +234,11 @@ public class JwtUtil {
             return bearerToken.substring(7);
         }
         return bearerToken;
+    }
+
+    @Scheduled(cron = "0 */5 * * * *") // 30분 마다 실행
+    public void cleanUpExpiredTokens() {
+        LocalDateTime now = LocalDateTime.now();
+        tokenRepository.deleteAllByExpireDateBefore(now);
     }
 }

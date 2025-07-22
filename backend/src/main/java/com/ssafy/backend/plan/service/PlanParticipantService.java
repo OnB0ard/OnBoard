@@ -61,9 +61,6 @@ public class PlanParticipantService {
         // TODO : if > token이 null이면? > Exception
         decider.setUserId(jwtUserInfo.getUserId());
 
-        System.out.println(plan.getPlanId());
-        System.out.println(decider.getUserId());
-
         if(!planParticipantRepository.existsByPlanAndUser(plan, decider)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
@@ -88,5 +85,41 @@ public class PlanParticipantService {
         return true;
     }
 
+    public boolean delegateRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
+        UserPlan delegatorPlan = new UserPlan();
 
+        Plan plan = new Plan();
+        // TODO : if > planID 가 없으면? > Exception
+        plan.setPlanId(planId);
+
+        User delegator = new User();
+        // TODO : if > token이 null이면? > Exception
+        delegator.setUserId(jwtUserInfo.getUserId());
+
+        if (!planParticipantRepository.existsByPlanAndUser(plan, delegator)) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+        delegatorPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, delegator);
+
+        if (delegatorPlan.getUserType() == UserType.USER) {
+            throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
+        } // else if 작성 안하고, 생성자라고 생각 함
+
+        User user = new User();
+        // TODO : if > userID가 없는 사람이면 > Exception
+        user.setUserId(userId);
+
+        if(!planParticipantRepository.existsByPlanAndUser(plan, user)) {
+            throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
+        }
+
+        UserPlan userPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, user);
+        userPlan.setUserType(UserType.CREATOR);
+        planParticipantRepository.save(userPlan);
+
+        delegatorPlan.setUserType(UserType.USER);
+        planParticipantRepository.save(delegatorPlan);
+        
+        return true;
+    }
 }

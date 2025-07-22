@@ -8,8 +8,10 @@ import com.ssafy.backend.plan.dto.response.CreatePlanResponseDTO;
 import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.service.PlanService;
+import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,4 +48,10 @@ public class PlanController {
 
         return new CommonResponse<>(planService.retrievePlanList(userId),HttpStatus.OK);
     }
+    @PostMapping("/{planId}/leave")
+    public CommonResponse<SuccessResponseDTO> leavePlan(@PathVariable Long planId,@AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        planService.leavePlan(jwtUserInfo.getUserId(),planId);
+        return new CommonResponse<>(new SuccessResponseDTO(true),HttpStatus.OK);
+    }
+
 }

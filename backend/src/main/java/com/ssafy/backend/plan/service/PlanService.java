@@ -8,6 +8,8 @@ import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.dto.response.UpdatePlanResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.repository.PlanRepository;
+import com.ssafy.backend.plan.repository.UserPlanRepository;
+import com.ssafy.backend.user.entity.User;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import java.util.List;
 public class PlanService {
     private final S3Util s3Util;
     private final PlanRepository planRepository;
+    private final UserPlanRepository userPlanRepository;
 
     public CreatePlanResponseDTO createPlan(CreatePlanRequestDTO createPlanRequestDTO, MultipartFile image) throws IOException {
         String imageKey = null;
@@ -124,5 +127,9 @@ public class PlanService {
                         .build()
         ).toList();
         return planResponses;
+    }
+
+    public void leavePlan(Long userId, Long planId) {
+        userPlanRepository.deleteByPlanAndUser(planId,userId);
     }
 }

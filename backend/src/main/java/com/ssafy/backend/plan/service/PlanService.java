@@ -110,7 +110,7 @@ public class PlanService {
                 boolean uploaded = s3Util.putObject(newFileName, image.getInputStream(), image.getContentType());
 
                 if (!uploaded) {
-                    throw new RuntimeException("S3 업로드 실패");
+                    throw new S3UploadFailedException("S3 업로드 실패");
                 }
 
                 imageKey = newFileName;

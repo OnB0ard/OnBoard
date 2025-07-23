@@ -1,13 +1,14 @@
-package com.ssafy.backend.user.entity;
+package com.ssafy.backend.security.entity;
 
+import com.ssafy.backend.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "token")
-@Getter
+@Data
 public class Token {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

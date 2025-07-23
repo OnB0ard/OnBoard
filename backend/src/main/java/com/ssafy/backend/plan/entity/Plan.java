@@ -2,20 +2,21 @@ package com.ssafy.backend.plan.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
 import com.ssafy.backend.user.entity.UserPlan;
-import com.ssafy.backend.whiteBoard.entity.WhiteBoard;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
 @NoArgsConstructor
 @Table(name = "plan")
 @Data
+@Builder
+@AllArgsConstructor
 public class Plan extends DateEntity {
     @Id
     @Column(name = "plan_id")
@@ -27,11 +28,13 @@ public class Plan extends DateEntity {
     private String planDescription;
 
     @Column(name = "start_date")
-    private LocalDateTime startDate;
+    private LocalDate startDate;
     @Column(name = "end_date")
-    private LocalDateTime endDate;
+    private LocalDate endDate;
     @Column(name = "plan_image", length = 1000)
     private String planImage;
+    @Column(name = "hash_tag")
+    private String hashTag;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserPlan> userPlans;

@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: space-between;
   background-color: transparent;    /* 투명 배경 */
-  backdrop-filter: blur(4px);
+  /* backdrop-filter: blur(4px); */
   height: 50px;
   padding: 0 20px;
 }
@@ -34,16 +34,26 @@
   flex-basis: 35%;
   flex-direction: row;
   align-items: flex-end;
-  gap: 50px; /* temp 간 간격 */
+  gap: 5%; /* temp 간 간격 */
+  margin-top: 12px;
 }
 
-/* 텍스트 스타일 */
-.Home {
+.home {
   font-weight: bold;
   color: #333;
+  font-size: 24px;
+}
+
+.home:hover {
+  cursor: pointer;
 }
 
 .temp {
-  color: #0000FF;
+  font-weight: bold;
+  color: #333;
   font-size: 16px;
+}
+
+.temp:hover {
+  cursor: pointer;
 }

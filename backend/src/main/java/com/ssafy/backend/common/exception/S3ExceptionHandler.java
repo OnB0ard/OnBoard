@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class S3ExceptionHandler {
     @ExceptionHandler(S3UploadFailedException.class)
-    public CommonResponse<ErrorBody> UserPlanExistException(UserPlanExistException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> UserPlanExistException(S3UploadFailedException e, HttpServletRequest request) {
         log.warn("S3-001> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("S3-001", "S3 업로드 실패하였습니다."),
                 HttpStatus.BAD_REQUEST);

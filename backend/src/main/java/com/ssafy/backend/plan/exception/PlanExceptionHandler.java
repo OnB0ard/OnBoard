@@ -53,7 +53,7 @@ public class PlanExceptionHandler {
         return new CommonResponse<>(new ErrorBody("PLAN-016", "사용자가 존재하지 않습니다."),
                 HttpStatus.BAD_REQUEST);
     }
-    @ExceptionHandler(UserNotExistException.class)
+    @ExceptionHandler(CreatorCannotLeaveException.class)
     public  CommonResponse<ErrorBody> CreatorCannotLeaveException(CreatorCannotLeaveException e, HttpServletRequest request) {
         log.warn("PLAN-017> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-017", "방 생성자는 나갈 수 없습니다."),

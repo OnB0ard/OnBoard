@@ -22,13 +22,8 @@ public class UserController {
 
     @PutMapping("/{userId}")
     public CommonResponse<ModifyProfileResponseDTO> modifyProfile(
-//            @AuthenticationPrincipal JwtUserInfo jwtUserInfo,
-            @PathVariable Long userId,
-            @RequestPart ModifyProfileRequestDTO modifyProfileRequestDTO, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
-        ModifyProfileResponseDTO modifyProfile = userService.modifyProfile(
-//                jwtUserInfo.getUserId(),
-               userId,
-                modifyProfileRequestDTO,image);
+            @AuthenticationPrincipal JwtUserInfo jwtUserInfo, @RequestPart ModifyProfileRequestDTO modifyProfileRequestDTO, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
+        ModifyProfileResponseDTO modifyProfile = userService.modifyProfile(jwtUserInfo.getUserId(), modifyProfileRequestDTO,image);
         return new CommonResponse<>(modifyProfile, HttpStatus.OK);
     }
 }

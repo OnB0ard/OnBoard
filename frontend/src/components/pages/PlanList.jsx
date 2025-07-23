@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Card from "../organisms/Card";
+import Card1 from "../organisms/Card1";
 import PlanAddCard from "../organisms/PlanAddCard";
 //import PlanPostModal from "../modals/PlanPostModal"; // 경로는 실제 위치에 맞게 수정
 
@@ -30,6 +30,8 @@ const PlanList = () => {
           py-8
         ">
           {/* 카드들 */}
+          <Card1 />
+          <Card1 />
           {ingCards}
           {/* 계획 추가 버튼 */}
           <PlanAddCard onClick={() => setModalOpen(true)} />
@@ -49,6 +51,7 @@ const PlanList = () => {
           justify-items-center
           py-8
         ">
+          <Card1 />
           {doneCards}
         </div>
       </div>

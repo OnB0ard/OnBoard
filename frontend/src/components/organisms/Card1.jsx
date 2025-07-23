@@ -1,16 +1,20 @@
-import React from "react"
+// 카드 내용들 임의로 넣은 파일(추후에 삭제)
+
+import React, { useState } from "react"
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar"
 import PlanImage from "../atoms/PlanImage"
 import CardDropdown from "../ui/CardDropDown"
 import { Button } from "../ui/button"
+import ShareModal from "./ShareModal"
+import ViewParticipantModal from "./ViewParticipantModal"
+import * as Popover from "@radix-ui/react-popover"
 
-const Card1 = ({
-  imageUrl,
-  onShare,
-  onViewParticipant,
-  onView,
-}) => {
-  return ( //카드에 마우스 대면 호버효과 + 커서 포인터 + 클릭시 계획페이지로 이동
+const Card1 = (props) => {
+  const { imageUrl, onView, onEdit, onDelete } = props;
+  const [participantOpen, setParticipantOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+
+  return (
     <div 
       className="
         bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 w-full max-w-[280px]
@@ -33,7 +37,7 @@ const Card1 = ({
             <div className="text-xs text-gray-500 mt-0.5">#친구들 #일본</div>
           </div>
         </div>
-        <CardDropdown />
+        <CardDropdown cardData={props} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
       {/* 이미지 */}
@@ -47,9 +51,41 @@ const Card1 = ({
       </div>
 
       {/* 하단 버튼 */}
-      <div className="flex justify-end gap-2 pt-2 mt-auto">
-        <Button variant="solid" onClick={onViewParticipant}>참여자 보기</Button>
-        <Button variant="outline" onClick={onShare}>공유하기</Button>
+      <div className="flex justify-end gap-2 pt-2 mt-auto ">
+        {/* 참여자 보기 팝오버 */}
+        <Popover.Root open={participantOpen} onOpenChange={setParticipantOpen}>
+          <Popover.Trigger asChild>
+            <Button
+              className="cursor-pointer"
+              variant="solid"
+              onClick={e => e.stopPropagation()}
+            >
+              참여자 보기
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content
+            side="top"
+            align="center"
+            sideOffset={8}
+            className="z-50"
+          >
+            <ViewParticipantModal />
+          </Popover.Content>
+        </Popover.Root>
+        {/* 공유하기 팝오버 */}
+        <ShareModal
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          trigger={
+            <Button
+              className="cursor-pointer"
+              variant="outline"
+              onClick={e => e.stopPropagation()}
+            >
+              공유하기
+            </Button>
+          }
+        />
       </div>
     </div>
   )

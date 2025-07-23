@@ -12,14 +12,14 @@ const Navbar = () => {
       </div>
       <div className="center" />
       <div className="right">
-        <Link to="/temp">
-          <div className="temp">temp</div>
+        <Link to="/planlist">
+          <div className="temp">Plan</div>
         </Link>
         <Link to="/temp">
-          <div className="temp">temp</div>
+          <div className="temp">Logout</div>
         </Link>
         <Link to="/temp">
-          <Button variant="outline">temp</Button>
+          <Button variant="outline">Mypage</Button>
         </Link>
       </div>
     </div>

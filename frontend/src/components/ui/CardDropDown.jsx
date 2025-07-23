@@ -1,14 +1,16 @@
 import React from "react"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
 import { MoreVertical } from "lucide-react"
+import { Button } from "../ui/button"
 
-const CardDropdown = ({ onEdit, onDelete }) => {
+// cardData prop을 받아서 onEdit, onDelete에 넘김
+const CardDropdown = ({ cardData, onEdit, onDelete }) => {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button className="p-1 rounded-full hover:bg-gray-100 transition">
+        <Button variant="ghost" className="p-1 rounded-full hover:bg-gray-100 transition min-w-0 w-auto h-auto">
           <MoreVertical className="w-5 h-5 text-gray-600" />
-        </button>
+        </Button>
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
@@ -18,13 +20,13 @@ const CardDropdown = ({ onEdit, onDelete }) => {
         >
           <DropdownMenu.Item
             className="w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-            onSelect={onEdit}
+            onSelect={() => onEdit && onEdit(cardData)}
           >
             수정
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className="w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
-            onSelect={onDelete}
+            onSelect={() => onDelete && onDelete(cardData)}
           >
             삭제
           </DropdownMenu.Item>

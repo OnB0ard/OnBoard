@@ -34,15 +34,16 @@ class JwtUtilTest {
     void setUp() {
         // JwtUtil 설정
         jwtUtil = new JwtUtil(
-                "thisisasecretkeyfortestingpurposesonly12345678901234567890",
+                "3a705c6764f87861de91174f6f296feefbd10f70d9a87c7a0a26e23ae8d71b11",
                 3600, // access token 만료 시간 (1시간)
                 86400, // refresh token 만료 시간 (24시간)
                 tokenRepository
         );
 
+
         // 테스트용 사용자 생성
         testUser = new User();
-        testUser.setUserId(1L);
+        testUser.setUserId(2L);
         testUser.setGoogleEmail("test@example.com");
         testUser.setUserName("테스트 사용자");
 
@@ -50,9 +51,10 @@ class JwtUtilTest {
         accessToken = jwtUtil.generateAccessToken(testUser);
         refreshToken = jwtUtil.generateRefreshToken(testUser.getUserId());
 
+        System.out.println(accessToken);
         // 토큰 레포지토리 설정
-        when(tokenRepository.existsByTokenTypeAndTokenString(eq(TokenType.ACCESS), anyString())).thenReturn(true);
-        when(tokenRepository.existsByTokenTypeAndTokenString(eq(TokenType.REFRESH), anyString())).thenReturn(true);
+//        when(tokenRepository.existsByTokenTypeAndTokenString(eq(TokenType.ACCESS), anyString())).thenReturn(true);
+//        when(tokenRepository.existsByTokenTypeAndTokenString(eq(TokenType.REFRESH), anyString())).thenReturn(true);
     }
 
     @Test
@@ -60,6 +62,7 @@ class JwtUtilTest {
     void testGenerateAccessToken() {
         // when
         String token = jwtUtil.generateAccessToken(testUser);
+        System.out.println(token);
 
         // then
         assertNotNull(token);

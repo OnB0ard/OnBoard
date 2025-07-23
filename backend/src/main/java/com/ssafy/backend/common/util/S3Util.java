@@ -12,6 +12,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
+import java.time.Duration;
 
 @Slf4j
 @Component
@@ -63,5 +65,13 @@ public class S3Util {
             log.error("S3 delete failed for key: {}", key, e);
             return false;
         }
+    }
+
+    public String getUrl(String key) {
+
+        Duration expiration = Duration.ofHours(1);
+
+        URL signedUrl = s3Template.createSignedGetURL(bucketName, key, expiration);
+        return signedUrl.toString();
     }
 }

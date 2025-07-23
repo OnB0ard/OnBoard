@@ -23,34 +23,40 @@ public class PlanExceptionHandler {
     public CommonResponse<ErrorBody> UserCannotApproveException(UserCannotApproveException e, HttpServletRequest request) {
         log.warn("PLAN-012> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-012", "참여자에게는 권한이 없습니다."),
-                HttpStatus.BAD_REQUEST);
+                HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(NotInThisRoomException.class)
     public CommonResponse<ErrorBody> NotInThisRoomException(NotInThisRoomException e, HttpServletRequest request) {
         log.warn("PLAN-013> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-013", "당신은 이 방에 속해있지 않습니다."),
-                HttpStatus.BAD_REQUEST);
+                HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(NotApplicantException.class)
     public CommonResponse<ErrorBody> NotApplicantException(NotApplicantException e, HttpServletRequest request) {
         log.warn("PLAN-014> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-014", "참여 요청을 하지 않은 사용자입니다."),
-                HttpStatus.BAD_REQUEST);
+                HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(PlanNotExistException.class)
     public  CommonResponse<ErrorBody> PlanNotExistException(PlanNotExistException e, HttpServletRequest request) {
         log.warn("PLAN-015> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-015", "여행 계획방이 존재하지 않습니다."),
-                HttpStatus.BAD_REQUEST);
+                HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(UserNotExistException.class)
     public  CommonResponse<ErrorBody> UserNotExistException(UserNotExistException e, HttpServletRequest request) {
         log.warn("PLAN-016> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-016", "사용자가 존재하지 않습니다."),
+                HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(CreatorCannotLeaveException.class)
+    public  CommonResponse<ErrorBody> CreatorCannotLeaveException(CreatorCannotLeaveException e, HttpServletRequest request) {
+        log.warn("PLAN-017> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-017", "방 생성자는 나갈 수 없습니다."),
                 HttpStatus.BAD_REQUEST);
     }
 }

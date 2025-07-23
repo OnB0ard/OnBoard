@@ -3,6 +3,8 @@ package com.ssafy.backend.plan.entity;
 import com.ssafy.backend.common.entity.DateEntity;
 import com.ssafy.backend.user.entity.UserPlan;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,6 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "plan")
 @Data
+@Builder
+@AllArgsConstructor
 public class Plan extends DateEntity {
     @Id
     @Column(name = "plan_id")
@@ -29,6 +33,8 @@ public class Plan extends DateEntity {
     private LocalDate endDate;
     @Column(name = "plan_image", length = 1000)
     private String planImage;
+    @Column(name = "hash_tag")
+    private String hashTag;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserPlan> userPlans;

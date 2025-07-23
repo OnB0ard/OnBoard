@@ -9,13 +9,18 @@ import Icon from "@/components/atoms/Icon";
 import "./PlanPostModal.css";
 
 function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null }) {
-  // State 초기화
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [hashtags, setHashtags] = useState(initialData?.hashtags || "");
+  // State 초기화 - API 명세에 맞게 수정
+  const [name, setName] = useState(initialData?.name || ""); // title → name
+  const [hashTag, setHashTag] = useState(initialData?.hashTag || ""); // hashtags → hashTag
   const [description, setDescription] = useState(initialData?.description || "");
-  const [range, setRange] = useState(initialData?.dateRange || { from: undefined, to: undefined });
+  const [range, setRange] = useState({
+    from: initialData?.startDate ? new Date(initialData.startDate) : undefined,
+    to: initialData?.endDate ? new Date(initialData.endDate) : undefined
+  });
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [imageModified, setImageModified] = useState(false); // 이미지 수정 여부 추적
+  const [originalImageUrl, _setOriginalImageUrl] = useState(initialData?.imageUrl || null); // 원본 이미지 URL 저장
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -64,10 +69,17 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     const file = event.target.files[0];
     if (file) {
       setSelectedImage(file);
+      
+      // 새 이미지 미리보기 생성
       if (imagePreview && imagePreview.startsWith('blob:')) {
         URL.revokeObjectURL(imagePreview);
       }
-      setImagePreview(URL.createObjectURL(file));
+      const newImageUrl = URL.createObjectURL(file);
+      setImagePreview(newImageUrl);
+      
+      // 수정 모드에서는 항상 true (파일 객체는 비교 불가)
+      // 새로 업로드하는 경우는 항상 수정으로 간주
+      setImageModified(true);
     }
   };
 
@@ -78,18 +90,26 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
   const handleImageRemove = () => {
     setSelectedImage(null);
     setImagePreview(null);
+    // 원본 이미지가 있었다면 제거는 수정으로 간주
+    setImageModified(originalImageUrl !== null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   const handleSubmit = () => {
+    // 날짜를 API 명세에 맞게 포맷팅 (YYYY-MM-DD)
+    const startDate = range.from ? range.from.toISOString().split('T')[0] : null;
+    const endDate = range.to ? range.to.toISOString().split('T')[0] : null;
+    
     onSubmit({
-      title,
-      hashtags,
+      name,
+      hashTag,
       description,
-      dateRange: range,
+      startDate,
+      endDate,
       image: selectedImage,
+      imageModified,
     });
   };
 
@@ -146,13 +166,13 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
 
           <div className="space-y-1">
             <label className="plan-post-modal__label"><Icon type="book" /> 제목</label>
-            <Input size="full" placeholder="여행 계획의 제목을 입력하세요" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input size="full" placeholder="여행 계획의 제목을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
           <div className="plan-post-modal__form-group">
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="hashtag" /> 해시 태그</label>
-              <Input size="full" placeholder="#가족, #친구, #제주도" value={hashtags} onChange={(e) => setHashtags(e.target.value)} />
+              <Input size="full" placeholder="#가족, #친구, #제주도" value={hashTag} onChange={(e) => setHashTag(e.target.value)} />
             </div>
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="calendar" /> 여행 기간</label>

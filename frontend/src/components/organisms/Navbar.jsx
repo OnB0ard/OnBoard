@@ -15,6 +15,9 @@ const Navbar = () => {
       </div>
       <div className="center" />
       <div className="right">
+        <Link to="/test">
+          <Button className="temp" variant="link">TEST</Button>          
+        </Link>
         <Link to="/plan">
           <Button className="temp" variant="link">Plan</Button>
         </Link>

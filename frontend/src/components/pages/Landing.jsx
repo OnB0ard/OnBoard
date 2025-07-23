@@ -5,6 +5,8 @@ import {
 } from '@shinyongjun/react-fullpage';
 import '@shinyongjun/react-fullpage/css';
 import './Landing.css';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar"
+
 
 function Landing() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -34,6 +36,7 @@ function Landing() {
 
   return (
     <>
+
       <FullpageContainer
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
@@ -51,6 +54,11 @@ function Landing() {
         <FullpageSection>
           <div style={sectionStyle('white','black')}>
             <div style={boxStyle}>wtf</div>
+            <Avatar>
+              <AvatarImage src="https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82" />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+            {/* <PlanImage></PlanImage> */}
           </div>
         </FullpageSection>
         <FullpageSection isAutoHeight>

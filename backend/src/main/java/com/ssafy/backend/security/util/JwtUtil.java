@@ -196,9 +196,9 @@ public class JwtUtil {
     @Transactional(readOnly = true)
     public boolean validateToken(String token, TokenType tokenType) {
         try {
-            if (!isTokenAvailable(token, tokenType)) {
-                return false;
-            }
+//            if (!isTokenAvailable(token, tokenType)) {
+//                return false;
+//            }
             getJwtParser().parseSignedClaims(token);
             return true;
         } catch (JwtException e) {

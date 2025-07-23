@@ -1,9 +1,12 @@
 package com.ssafy.backend.user.service;
 
+import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.security.dto.TokenDTO;
+import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.util.JwtUtil;
 import com.ssafy.backend.user.dto.GoogleUserInfoDTO;
 import com.ssafy.backend.user.dto.request.LoginRequestDTO;
+import com.ssafy.backend.user.dto.request.LogoutRequestDTO;
 import com.ssafy.backend.user.dto.response.LoginResponseDTO;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.repository.UserRepository;
@@ -47,5 +50,12 @@ public class UserAuthService {
                 .refreshToken(refreshToken.getTokenString())
                 .refreshTokenExpireDate(refreshToken.getExpireDate())
                 .build();
+    }
+
+    @Transactional
+    public boolean logout(LogoutRequestDTO logoutRequestDTO) {
+        jwtUtil.deleteFromWhiteList(logoutRequestDTO.getAccessToken());
+        jwtUtil.deleteFromWhiteList(logoutRequestDTO.getRefreshToken());
+        return true;
     }
 }

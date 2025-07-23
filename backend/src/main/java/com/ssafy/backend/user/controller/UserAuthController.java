@@ -1,7 +1,9 @@
 package com.ssafy.backend.user.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
+import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.user.dto.request.LoginRequestDTO;
+import com.ssafy.backend.user.dto.request.LogoutRequestDTO;
 import com.ssafy.backend.user.dto.response.LoginResponseDTO;
 import com.ssafy.backend.user.service.UserAuthService;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +26,11 @@ public class UserAuthController {
     public CommonResponse<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
         LoginResponseDTO userInfo = userAuthService.login(loginRequestDTO);
         return new CommonResponse<>(userInfo, HttpStatus.OK);
+    }
+
+    @PostMapping("/logout")
+    @PreAuthorize("permitAll()")
+    public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
+        return new CommonResponse<>(new SuccessResponseDTO(userAuthService.logout(logoutRequestDTO)), HttpStatus.OK);
     }
 }

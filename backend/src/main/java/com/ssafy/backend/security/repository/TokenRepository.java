@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public interface TokenRepository extends JpaRepository<Token, Long> {
     boolean existsByTokenTypeAndTokenString(TokenType tokenType, String tokenString);
 
-    void deleteByTokenTypeAndTokenString(TokenType tokenType, String token);
-
     void deleteAllByExpireDateBefore(LocalDateTime expireDateBefore);
+
+    void deleteByTokenString(String tokenString);
 }

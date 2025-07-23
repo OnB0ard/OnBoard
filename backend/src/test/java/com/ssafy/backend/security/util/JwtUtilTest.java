@@ -273,10 +273,10 @@ class JwtUtilTest {
                 .build();
 
         // When
-        jwtUtil.deleteFromWhiteList(validToken);
+        jwtUtil.deleteFromWhiteList(validToken.getTokenString());
 
         // Then
-        verify(tokenRepository).deleteByTokenTypeAndTokenString(validToken.getTokenType(), validToken.getTokenString());
+        verify(tokenRepository).deleteByTokenString(validToken.getTokenString());
     }
 
     @Test

@@ -4,7 +4,6 @@ import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.ErrorBody;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContextException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -57,6 +56,13 @@ public class PlanExceptionHandler {
     public  CommonResponse<ErrorBody> CreatorCannotLeaveException(CreatorCannotLeaveException e, HttpServletRequest request) {
         log.warn("PLAN-017> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-017", "방 생성자는 나갈 수 없습니다."),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(PendingUserException.class)
+    public  CommonResponse<ErrorBody> PendingUserException(PendingUserException e, HttpServletRequest request) {
+        log.warn("PLAN-017> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-017", "아직 초대되지 않은 방입니다."),
                 HttpStatus.BAD_REQUEST);
     }
 }

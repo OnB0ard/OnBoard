@@ -1,178 +1,186 @@
-import { useState, useRef } from "react"
-import { Input } from "@/components/atoms/Input"
-import { Textarea } from "@/components/atoms/Textarea"
-import { Button } from "@/components/atoms/Button"
-import CalendarModal from "@/components/organisms/CalendarModal"
-import PlanImage from "@/components/atoms/PlanImage"
-import Icon from "@/components/atoms/Icon"
+import { useState, useRef, useEffect } from "react";
+import { Input } from "@/components/atoms/Input";
+import { Textarea } from "@/components/atoms/Textarea";
+import { Button } from "@/components/atoms/Button";
+import CalendarModal from "@/components/organisms/CalendarModal";
+import PlanImage from "@/components/atoms/PlanImage";
+import Icon from "@/components/atoms/Icon";
 
-import "./PlanPostModal.css"
+import "./PlanPostModal.css";
 
-function PlanPostModal({ onClose, onSubmit }) {
-  const [range, setRange] = useState({ from: undefined, to: undefined })
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-  const [description, setDescription] = useState("")
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const fileInputRef = useRef(null)
+function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null }) {
+  // State 초기화
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [hashtags, setHashtags] = useState(initialData?.hashtags || "");
+  const [description, setDescription] = useState(initialData?.description || "");
+  const [range, setRange] = useState(initialData?.dateRange || { from: undefined, to: undefined });
+  const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const isEditMode = mode === 'edit';
+  let modalTitle, subtitle, submitButtonText;
+
+  if (isEditMode) {
+    modalTitle = '여행 계획 수정하기';
+    subtitle = '여행 정보를 수정하세요.';
+    submitButtonText = '수정하기';
+  } else {
+    modalTitle = '새로운 여행 계획 만들기';
+    subtitle = '함께 떠날 여행의 첫 걸음을 시작해보세요.';
+    submitButtonText = '만들기';
+  }
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const formatDate = (date) => {
-    if (!date) return ""
-    const yyyy = date.getFullYear()
-    const mm = String(date.getMonth() + 1).padStart(2, "0")
-    const dd = String(date.getDate()).padStart(2, "0")
-    return `${yyyy}.${mm}.${dd}`
-  }
+    if (!date) return "";
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}.${mm}.${dd}`;
+  };
+  
+  const getDateRangeText = () => {
+    if (range.from && range.to) {
+      return `${formatDate(range.from)} ~ ${formatDate(range.to)}`;
+    }
+    return "";
+  };
 
   const handleRangeChange = (selected) => {
-    setRange(selected)
-    setIsCalendarOpen(false) // CalendarModal에서 완료 버튼을 누르면 닫힘
-  }
+    setRange(selected);
+    setIsCalendarOpen(false);
+  };
 
   const handleImageUpload = (event) => {
-    const file = event.target.files[0]
+    const file = event.target.files[0];
     if (file) {
-      setSelectedImage(file)
-      
-      // 이미지 미리보기 생성
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target.result)
+      setSelectedImage(file);
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
       }
-      reader.readAsDataURL(file)
+      setImagePreview(URL.createObjectURL(file));
     }
-  }
+  };
 
   const handleImageClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleImageRemove = () => {
-    setSelectedImage(null)
-    setImagePreview(null)
+    setSelectedImage(null);
+    setImagePreview(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      fileInputRef.current.value = "";
     }
-  }
+  };
 
-  const dateText =
-    range.from && range.to
-      ? `${formatDate(range.from)} ~ ${formatDate(range.to)}`
-      : ""
+  const handleSubmit = () => {
+    onSubmit({
+      title,
+      hashtags,
+      description,
+      dateRange: range,
+      image: selectedImage,
+    });
+  };
+
+  const renderImageSection = () => {
+    if (imagePreview) {
+      return (
+        <div className="relative group">
+          <PlanImage src={imagePreview} alt="선택된 이미지" />
+          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-lg">
+            <div className="flex gap-2">
+              <button onClick={handleImageClick} className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 p-2 rounded-full transition-all" title="이미지 변경">
+                <Icon type="camera" />
+              </button>
+              <button onClick={handleImageRemove} className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 p-2 rounded-full transition-all" title="이미지 제거">
+                <Icon type="trash" />
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="w-full max-w-2xl aspect-[16/9] overflow-hidden rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
+        <button onClick={handleImageClick} className="h-full w-full flex flex-col items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all">
+          <Icon type="camera" className="text-4xl mb-2" />
+          <span className="text-sm font-medium">대표 이미지 업로드</span>
+          <span className="text-xs text-gray-400 mt-1">클릭하여 이미지를 선택하세요</span>
+        </button>
+      </div>
+    );
+  };
 
   return (
     <>
       <div className="plan-post-modal__backdrop">
         <div className="plan-post-modal">
-          {/* 헤더 */}
           <div className="plan-post-modal__header">
             <div>
-              <h2 className="plan-post-modal__title">새로운 여행 계획 만들기</h2>
-              <p className="plan-post-modal__subtitle">
-                함께 떠날 여행의 첫 걸음을 시작해보세요
-              </p>
+              <h2 className="plan-post-modal__title">{modalTitle}</h2>
+              <p className="plan-post-modal__subtitle">{subtitle}</p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <Icon type="xmark" />
             </button>
           </div>
 
-          {/* 대표 이미지 */}
           <div className="space-y-1">
-            <label className="plan-post-modal__label"><Icon type="camera" /> 대표이미지</label>
-            <PlanImage
-              src={imagePreview}
-              alt="선택된 이미지"
-              showUploadUI={true}
-              onImageClick={handleImageClick}
-              onImageRemove={handleImageRemove}
-            />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
+            <label className="plan-post-modal__label">
+              <Icon type="camera" /> 대표이미지
+            </label>
+            {renderImageSection()}
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
           </div>
 
-          {/* 제목 */}
           <div className="space-y-1">
             <label className="plan-post-modal__label"><Icon type="book" /> 제목</label>
-            <Input size="full" placeholder="여행 계획의 제목을 입력하세요" />
+            <Input size="full" placeholder="여행 계획의 제목을 입력하세요" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
-          {/* 해시태그 + 여행기간 */}
           <div className="plan-post-modal__form-group">
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="hashtag" /> 해시 태그</label>
-              <Input size="full" placeholder="#가족, #친구, #제주도" />
+              <Input size="full" placeholder="#가족, #친구, #제주도" value={hashtags} onChange={(e) => setHashtags(e.target.value)} />
             </div>
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="calendar" /> 여행 기간</label>
               <div className="relative">
-                <Input
-                  value={dateText}
-                  readOnly // 직접 입력하는걸 하려고 헀지만 처리하는데 번거로움이 많음.
-                  placeholder="여행 기간을 선택하세요"
-                />
-                <button
-                  onClick={() => setIsCalendarOpen(true)}
-                  className="absolute inset-y-0 right-2 flex items-center"
-                >
+                <Input value={getDateRangeText()} readOnly placeholder="여행 기간을 선택하세요" />
+                <button onClick={() => setIsCalendarOpen(true)} className="absolute inset-y-0 right-2 flex items-center">
                   <Icon type="calendar" />
                 </button>
               </div>
             </div>
           </div>
-
-          {/* 설명 */}
+          
           <div className="space-y-1">
             <label className="plan-post-modal__label"><Icon type="document" /> 여행 설명</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="여행 계획에 대한 상세한 설명을 작성해주세요."
-              maxLength={100}
-            />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="여행 계획에 대한 상세한 설명을 작성해주세요." maxLength={100} />
             <p className="plan-post-modal__counter">{description.length}/100</p>
           </div>
 
-          {/* 버튼 */}
           <div className="plan-post-modal__footer">
-            <Button
-              background="white"
-              textColor="black"
-              border="gray"
-              shape="pill"
-              onClick={onClose}
-            >
-              취소
-            </Button>
-            <Button
-              background="dark"
-              textColor="white"
-              shape="pill"
-              onClick={() => onSubmit({ 
-                image: selectedImage,
-                dateRange: range,
-                description: description 
-              })}
-            >
-              만들기
-            </Button>
+            <Button background="white" textColor="black" border="gray" shape="pill" onClick={onClose}>취소</Button>
+            <Button background="dark" textColor="white" shape="pill" onClick={handleSubmit}>{submitButtonText}</Button>
           </div>
         </div>
       </div>
 
-      {/* 달력 모달 */}
-      <CalendarModal
-        isOpen={isCalendarOpen}
-        onClose={() => setIsCalendarOpen(false)}
-        onChange={handleRangeChange}
-      />
+      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} onChange={handleRangeChange} />
     </>
-  )
+  );
 }
 
-export default PlanPostModal
+export default PlanPostModal;

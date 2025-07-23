@@ -229,9 +229,9 @@ public class JwtUtil {
     /**
      * 토큰을 화이트리스트에서 제거 (로그아웃 시 사용)
      */
-    public void deleteFromWhiteList(TokenDTO token) {
-        if (token != null && !token.getTokenString().isEmpty()) {
-            tokenRepository.deleteByTokenTypeAndTokenString(token.getTokenType(), token.getTokenString());
+    public void deleteFromWhiteList(String tokenString)  {
+        if (tokenString != null) {
+            tokenRepository.deleteByTokenString(extractToken(tokenString));
         }
     }
 

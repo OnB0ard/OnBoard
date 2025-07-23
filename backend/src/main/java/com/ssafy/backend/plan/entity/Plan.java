@@ -34,7 +34,7 @@ public class Plan extends DateEntity {
     @Column(name = "plan_image", length = 1000)
     private String planImage;
     @Column(name = "hash_tag")
-    private String hashTage;
+    private String hashTag;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserPlan> userPlans;

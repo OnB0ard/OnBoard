@@ -57,7 +57,7 @@ public class PlanService {
                 .startDate(createPlanRequestDTO.getStartDate())
                 .endDate(createPlanRequestDTO.getEndDate())
                 .planImage(imageKey)
-                .hashTage(createPlanRequestDTO.getHashTag())
+                .hashTag(createPlanRequestDTO.getHashTag())
                 .build();
 
         planRepository.save(plan);
@@ -79,7 +79,7 @@ public class PlanService {
                 .description(plan.getPlanDescription())
                 .startDate(plan.getStartDate().toString())
                 .endDate(plan.getEndDate().toString())
-                .hashTag(plan.getHashTage())
+                .hashTag(plan.getHashTag())
                 .imageUrl(imageKey != null ? s3Util.getUrl(imageKey) : null)
                 .build();
     }
@@ -123,7 +123,7 @@ public class PlanService {
         plan.setPlanDescription(updatePlanReq.getDescription());
         plan.setStartDate(updatePlanReq.getStartDate());
         plan.setEndDate(updatePlanReq.getEndDate());
-        plan.setHashTage(updatePlanReq.getHashTag());
+        plan.setHashTag(updatePlanReq.getHashTag());
 
         return UpdatePlanResponseDTO.builder()
                 .planId(plan.getPlanId())
@@ -131,7 +131,7 @@ public class PlanService {
                 .description(plan.getPlanDescription())
                 .startDate(plan.getStartDate())
                 .endDate(plan.getEndDate())
-                .hashTag(plan.getHashTage())
+                .hashTag(plan.getHashTag())
                 .imageUrl(imageKey != null ? s3Util.getUrl(imageKey) : null)
                 .build();
     }
@@ -167,7 +167,7 @@ public class PlanService {
                         .description(plan.getPlanDescription())
                         .startDate(plan.getStartDate())
                         .endDate(plan.getEndDate())
-                        .hashTag(plan.getHashTage())
+                        .hashTag(plan.getHashTag())
                         .imageUrl(plan.getPlanImage())
                         .build()
         ).toList();

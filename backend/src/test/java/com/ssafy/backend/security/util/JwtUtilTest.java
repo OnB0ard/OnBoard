@@ -1,238 +1,327 @@
 package com.ssafy.backend.security.util;
 
 import com.ssafy.backend.security.dto.JwtUserInfo;
+import com.ssafy.backend.security.dto.TokenDTO;
+import com.ssafy.backend.security.entity.Token;
 import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.repository.TokenRepository;
 import com.ssafy.backend.user.entity.User;
+import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class JwtUtilTest {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtUtilTest.class);
     private JwtUtil jwtUtil;
 
     @Mock
     private TokenRepository tokenRepository;
 
     private User testUser;
-    private String accessToken;
-    private String refreshToken;
+    private TokenDTO accessTokenDTO;
+    private TokenDTO refreshTokenDTO;
+    private Token accessToken;
+    private Token refreshToken;
+
+    private final String secretKey = "testSecretKeyWithAtLeast32BytesForHS256Algorithm";
+    private final int accessExpirationTime = 3600;
+    private final int refreshExpirationTime = 86400;
+    private SecretKey key;
 
     @BeforeEach
-    void setUp() {
-        // JwtUtil 설정
-        jwtUtil = new JwtUtil(
-                "3a705c6764f87861de91174f6f296feefbd10f70d9a87c7a0a26e23ae8d71b11",
-                3600, // access token 만료 시간 (1시간)
-                86400, // refresh token 만료 시간 (24시간)
-                tokenRepository
-        );
+    void setUp() throws NoSuchAlgorithmException {
+        // JwtUtil 직접 생성
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(secretKey.getBytes(StandardCharsets.UTF_8));
+        key = new SecretKeySpec(hashBytes, Jwts.SIG.HS256.key().build().getAlgorithm());
+        jwtUtil = new JwtUtil(secretKey, accessExpirationTime, refreshExpirationTime, tokenRepository);
 
-
-        // 테스트용 사용자 생성
+        // 테스트 유저 생성
         testUser = new User();
-        testUser.setUserId(2L);
-        testUser.setGoogleEmail("test@example.com");
-        testUser.setUserName("테스트 사용자");
+        testUser.setUserId(1L);
+        testUser.setGoogleEmail("test@gmail.com");
+        testUser.setUserName("테스트유저");
 
-        // 토큰 생성
-        accessToken = jwtUtil.generateAccessToken(testUser);
-        refreshToken = jwtUtil.generateRefreshToken(testUser.getUserId());
+        // 토큰 엔티티 생성
+        accessToken = new Token();
+        accessToken.setTokenType(TokenType.ACCESS);
+        accessToken.setTokenString("mock-access-token");
+        accessToken.setExpireDate(LocalDateTime.now().plusHours(1));
 
-        System.out.println(accessToken);
-        // 토큰 레포지토리 설정
-//        when(tokenRepository.existsByTokenTypeAndTokenString(eq(TokenType.ACCESS), anyString())).thenReturn(true);
-//        when(tokenRepository.existsByTokenTypeAndTokenString(eq(TokenType.REFRESH), anyString())).thenReturn(true);
+        refreshToken = new Token();
+        refreshToken.setTokenType(TokenType.REFRESH);
+        refreshToken.setTokenString("mock-refresh-token");
+        refreshToken.setExpireDate(LocalDateTime.now().plusDays(1));
+
+        // 토큰 DTO 생성
+        accessTokenDTO = TokenDTO.builder()
+                .tokenString(accessToken.getTokenString())
+                .tokenType(accessToken.getTokenType())
+                .expireDate(accessToken.getExpireDate())
+                .build();
+
+        refreshTokenDTO = TokenDTO.builder()
+                .tokenString(refreshToken.getTokenString())
+                .tokenType(refreshToken.getTokenType())
+                .expireDate(refreshToken.getExpireDate())
+                .build();
     }
 
     @Test
     @DisplayName("액세스 토큰 생성 테스트")
-    void testGenerateAccessToken() {
-        // when
-        String token = jwtUtil.generateAccessToken(testUser);
-        System.out.println(token);
+    void generateAccessToken() {
+        // Given
+        when(tokenRepository.save(any(Token.class))).thenReturn(accessToken);
 
-        // then
-        assertNotNull(token);
-        assertTrue(token.length() > 0);
+        // When
+        TokenDTO result = jwtUtil.generateAccessToken(testUser);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(TokenType.ACCESS, result.getTokenType());
+        assertEquals(accessToken.getTokenString(), result.getTokenString());
+
+        ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
+        verify(tokenRepository).save(tokenCaptor.capture());
+        assertEquals(TokenType.ACCESS, tokenCaptor.getValue().getTokenType());
     }
 
     @Test
     @DisplayName("리프레시 토큰 생성 테스트")
-    void testGenerateRefreshToken() {
-        // when
-        String token = jwtUtil.generateRefreshToken(testUser.getUserId());
+    void generateRefreshToken() {
+        // Given
+        when(tokenRepository.save(any(Token.class))).thenReturn(refreshToken);
 
-        // then
-        assertNotNull(token);
-        assertTrue(token.length() > 0);
+        // When
+        TokenDTO result = jwtUtil.generateRefreshToken(testUser.getUserId());
+
+        // Then
+        assertNotNull(result);
+        assertEquals(TokenType.REFRESH, result.getTokenType());
+        assertEquals(refreshToken.getTokenString(), result.getTokenString());
+
+        ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
+        verify(tokenRepository).save(tokenCaptor.capture());
+        assertEquals(TokenType.REFRESH, tokenCaptor.getValue().getTokenType());
+    }
+
+    @Test
+    @DisplayName("실제 토큰 생성 및 검증 테스트")
+    void generateAndValidateRealToken() {
+        // Given
+        when(tokenRepository.save(any(Token.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(tokenRepository.existsByTokenTypeAndTokenString(any(TokenType.class), anyString())).thenReturn(true);
+
+        // When
+        TokenDTO realAccessToken = jwtUtil.generateAccessToken(testUser);
+
+        log.info("생성된 토큰: {}", realAccessToken.getTokenString());
+
+        // Then
+        assertNotNull(realAccessToken);
+        assertNotNull(realAccessToken.getTokenString());
+
+        // 토큰에서 사용자 정보 추출 테스트
+        JwtUserInfo userInfo = jwtUtil.getUserInfoFromToken(realAccessToken.getTokenString());
+        assertEquals(testUser.getUserId(), userInfo.getUserId());
+        assertEquals(testUser.getGoogleEmail(), userInfo.getGoogleEmail());
+        assertEquals(testUser.getUserName(), userInfo.getUserName());
+
+        // 토큰 유효성 검증
+        assertTrue(jwtUtil.validateToken(realAccessToken.getTokenString(), TokenType.ACCESS));
+        assertFalse(jwtUtil.isExpired(realAccessToken.getTokenString()));
     }
 
     @Test
     @DisplayName("토큰에서 사용자 정보 추출 테스트")
-    void testGetUserInfoFromToken() {
-        // when
-        JwtUserInfo userInfo = jwtUtil.getUserInfoFromToken(accessToken);
+    void getUserInfoFromToken() {
+        // Given
+        String token = Jwts.builder()
+                .subject("1")
+                .claim("userId", 1L)
+                .claim("googleEmail", "test@gmail.com")
+                .claim("userName", "테스트유저")
+                .signWith(key)
+                .expiration(new Date(System.currentTimeMillis() + 3600 * 1000))
+                .compact();
 
-        // then
+        // When
+        JwtUserInfo userInfo = jwtUtil.getUserInfoFromToken(token);
+
+        // Then
         assertNotNull(userInfo);
-        assertEquals(testUser.getUserId().longValue(), userInfo.getUserId());
-        assertEquals(testUser.getGoogleEmail(), userInfo.getGoogleEmail());
-        assertEquals(testUser.getUserName(), userInfo.getUserName());
+        assertEquals(1L, userInfo.getUserId());
+        assertEquals("test@gmail.com", userInfo.getGoogleEmail());
+        assertEquals("테스트유저", userInfo.getUserName());
     }
 
     @Test
-    @DisplayName("토큰에서 사용자 ID 추출 테스트")
-    void testGetUserId() {
-        // when
-        Long userId = jwtUtil.getUserId(accessToken);
+    @DisplayName("토큰에서 개별 정보 추출 테스트")
+    void getIndividualInfoFromToken() {
+        // Given
+        String token = Jwts.builder()
+                .subject("1")
+                .claim("userId", 1L)
+                .claim("googleEmail", "test@gmail.com")
+                .claim("userName", "테스트유저")
+                .signWith(key)
+                .expiration(new Date(System.currentTimeMillis() + 3600 * 1000))
+                .compact();
 
-        // then
-        assertEquals(testUser.getUserId(), userId);
+        // When & Then
+        assertEquals(1L, jwtUtil.getUserId(token));
+        assertEquals("test@gmail.com", jwtUtil.getGoogleEmail(token));
+        assertEquals("테스트유저", jwtUtil.getName(token));
     }
 
     @Test
-    @DisplayName("토큰에서 사용자 이름 추출 테스트")
-    void testGetName() {
-        // when
-        String userName = jwtUtil.getName(accessToken);
+    @DisplayName("만료된 토큰 확인 테스트")
+    void isExpiredToken() {
+        // Given
+        // 이미 만료된 토큰 생성
+        String expiredToken = Jwts.builder()
+                .subject("1")
+                .claim("userId", 1L)
+                .signWith(key)
+                .expiration(new Date(System.currentTimeMillis() - 1000))
+                .compact();
 
-        // then
-        assertEquals(testUser.getUserName(), userName);
+        // 유효한 토큰 생성
+        String validToken = Jwts.builder()
+                .subject("1")
+                .claim("userId", 1L)
+                .signWith(key)
+                .expiration(new Date(System.currentTimeMillis() + 3600 * 1000))
+                .compact();
+
+        // When & Then
+        assertTrue(jwtUtil.isExpired(expiredToken));
+        assertFalse(jwtUtil.isExpired(validToken));
     }
 
     @Test
-    @DisplayName("토큰 유효성 검증 테스트 - 유효한 토큰")
-    void testValidateToken_validToken() {
-        // given
-        when(tokenRepository.existsByTokenTypeAndTokenString(TokenType.ACCESS, accessToken)).thenReturn(true);
+    @DisplayName("토큰 유효성 검증 테스트")
+    void validateToken() {
+        // Given
+        String token = Jwts.builder()
+                .subject("1")
+                .claim("userId", 1L)
+                .signWith(key)
+                .expiration(new Date(System.currentTimeMillis() + 3600 * 1000))
+                .compact();
 
-        // when
-        boolean isValid = jwtUtil.validateToken(accessToken, TokenType.ACCESS);
+        when(tokenRepository.existsByTokenTypeAndTokenString(TokenType.ACCESS, token)).thenReturn(true);
+        when(tokenRepository.existsByTokenTypeAndTokenString(TokenType.REFRESH, token)).thenReturn(false);
 
-        // then
-        assertTrue(isValid);
+        // When & Then
+        assertTrue(jwtUtil.validateToken(token, TokenType.ACCESS));
+        assertFalse(jwtUtil.validateToken(token, TokenType.REFRESH));
+
+        // 잘못된 형식의 토큰
+        assertFalse(jwtUtil.validateToken("invalid.token", TokenType.ACCESS));
     }
 
     @Test
-    @DisplayName("토큰 유효성 검증 테스트 - 만료된 토큰")
-    void testValidateToken_expiredToken() {
-        // given
-        // 만료된 토큰 생성을 위해 만료 시간을 -1초로 설정한 JwtUtil 생성
-        JwtUtil expiredJwtUtil = new JwtUtil(
-                "thisisasecretkeyfortestingpurposesonly12345678901234567890",
-                -1, // 액세스 토큰이 이미 만료되도록 설정
-                -1, // 리프레시 토큰도 만료되도록 설정
-                tokenRepository
-        );
+    @DisplayName("토큰 화이트리스트 추가 테스트")
+    void addToWhitelist() {
+        // Given
+        TokenDTO validToken = TokenDTO.builder()
+                .tokenString("valid-token")
+                .tokenType(TokenType.ACCESS)
+                .expireDate(LocalDateTime.now().plusHours(1))
+                .build();
 
-        String expiredToken = expiredJwtUtil.generateAccessToken(testUser);
-        when(tokenRepository.existsByTokenTypeAndTokenString(TokenType.ACCESS, expiredToken)).thenReturn(true);
+        // When
+        jwtUtil.addToWhitelist(validToken);
 
-        // when
-        boolean isValid = jwtUtil.validateToken(expiredToken, TokenType.ACCESS);
-
-        // then
-        assertFalse(isValid);
+        // Then
+        ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
+        verify(tokenRepository).save(tokenCaptor.capture());
+        assertEquals(validToken.getTokenString(), tokenCaptor.getValue().getTokenString());
+        assertEquals(validToken.getTokenType(), tokenCaptor.getValue().getTokenType());
     }
 
     @Test
-    @DisplayName("토큰 유효성 검증 테스트 - 등록되지 않은 토큰")
-    void testValidateToken_notRegisteredToken() {
-        // given
-        when(tokenRepository.existsByTokenTypeAndTokenString(TokenType.ACCESS, accessToken)).thenReturn(false);
+    @DisplayName("토큰 화이트리스트에서 제거 테스트")
+    void addToWhiteList() {
+        // Given
+        TokenDTO validToken = TokenDTO.builder()
+                .tokenString("valid-token")
+                .tokenType(TokenType.ACCESS)
+                .expireDate(LocalDateTime.now().plusHours(1))
+                .build();
 
-        // when
-        boolean isValid = jwtUtil.validateToken(accessToken, TokenType.ACCESS);
+        // When
+        jwtUtil.deleteFromWhiteList(validToken.getTokenString());
 
-        // then
-        assertFalse(isValid);
+        // Then
+        verify(tokenRepository).deleteByTokenString(validToken.getTokenString());
     }
 
     @Test
-    @DisplayName("토큰 만료 확인 테스트")
-    void testIsExpired() {
-        // given
-        // 만료되지 않은 토큰
+    @DisplayName("토큰 화이트리스트 추가 실패 테스트 (null 또는 빈 토큰)")
+    void addToWhitelistWithNullOrEmptyToken() {
+        // When
+        jwtUtil.addToWhitelist(null);
 
-        // when
-        boolean isExpired = jwtUtil.isExpired(accessToken);
+        TokenDTO emptyToken = TokenDTO.builder()
+                .tokenString("")
+                .tokenType(TokenType.ACCESS)
+                .expireDate(LocalDateTime.now().plusHours(1))
+                .build();
+        jwtUtil.addToWhitelist(emptyToken);
 
-        // then
-        assertFalse(isExpired);
-
-        // given - 만료된 토큰
-        JwtUtil expiredJwtUtil = new JwtUtil(
-                "thisisasecretkeyfortestingpurposesonly12345678901234567890",
-                -1, // 액세스 토큰이 이미 만료되도록 설정
-                -1,
-                tokenRepository
-        );
-        String expiredToken = expiredJwtUtil.generateAccessToken(testUser);
-
-        // when
-        boolean isExpiredToken = jwtUtil.isExpired(expiredToken);
-
-        // then
-        assertTrue(isExpiredToken);
-    }
-
-    @Test
-    @DisplayName("토큰 만료 일자 가져오기 테스트")
-    void testGetExpirationDateFromToken() {
-        // when
-        Date expirationDate = jwtUtil.getExpirationDateFromToken(accessToken);
-
-        // then
-        assertNotNull(expirationDate);
-        // 현재 시간보다 미래인지 확인
-        assertTrue(expirationDate.after(new Date()));
-    }
-
-    @Test
-    @DisplayName("블랙리스트에 토큰 추가 테스트")
-    void testAddToBlacklist() {
-        // when
-        jwtUtil.addToBlacklist(accessToken, TokenType.ACCESS);
-
-        // then
-        verify(tokenRepository, times(1)).deleteByTokenTypeAndTokenString(TokenType.ACCESS, accessToken);
+        // Then
+        verify(tokenRepository, never()).save(any(Token.class));
     }
 
     @Test
     @DisplayName("Bearer 토큰에서 JWT 추출 테스트")
-    void testExtractToken() {
-        // given
-        String bearerToken = "Bearer " + accessToken;
+    void extractToken() {
+        // Given
+        String bearerToken = "Bearer token123";
 
-        // when
-        String extractedToken = jwtUtil.extractToken(bearerToken);
+        // When
+        String token = jwtUtil.extractToken(bearerToken);
 
-        // then
-        assertEquals(accessToken, extractedToken);
+        // Then
+        assertEquals("token123", token);
 
-        // when - Bearer 접두사가 없는 경우
-        String extractedToken2 = jwtUtil.extractToken(accessToken);
+        // Bearer 접두사가 없는 경우
+        assertEquals("token456", jwtUtil.extractToken("token456"));
 
-        // then
-        assertEquals(accessToken, extractedToken2);
+        // null 처리
+        assertNull(jwtUtil.extractToken(null));
+    }
 
-        // when - null인 경우
-        String extractedToken3 = jwtUtil.extractToken(null);
+    @Test
+    @DisplayName("만료된 토큰 정리 테스트")
+    void cleanUpExpiredTokens() {
+        // When
+        jwtUtil.cleanUpExpiredTokens();
 
-        // then
-        assertNull(extractedToken3);
+        // Then
+        verify(tokenRepository).deleteAllByExpireDateBefore(any(LocalDateTime.class));
     }
 }

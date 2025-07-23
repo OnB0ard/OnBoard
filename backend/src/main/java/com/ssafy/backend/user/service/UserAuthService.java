@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserAuthService {
 
     private final GoogleOauthUtil googleOauth;
     private final UserRepository userRepository;

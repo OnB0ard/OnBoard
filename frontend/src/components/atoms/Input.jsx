@@ -14,10 +14,10 @@ const inputVariants = cva(
   {
     variants: {
       size: {
-        full: "w-full",
-        half: "w-[calc(50%-0.5rem)]",
-        lg: "w-[500px]",
-        sm: "w-[250px]",
+        full: "w-full", // 부모 크기에 100%
+        half: "w-[calc(50%-0.5rem)]", // flex gap 감안한 절반 크기
+        lg: "w-[500px]", // 큰 검색창(여행 리스트)
+        sm: "w-[250px]", // 작은 검색창(메인에서 여행 상세 검색)
       },
     },
     defaultVariants: {

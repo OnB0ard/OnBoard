@@ -37,19 +37,25 @@ const ViewParticipantModal = ({ participants: initialParticipants = [], myName =
   }
 
   return (
-    <div className="w-64 max-h-80 bg-white rounded-xl shadow-xl p-4 flex flex-col">
+    <div className="w-72 max-h-80 bg-white rounded-xl shadow-xl p-4 flex flex-col border border-gray-200">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-bold text-lg">참여자 목록</h3>
+        <h3 className="font-bold text-lg">
+          참여자 목록
+          <span className="ml-2 text-xs text-gray-400">({isHost ? "방장" : "참여자"})</span>
+        </h3>
         <span className="text-xs text-gray-400">{participants.length}명</span>
       </div>
-      <ul className="space-y-2 overflow-y-auto pr-1 flex-1">
+      <ul className="space-y-2 overflow-y-auto pr-1 flex-1 max-h-48">
         {participants.map((p) => (
           <li key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition group">
-            <Avatar>
+            <Avatar className="w-8 h-8">
               <AvatarImage src={p.avatar} />
-              <AvatarFallback>{p.name[0]}</AvatarFallback>
+              <AvatarFallback className="text-xs">{p.name[0]}</AvatarFallback>
             </Avatar>
-            <span className={`font-medium text-gray-800 text-sm flex-1 ${p.name === hostName ? "text-blue-600" : ""}`}>{p.name}{p.name === hostName && <span className="ml-1 text-xs text-blue-400 font-bold">(방장)</span>}</span>
+            <span className={`font-medium text-gray-800 text-sm flex-1 ${p.name === hostName ? "text-blue-600" : ""}`}>
+              {p.name}
+              {p.name === hostName && <span className="ml-1 text-xs text-blue-400 font-bold">(방장)</span>}
+            </span>
             {/* 방장일 때만 수락/삭제 버튼 노출 */}
             {isHost && p.status === "pending" && (
               <button
@@ -57,7 +63,7 @@ const ViewParticipantModal = ({ participants: initialParticipants = [], myName =
                 title="초대 수락"
                 onClick={() => handleAccept(p.id, p.name)}
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-3 h-3" />
               </button>
             )}
             {isHost && p.name !== hostName && (
@@ -66,7 +72,7 @@ const ViewParticipantModal = ({ participants: initialParticipants = [], myName =
                 title={p.status === "pending" ? "초대 거절" : "내보내기"}
                 onClick={() => handleDelete(p.id, p.name, p.status)}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </li>

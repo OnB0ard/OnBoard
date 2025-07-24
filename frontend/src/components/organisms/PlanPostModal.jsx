@@ -21,7 +21,7 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageModified, setImageModified] = useState(false); // 이미지 수정 여부 추적
-  const [originalImageUrl, _setOriginalImageUrl] = useState(initialData?.imageUrl || null); // 원본 이미지 URL 저장
+  const [originalImageUrl, setOriginalImageUrl] = useState(initialData?.imageUrl || null); // 원본 이미지 URL 저장
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // 로딩 상태
   const fileInputRef = useRef(null);
@@ -38,6 +38,22 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     subtitle = '함께 떠날 여행의 첫 걸음을 시작해보세요.';
     submitButtonText = '만들기';
   }
+
+  // initialData가 변경될 때 state 업데이트
+  useEffect(() => {
+    if (initialData && isEditMode) {
+      setName(initialData.name || "");
+      setHashTag(initialData.hashTag || "");
+      setDescription(initialData.description || "");
+      setRange({
+        from: initialData.startDate ? new Date(initialData.startDate) : undefined,
+        to: initialData.endDate ? new Date(initialData.endDate) : undefined
+      });
+      setImagePreview(initialData.imageUrl || null);
+      setOriginalImageUrl(initialData.imageUrl || null);
+      setImageModified(false);
+    }
+  }, [initialData, isEditMode]);
 
   useEffect(() => {
     return () => {

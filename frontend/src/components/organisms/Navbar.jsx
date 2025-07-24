@@ -19,7 +19,7 @@ const Navbar = () => {
         <Link to="/Test">
           <Button className="temp" variant="link">TEST</Button>          
         </Link>
-        <Link to="/planlist">
+        <Link to="/list">
           <Button className="temp" variant="link">Plan</Button>
         </Link>
         <Link to="/mypage">

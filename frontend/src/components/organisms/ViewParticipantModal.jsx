@@ -8,6 +8,8 @@ const participants = [
   { id: 2, name: "리쿠", avatar: "https://randomuser.me/api/portraits/men/33.jpg", status: "accepted" },
   { id: 3, name: "박예쁜", avatar: "https://randomuser.me/api/portraits/women/44.jpg", status: "pending" },
   { id: 4, name: "최멋짐", avatar: "https://randomuser.me/api/portraits/men/45.jpg", status: "accepted" },
+  { id: 5, name: "최멋짐", avatar: "https://randomuser.me/api/portraits/men/45.jpg", status: "accepted" },
+  { id: 6, name: "최멋짐", avatar: "https://randomuser.me/api/portraits/men/45.jpg", status: "accepted" },
 ];
 
 // 공통 렌더 함수
@@ -38,7 +40,7 @@ function ParticipantList({ myName, hostName }) {
   };
 
   return (
-    <div className="w-64 max-h-80 bg-white rounded-xl shadow-xl p-4 flex flex-col">
+    <div className="w-72 max-h-80 bg-white rounded-xl shadow-xl p-4 flex flex-col border border-gray-200">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-lg">
           참여자 목록
@@ -46,12 +48,12 @@ function ParticipantList({ myName, hostName }) {
         </h3>
         <span className="text-xs text-gray-400">{list.length}명</span>
       </div>
-      <ul className="space-y-2 overflow-y-auto pr-1 flex-1">
+      <ul className="space-y-2 overflow-y-auto pr-1 flex-1 max-h-48">
         {list.map((p) => (
           <li key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition group">
-            <Avatar>
+            <Avatar className="w-8 h-8">
               <AvatarImage src={p.avatar} />
-              <AvatarFallback>{p.name[0]}</AvatarFallback>
+              <AvatarFallback className="text-xs">{p.name[0]}</AvatarFallback>
             </Avatar>
             <span className={`font-medium text-gray-800 text-sm flex-1 ${p.name === hostName ? "text-blue-600" : ""}`}>
               {p.name}
@@ -64,7 +66,7 @@ function ParticipantList({ myName, hostName }) {
                 title="초대 수락"
                 onClick={() => handleAccept(p.id, p.name)}
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-3 h-3" />
               </button>
             )}
             {isHost && p.name !== hostName && (
@@ -73,7 +75,7 @@ function ParticipantList({ myName, hostName }) {
                 title={p.status === "pending" ? "초대 거절" : "내보내기"}
                 onClick={() => handleDelete(p.id, p.name, p.status)}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </li>
@@ -83,15 +85,10 @@ function ParticipantList({ myName, hostName }) {
   );
 }
 
-const ViewParticipantModal = () => {
-  return (
-    <div className="flex flex-col md:flex-row gap-8">
-      {/* 방장일 때 */}
-      <ParticipantList myName="김경진" hostName="김경진" />
-      {/* 방장이 아닐 때 */}
-      {/* <ParticipantList myName="리쿠" hostName="김경진" /> */}
-    </div>
-  );
+const ViewParticipantModal = ({ isOpen, onClose, myName = "김경진", hostName = "김경진" }) => {
+  if (!isOpen) return null;
+
+  return <ParticipantList myName={myName} hostName={hostName} />;
 };
 
 export default ViewParticipantModal;

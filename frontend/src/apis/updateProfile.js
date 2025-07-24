@@ -1,36 +1,34 @@
-import axios from "axios";
+import apiClient from "@/apis/apiClient";
 
-/**
- * 사용자 프로필을 이미지와 함께 서버에 저장
- * @param {Object} params
- * @param {string} params.nickname
- * @param {File|null} params.imageFile
- */
-export const updateUserProfile = async ({ nickname, imageFile }) => {
+export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
   try {
     const formData = new FormData();
 
-    // 파일이 선택된 경우에만 첨부
-    if (imageFile) {
-      formData.append("image", imageFile);
+    const profileBlob = new Blob([JSON.stringify(profileData)], {
+  type: "application/json",
+});
+formData.append("modifyProfileRequestDTO", profileBlob); // ✅ key 이름 맞춤
+
+if (imageFile) {
+  formData.append("image", imageFile);
+}
+
+
+    console.log("🔍 [updateUserProfile] userId:", userId);
+    console.log("🔍 [updateUserProfile] profileData:", profileData);
+    for (let [key, value] of formData.entries()) {
+      console.log(`🧪 FormData - ${key}:`, value);
     }
-
-    const profileData = {
-      name: nickname,
-      imageModified: !!imageFile,
-    };
-
-    formData.append("profile", JSON.stringify(profileData));
-
-    const response = await axios.post("/api/user/update-profile", formData, {
+    const response = await apiClient.put(`user/${userId}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
 
+    console.log("✅ 프로필 저장 성공:", response.data);
     return response.data;
   } catch (error) {
-    console.error("프로필 저장 실패:", error);
+    console.error("❌ 프로필 저장 실패:", error.response?.data || error.message);
     throw error;
   }
 };

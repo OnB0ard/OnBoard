@@ -4,6 +4,12 @@ import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
 
+// Zustand store와 apiClient 연결을 위한 추가 import
+import { useAuthStore } from '@/store/useAuthStore';
+import { setAccessTokenGetter } from '@/apis/apiClient';
+
+setAccessTokenGetter(() => useAuthStore.getState().accessToken);
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

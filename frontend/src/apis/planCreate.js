@@ -37,7 +37,7 @@ export const createPlan = async (planData) => {
     //    - baseURL이 적용되므로 엔드포인트만 적습니다.
     //    - 인증 토큰은 인터셉터가 자동으로 추가해줍니다.
     //    - 에러 처리는 axios가 자동으로 처리해줍니다. (2xx 외 상태 코드에서 에러 throw)
-    const response = await apiClient.post('/api/v1/plan/create', formData);
+    const response = await apiClient.post('plan/create', formData);
     
     // 4. 성공 시 데이터 반환
     return response.data;

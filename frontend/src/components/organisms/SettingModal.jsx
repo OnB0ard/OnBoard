@@ -5,6 +5,7 @@ import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import Icon from "@/components/atoms/Icon";
 import { updateUserProfile } from "../../apis/updateProfile"; 
+import { useAuthStore } from "@/store/useAuthStore"; // zustand store import
 
 const SettingModal = ({ isOpen, onClose }) => {
   const [previewUrl, setPreviewUrl] = useState("/default-profile.png");
@@ -26,28 +27,45 @@ const SettingModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSave = async () => {
-    if (!nickname.trim()) {
-      alert("닉네임을 입력해주세요.");
-      return;
-    }
+  const userId = useAuthStore((state) => state.userId);
 
-    try {
-      setLoading(true);
+const handleSave = async () => {
+  if (!nickname.trim()) {
+    alert("닉네임을 입력해주세요.");
+    return;
+  }
 
-      await updateUserProfile({
-        nickname: nickname.trim(),
-        imageFile,
-      });
+  const imageModified = imageFile !== null;
 
-      alert("프로필이 저장되었습니다.");
-      onClose();
-    } catch (error) {
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+
+    console.log("📦 전송할 nickname:", nickname);
+    console.log("📦 imageModified:", imageModified);
+    console.log("📦 imageFile:", imageFile);
+    console.log("📦 userId from zustand:", userId);
+
+    await updateUserProfile({
+      userId,
+      profileData: {
+        name: nickname.trim(),
+        imageModified,
+      },
+      imageFile,
+    });
+
+    alert("프로필이 저장되었습니다.");
+    onClose();
+  } catch (error) {
+    console.error("❌ 프로필 저장 실패:", error);
+    alert("저장 중 오류가 발생했습니다.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   if (!isOpen) return null;
 

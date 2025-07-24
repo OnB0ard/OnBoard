@@ -3,7 +3,8 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: 
+  { },
 });
 
 // 요청 인터셉터: API 요청을 보내기 전에 실행

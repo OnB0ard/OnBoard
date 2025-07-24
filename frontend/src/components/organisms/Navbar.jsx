@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import './Navbar.css';
 import {Button} from "@/components/ui/button"
 import {useGoogleLogin} from "@/hooks/useGoogleLogin"
+import Test from "../pages/Test"
 
 const Navbar = () => {
 
@@ -15,10 +16,10 @@ const Navbar = () => {
       </div>
       <div className="center" />
       <div className="right">
-        <Link to="/test">
+        <Link to="/Test">
           <Button className="temp" variant="link">TEST</Button>          
         </Link>
-        <Link to="/plan">
+        <Link to="/planlist">
           <Button className="temp" variant="link">Plan</Button>
         </Link>
         <Link to="/mypage">

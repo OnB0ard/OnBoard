@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Card1 from "../organisms/Card1";
 import PlanAddCard from "../organisms/PlanAddCard";
-//import PlanPostModal from "../modals/PlanPostModal"; // 경로는 실제 위치에 맞게 수정
+import PlanPostModal from "../organisms/PlanPostModal"; // 경로는 실제 위치에 맞게 수정
 
 const PlanList = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -32,7 +32,7 @@ const PlanList = () => {
           {/* 카드들 */}
           <Card1 />
           <Card1 />
-          {ingCards}
+          {/* {ingCards} */}
           {/* 계획 추가 버튼 */}
           <PlanAddCard onClick={() => setModalOpen(true)} />
         </div>

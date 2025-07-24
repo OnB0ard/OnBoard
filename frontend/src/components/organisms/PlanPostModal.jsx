@@ -5,6 +5,7 @@ import { Button } from "@/components/atoms/Button";
 import CalendarModal from "@/components/organisms/CalendarModal";
 import PlanImage from "@/components/atoms/PlanImage";
 import Icon from "@/components/atoms/Icon";
+import { createPlan } from "@/apis/PlanCreate";
 
 import "./PlanPostModal.css";
 
@@ -22,6 +23,7 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
   const [imageModified, setImageModified] = useState(false); // 이미지 수정 여부 추적
   const [originalImageUrl, setOriginalImageUrl] = useState(initialData?.imageUrl || null); // 원본 이미지 URL 저장
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태
   const fileInputRef = useRef(null);
 
   const isEditMode = mode === 'edit';
@@ -113,20 +115,66 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     }
   };
 
-  const handleSubmit = () => {
-    // 날짜를 API 명세에 맞게 포맷팅 (YYYY-MM-DD)
-    const startDate = range.from ? range.from.toISOString().split('T')[0] : null;
-    const endDate = range.to ? range.to.toISOString().split('T')[0] : null;
+  const handleSubmit = async () => {
+    // 필수 필드 검증
+    if (!name.trim()) {
+      alert('여행 계획의 제목을 입력해주세요.');
+      return;
+    }
+    if (!range.from || !range.to) {
+      alert('여행 기간을 선택해주세요.');
+      return;
+    }
+    if (!description.trim()) {
+      alert('여행 설명을 입력해주세요.');
+      return;
+    }
+
+    setIsLoading(true);
     
-    onSubmit({
-      name,
-      hashTag,
-      description,
-      startDate,
-      endDate,
-      image: selectedImage,
-      imageModified,
-    });
+    try {
+      // 날짜를 API 명세에 맞게 포맷팅 (YYYY-MM-DD)
+      const startDate = range.from.toISOString().split('T')[0];
+      const endDate = range.to.toISOString().split('T')[0];
+      
+      const planData = {
+        name: name.trim(),
+        hashTag: hashTag.trim(),
+        description: description.trim(),
+        startDate,
+        endDate,
+        image: selectedImage
+      };
+
+      // 디버깅: 전송할 데이터 확인
+      console.log('=== PlanPostModal 디버깅 ===');
+      console.log('Form State Values:');
+      console.log('- name:', name);
+      console.log('- hashTag:', hashTag);
+      console.log('- description:', description);
+      console.log('- range.from:', range.from);
+      console.log('- range.to:', range.to);
+      console.log('- selectedImage:', selectedImage);
+      console.log('Formatted planData:', planData);
+      console.log('==============================');
+
+      // API 호출
+      const response = await createPlan(planData);
+      
+      // 성공 시 onSubmit 콜백 호출 (부모 컴포넌트에서 처리)
+      if (onSubmit) {
+        onSubmit(response);
+      }
+      
+      // 모달 닫기
+      onClose();
+      
+    } catch (error) {
+      console.error('여행 계획 생성 실패:', error);
+      alert('여행 계획 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderImageSection = () => {
@@ -208,8 +256,10 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
           </div>
 
           <div className="plan-post-modal__footer">
-            <Button background="white" textColor="black" border="gray" shape="pill" onClick={onClose}>취소</Button>
-            <Button background="dark" textColor="white" shape="pill" onClick={handleSubmit}>{submitButtonText}</Button>
+            <Button background="white" textColor="black" border="gray" shape="pill" onClick={onClose} disabled={isLoading}>취소</Button>
+            <Button background="dark" textColor="white" shape="pill" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? '처리 중...' : submitButtonText}
+            </Button>
           </div>
         </div>
       </div>

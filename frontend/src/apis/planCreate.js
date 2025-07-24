@@ -14,8 +14,8 @@ import apiClient from './apiClient'; // 중앙 apiClient 임포트
 export const createPlan = async (planData) => {
   const formData = new FormData();
 
-  // 1. 텍스트 데이터는 JSON 객체로 준비
-  const planJson = {
+  // 1. 텍스트 데이터는 DTO 객체로 준비
+  const createPlanRequestDTO = {
     name: planData.name,
     description: planData.description,
     startDate: planData.startDate,
@@ -23,8 +23,11 @@ export const createPlan = async (planData) => {
     hashTag: planData.hashTag,
   };
 
-  // 2. 'plan' key에는 JSON 문자열을 바로 추가 (Blob 사용 X)
-  formData.append('plan', JSON.stringify(planJson));
+  // 2. DTO 객체를 Blob으로 변환하여 FormData에 추가
+  const planBlob = new Blob([JSON.stringify(createPlanRequestDTO)], {
+    type: "application/json",
+  });
+  formData.append('createPlanRequestDTO', planBlob); // 서버에서 받는 key 이름이 'plan'이므로 유지
 
   // 3. 'image' key에는 이미지 파일이 있으면 추가
   if (planData.image) {
@@ -32,15 +35,18 @@ export const createPlan = async (planData) => {
   }
 
   try {
-    const response = await apiClient.post('/plan/create', formData);
+    // 4. API 호출 시 Content-Type 헤더를 명시적으로 지정
+    const response = await apiClient.post('plan/create', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    console.log("✅ 여행 계획 생성 성공:", response.data);
     return response.data;
 
   } catch (error) {
-    // 에러 로깅은 상세하게 유지하여 디버깅에 용이하도록 함
-    console.error('여행 계획 생성 실패:', error);
-    console.error('Error details:');
-    console.error('- Status:', error.response?.status);
-    console.error('- Response Data:', error.response?.data);
+    console.error("❌ 여행 계획 생성 실패:", error.response?.data || error.message);
     throw error;
   }
 };

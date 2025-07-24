@@ -1,9 +1,13 @@
 import { useCallback } from "react";
+import { loginWithGoogle } from "@/apis/authApi";
+import { useAuthStore } from "@/store/useAuthStore"; // Zustand 스토어 불러오기
 
 export const useGoogleLogin = () => {
+  const setAuth = useAuthStore((state) => state.setAuth); // 상태 업데이트 함수
+
   return useCallback(() => {
     const clientId = "406153969379-njhcgskl5tuv1utb2unqmvgoe4igjfe9.apps.googleusercontent.com";
-    const redirectUri = `${window.location.origin}/popup.html`; 
+    const redirectUri = `${window.location.origin}/popup.html`;
     const scope = "email profile openid";
     const state = Math.random().toString(36).substring(2);
 
@@ -19,13 +23,28 @@ export const useGoogleLogin = () => {
         const { access_token } = event.data.params;
 
         try {
-          const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${access_token}` },
-          });
-          const profile = await res.json();
-          console.log("사용자 정보:", profile);
+          const response = await loginWithGoogle(access_token);
+
+          if (response.code === 200) {
+            const data = response.body;
+
+            // ✅ JWT 및 사용자 정보 저장
+            setAuth({
+              userId: data.userId,
+              userName: data.userName,
+              googleEmail: data.googleEmail,
+              profileImage: data.profileImage,
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+            });
+
+            console.log("로그인 성공! 사용자 상태 저장 완료");
+            console.log(data);
+          } else {
+            console.error("서버 응답 에러:", response);
+          }
         } catch (e) {
-          console.error("사용자 정보 요청 실패", e);
+          console.error("로그인 실패", e);
         }
 
         window.removeEventListener("message", listener);
@@ -34,5 +53,5 @@ export const useGoogleLogin = () => {
     };
 
     window.addEventListener("message", listener);
-  }, []);
+  }, [setAuth]);
 };

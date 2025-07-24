@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: 'http://i13A504.p.ssafy.io:8080/api/v1',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });

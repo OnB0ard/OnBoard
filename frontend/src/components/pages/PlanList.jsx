@@ -7,7 +7,7 @@ import LoadingOverlay from "../atoms/LoadingOverlay";
 import { getPlanList } from "../../apis/planList";
 import { deletePlan } from "../../apis/planDelete";
 import { updatePlan } from "../../apis/planUpdate";
-import { createPlan } from "../../apis/planCreate";
+
 
 const PlanList = () => {
   const navigate = useNavigate();
@@ -110,27 +110,27 @@ const PlanList = () => {
     setModalOpen(false);
   };
 
-  // 생성 제출 처리
-  const handleCreateSubmit = async (formData) => {
-    console.log('생성된 데이터:', formData);
-    try {
-      // 실제 createPlan API 호출
-      await createPlan(formData);
-      console.log('계획 생성 성공');
-      setModalOpen(false);
-      // 목록 다시 로드
-      fetchPlans();
-    } catch (error) {
-      console.error('계획 생성 실패:', error);
-      // 백엔드 API가 아직 개발되지 않은 경우를 위한 안내
-      if (error.response?.status === 500) {
-        alert('백엔드 API가 아직 개발 중입니다. 잠시 후 다시 시도해주세요.');
-      } else {
-        alert('계획 생성에 실패했습니다. 다시 시도해주세요.');
-      }
-      // 모달은 닫지 않고 유지 (사용자가 다시 시도할 수 있도록)
-    }
-  };
+  // // 생성 제출 처리
+  // const handleCreateSubmit = async (formData) => {
+  //   console.log('생성된 데이터:', formData);
+  //   try {
+  //     // 실제 createPlan API 호출
+  //     await createPlan(formData);
+  //     console.log('계획 생성 성공');
+  //     setModalOpen(false);
+  //     // 목록 다시 로드
+  //     fetchPlans();
+  //   } catch (error) {
+  //     console.error('계획 생성 실패:', error);
+  //     // 백엔드 API가 아직 개발되지 않은 경우를 위한 안내
+  //     if (error.response?.status === 500) {
+  //       alert('백엔드 API가 아직 개발 중입니다. 잠시 후 다시 시도해주세요.');
+  //     } else {
+  //       alert('계획 생성에 실패했습니다. 다시 시도해주세요.');
+  //     }
+  //     // 모달은 닫지 않고 유지 (사용자가 다시 시도할 수 있도록)
+  //   }
+  // };
 
   // 수정 모달 닫기
   const handleEditModalClose = () => {
@@ -224,7 +224,6 @@ const PlanList = () => {
         {modalOpen && (
           <PlanPostModal 
             onClose={handleCreateModalClose}
-            onSubmit={handleCreateSubmit}
           />
         )}
         
@@ -234,7 +233,6 @@ const PlanList = () => {
             mode="edit"
             initialData={editingCard}
             onClose={handleEditModalClose}
-            onSubmit={handleEditSubmit}
           />
         )}
       </div>

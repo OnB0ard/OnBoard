@@ -14,15 +14,9 @@ function App() {
       <Navbar/>
       <Routes>
         <Route path="/" element={<Landing/>} />
-<<<<<<< frontend/src/App.jsx
         <Route path="/Test" element={<Test/>} />
-        <Route path="/planlist" element={<PlanList/>} />
-        <Route path="/Test" element={<Test/>}/>
-=======
         <Route path="/list" element={<PlanList/>} />
-        <Route path="/plan" element={<PlanList/>} />
         <Route path="/plan/:planId" element={<Plan/>} />
->>>>>>> frontend/src/App.jsx
         {/* <Route path="/temp" element={<Temp/>} /> */}
       </Routes>
       

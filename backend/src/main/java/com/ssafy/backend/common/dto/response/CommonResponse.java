@@ -1,9 +1,6 @@
 package com.ssafy.backend.common.dto.response;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 
 /**
  * 공통 응답 형식 클래스
@@ -64,8 +61,13 @@ public class CommonResponse<T> extends ResponseEntity<ResponseWrapper<T>> {
             return this;
         }
 
+        public CommonResponseBuilder<T> cookie(ResponseCookie cookie) {
+            headers.add(HttpHeaders.SET_COOKIE, cookie.toString());
+            return this;
+        }
+
         public CommonResponse<T> build() {
-            return new CommonResponse<>(body, status, headers);
+            return new CommonResponse<T>(body, status, headers);
         }
     }
 }

@@ -6,6 +6,7 @@ import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.dto.request.ModifyProfileRequestDTO;
 import com.ssafy.backend.user.dto.response.LoginResponseDTO;
 import com.ssafy.backend.user.dto.response.ModifyProfileResponseDTO;
+import com.ssafy.backend.user.dto.response.RetrieveProfileResponseDTO;
 import com.ssafy.backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,5 +33,10 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public CommonResponse<SuccessResponseDTO> deleteUser(@AuthenticationPrincipal JwtUserInfo jwtUserInfo, @PathVariable Long userId) {
         return new CommonResponse<>(new SuccessResponseDTO(userService.deleteUser(jwtUserInfo, userId)), HttpStatus.OK);
+    }
+    @GetMapping("/retrieve")
+    public CommonResponse<RetrieveProfileResponseDTO> getUserProfile(@AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        RetrieveProfileResponseDTO profile = userService.getUserProfile(jwtUserInfo.getUserId());
+        return new CommonResponse<>(profile, HttpStatus.OK);
     }
 }

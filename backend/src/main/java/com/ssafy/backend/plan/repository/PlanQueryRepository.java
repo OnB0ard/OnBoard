@@ -8,5 +8,4 @@ import java.util.List;
 public interface PlanQueryRepository {
     List<Plan> findByWriter(Long userId);
     List<Plan> findPlansByUser(User user);
-
 }

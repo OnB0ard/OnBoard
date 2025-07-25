@@ -77,7 +77,7 @@ public class JwtUtil {
         token.setTokenString(accessToken);
         LocalDateTime expirationDateTime = expiration.toInstant()
                 .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();;
+                .toLocalDateTime();
         token.setExpireDate(expirationDateTime);
 
         Token savedToken = tokenRepository.save(token);

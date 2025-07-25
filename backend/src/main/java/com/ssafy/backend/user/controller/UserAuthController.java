@@ -9,7 +9,6 @@ import com.ssafy.backend.user.dto.response.LoginResponseDTO;
 import com.ssafy.backend.user.service.UserAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.access.prepost.PreAuthorize;

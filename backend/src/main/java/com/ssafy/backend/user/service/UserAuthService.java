@@ -1,6 +1,5 @@
 package com.ssafy.backend.user.service;
 
-import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.security.dto.TokenDTO;
 import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.util.JwtUtil;

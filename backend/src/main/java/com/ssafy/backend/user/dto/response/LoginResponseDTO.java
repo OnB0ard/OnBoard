@@ -1,5 +1,6 @@
 package com.ssafy.backend.user.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,8 @@ public class LoginResponseDTO {
     private String userName;
     private String accessToken;
     private LocalDateTime accessTokenExpireDate;
+    @JsonIgnore
     private String refreshToken;
+    @JsonIgnore
     private LocalDateTime refreshTokenExpireDate;
 }

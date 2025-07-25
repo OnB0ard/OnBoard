@@ -1,60 +1,39 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Input } from "@/components/atoms/Input";
 import { Textarea } from "@/components/atoms/Textarea";
 import { Button } from "@/components/atoms/Button";
 import CalendarModal from "@/components/organisms/CalendarModal";
 import PlanImage from "@/components/atoms/PlanImage";
 import Icon from "@/components/atoms/Icon";
-import { createPlan } from "@/apis/PlanCreate";
+import { usePlanFormStore } from "../../store/usePlanFormStore";
 
 import "./PlanPostModal.css";
 
 function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null }) {
-  // State 초기화 - API 명세에 맞게 수정
-  const [name, setName] = useState(initialData?.name || ""); // title → name
-  const [hashTag, setHashTag] = useState(initialData?.hashTag || ""); // hashtags → hashTag
-  const [description, setDescription] = useState(initialData?.description || "");
-  const [range, setRange] = useState({
-    from: initialData?.startDate ? new Date(initialData.startDate) : undefined,
-    to: initialData?.endDate ? new Date(initialData.endDate) : undefined
-  });
-  const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imageModified, setImageModified] = useState(false); // 이미지 수정 여부 추적
-  const [originalImageUrl, setOriginalImageUrl] = useState(initialData?.imageUrl || null); // 원본 이미지 URL 저장
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // 로딩 상태
+  const {
+    name, setName,
+    hashTag, setHashTag,
+    description, setDescription,
+    range, setRange,
+    imagePreview,
+    isCalendarOpen, openCalendar, closeCalendar,
+    isLoading,
+    initialize, setImage, removeImage, handleSubmit, reset,
+  } = usePlanFormStore();
+
   const fileInputRef = useRef(null);
 
   const isEditMode = mode === 'edit';
-  let modalTitle, subtitle, submitButtonText;
-
-  if (isEditMode) {
-    modalTitle = '여행 계획 수정하기';
-    subtitle = '여행 정보를 수정하세요.';
-    submitButtonText = '수정하기';
-  } else {
-    modalTitle = '새로운 여행 계획 만들기';
-    subtitle = '함께 떠날 여행의 첫 걸음을 시작해보세요.';
-    submitButtonText = '만들기';
-  }
-
-  // initialData가 변경될 때 state 업데이트
+  const modalTitle = isEditMode ? '여행 계획 수정하기' : '새로운 여행 계획 만들기';
+  const subtitle = isEditMode ? '여행 정보를 수정하세요.' : '함께 떠날 여행의 첫 걸음을 시작해보세요.';
+  const submitButtonText = isEditMode ? '수정하기' : '만들기';
   useEffect(() => {
-    if (initialData && isEditMode) {
-      setName(initialData.name || "");
-      setHashTag(initialData.hashTag || "");
-      setDescription(initialData.description || "");
-      setRange({
-        from: initialData.startDate ? new Date(initialData.startDate) : undefined,
-        to: initialData.endDate ? new Date(initialData.endDate) : undefined
-      });
-      setImagePreview(initialData.imageUrl || null);
-      setOriginalImageUrl(initialData.imageUrl || null);
-      setImageModified(false);
-    }
-  }, [initialData, isEditMode]);
-
+    initialize(mode, initialData);
+    return () => {
+      reset();
+    };
+  }, [mode, initialData, initialize, reset]);
+  
   useEffect(() => {
     return () => {
       if (imagePreview && imagePreview.startsWith('blob:')) {
@@ -65,118 +44,36 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
 
   const formatDate = (date) => {
     if (!date) return "";
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    return `${yyyy}.${mm}.${dd}`;
+    return new Date(date).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').slice(0, -1);
   };
   
   const getDateRangeText = () => {
     if (range.from && range.to) {
       return `${formatDate(range.from)} ~ ${formatDate(range.to)}`;
     }
-    return "";
-  };
-
-  const handleRangeChange = (selected) => {
-    setRange(selected);
-    setIsCalendarOpen(false);
+    return "여행 기간을 선택하세요";
   };
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      setSelectedImage(file);
-      
-      // 새 이미지 미리보기 생성
-      if (imagePreview && imagePreview.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
-      }
-      const newImageUrl = URL.createObjectURL(file);
-      setImagePreview(newImageUrl);
-      
-      // 수정 모드에서는 항상 true (파일 객체는 비교 불가)
-      // 새로 업로드하는 경우는 항상 수정으로 간주
-      setImageModified(true);
+      setImage(file);
     }
   };
-
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
-  };
+  
+  const handleImageClick = () => fileInputRef.current?.click();
 
   const handleImageRemove = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
-    // 원본 이미지가 있었다면 제거는 수정으로 간주
-    setImageModified(originalImageUrl !== null);
+    removeImage();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const handleSubmit = async () => {
-    // 필수 필드 검증
-    if (!name.trim()) {
-      alert('여행 계획의 제목을 입력해주세요.');
-      return;
-    }
-    if (!range.from || !range.to) {
-      alert('여행 기간을 선택해주세요.');
-      return;
-    }
-    if (!description.trim()) {
-      alert('여행 설명을 입력해주세요.');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      // 날짜를 API 명세에 맞게 포맷팅 (YYYY-MM-DD)
-      const startDate = range.from.toISOString().split('T')[0];
-      const endDate = range.to.toISOString().split('T')[0];
-      
-      const planData = {
-        name: name.trim(),
-        hashTag: hashTag.trim(),
-        description: description.trim(),
-        startDate,
-        endDate,
-        image: selectedImage
-      };
-
-      // 디버깅: 전송할 데이터 확인
-      console.log('=== PlanPostModal 디버깅 ===');
-      console.log('Form State Values:');
-      console.log('- name:', name);
-      console.log('- hashTag:', hashTag);
-      console.log('- description:', description);
-      console.log('- range.from:', range.from);
-      console.log('- range.to:', range.to);
-      console.log('- selectedImage:', selectedImage);
-      console.log('Formatted planData:', planData);
-      console.log('==============================');
-
-      // API 호출
-      const response = await createPlan(planData);
-      
-      // 성공 시 onSubmit 콜백 호출 (부모 컴포넌트에서 처리)
-      if (onSubmit) {
-        onSubmit(response);
-      }
-      
-      // 모달 닫기
-      onClose();
-      
-    } catch (error) {
-      console.error('여행 계획 생성 실패:', error);
-      alert('여행 계획 생성에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleFormSubmit = () => {
+    handleSubmit(mode, initialData?.planId, onClose, onSubmit);
   };
-
+  
   const renderImageSection = () => {
     if (imagePreview) {
       return (
@@ -241,8 +138,8 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="calendar" /> 여행 기간</label>
               <div className="relative">
-                <Input value={getDateRangeText()} readOnly placeholder="여행 기간을 선택하세요" />
-                <button onClick={() => setIsCalendarOpen(true)} className="absolute inset-y-0 right-2 flex items-center">
+                <Input value={getDateRangeText()} readOnly onClick={openCalendar} placeholder="여행 기간을 선택하세요" />
+                <button onClick={openCalendar} className="absolute inset-y-0 right-2 flex items-center">
                   <Icon type="calendar" />
                 </button>
               </div>
@@ -257,14 +154,19 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
 
           <div className="plan-post-modal__footer">
             <Button background="white" textColor="black" border="gray" shape="pill" onClick={onClose} disabled={isLoading}>취소</Button>
-            <Button background="dark" textColor="white" shape="pill" onClick={handleSubmit} disabled={isLoading}>
+            <Button background="dark" textColor="white" shape="pill" onClick={handleFormSubmit} disabled={isLoading}>
               {isLoading ? '처리 중...' : submitButtonText}
             </Button>
           </div>
         </div>
       </div>
 
-      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} onChange={handleRangeChange} />
+      <CalendarModal 
+        isOpen={isCalendarOpen} 
+        onClose={closeCalendar} 
+        onChange={setRange} 
+        initialRange={range} 
+      />
     </>
   );
 }

@@ -15,4 +15,6 @@ public class RetrievePlanResponse {
     private LocalDate endDate;
     private String hashTag;
     private String imageUrl;
+    private String hostName;
+    private String hostImageUrl;
 }

@@ -160,8 +160,14 @@ public class PlanService {
         User user = validateUserExistence(userId);
         List<Plan> plansByUser = planRepository.findPlansByUser(user);
 
-        List<RetrievePlanResponse> planResponses = plansByUser.stream().map(plan ->
-            RetrievePlanResponse.builder()
+        List<RetrievePlanResponse> responseList = plansByUser.stream().map(plan -> {
+            User hostUser = plan.getUserPlans().stream()
+                    .filter(up -> up.getUserType() == UserType.CREATOR)
+                    .map(UserPlan::getUser)
+                    .findFirst()
+                    .orElse(null); // 혹시나 방장이 없다면 null
+
+            return RetrievePlanResponse.builder()
                     .planId(plan.getPlanId())
                     .name(plan.getPlanName())
                     .description(plan.getPlanDescription())
@@ -169,9 +175,11 @@ public class PlanService {
                     .endDate(plan.getEndDate())
                     .hashTag(plan.getHashTag())
                     .imageUrl(plan.getPlanImage() != null ? s3Util.getUrl(plan.getPlanImage()) : null)
-                    .build()
-        ).toList();
-        return planResponses;
+                    .hostName(hostUser != null ? hostUser.getUserName() : null)
+                    .hostImageUrl(hostUser != null ? s3Util.getUrl(hostUser.getProfileImage()) : null)
+                    .build();
+        }).toList();
+        return responseList;
     }
 
     @Transactional

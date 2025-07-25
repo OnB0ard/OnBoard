@@ -26,6 +26,8 @@ public class UserAuthService {
     private final JwtUtil jwtUtil;
     private final S3Util s3Util;
 
+    private static final String PLACEHOLDER_PROFILE_IMAGE = "placeholder.png";
+
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
 
@@ -36,7 +38,7 @@ public class UserAuthService {
             user = new User();
             user.setGoogleEmail(googleUserInfo.getEmail());
             user.setUserName(googleUserInfo.getName());
-            user.setProfileImage("placeholder.png");
+            user.setProfileImage(PLACEHOLDER_PROFILE_IMAGE);
             userRepository.save(user);
         }
 
@@ -47,7 +49,9 @@ public class UserAuthService {
         return LoginResponseDTO.builder()
                 .userId(user.getUserId())
                 .googleEmail(user.getGoogleEmail())
-                .profileImage(user.getProfileImage() != null ? s3Util.getUrl(user.getProfileImage()) : null)
+                .profileImage(user.getProfileImage() != null
+                        ? s3Util.getUrl(user.getProfileImage())
+                        : null)
                 .userName(user.getUserName())
                 .accessToken(accessToken.getTokenString())
                 .accessTokenExpireDate(accessToken.getExpireDate())

@@ -22,6 +22,6 @@ public class UserExceptionHandler {
     public CommonResponse<ErrorBody> NotYourAccountException(NotYourAccountException e, HttpServletRequest request) {
         log.warn("USER-002> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("USER-002", "본인의 계정이 아닙니다."),
-                HttpStatus.BAD_REQUEST);
+                HttpStatus.FORBIDDEN);
     }
 }

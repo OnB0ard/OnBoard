@@ -66,7 +66,6 @@ public class UserService {
         String imageKey = user.getProfileImage();
         if (imageKey != null && !imageKey.isEmpty() && !imageKey.equals("placeholder.png")) {
             s3Util.deleteObject(imageKey);
-            imageKey = null; // 초기화
         }
 
         userRepository.delete(user);

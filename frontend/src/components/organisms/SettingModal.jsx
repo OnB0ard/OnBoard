@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./SettingModal.css";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/atoms/Input";
@@ -15,6 +15,21 @@ const SettingModal = ({ isOpen, onClose }) => {
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef(null);
 
+  const userId = useAuthStore((state) => state.userId);
+  const userName = useAuthStore((state) => state.userName);
+  const profileImage = useAuthStore((state) => state.profileImage);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+
+  // 모달이 열릴 때 현재 사용자 정보로 초기화
+  useEffect(() => {
+    if (isOpen) {
+      setNickname(userName || "");
+      setPreviewUrl(profileImage || "/default-profile.png");
+      setImageFile(null);
+      setIsEditing(false);
+    }
+  }, [isOpen, userName, profileImage]);
+
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
   };
@@ -26,8 +41,6 @@ const SettingModal = ({ isOpen, onClose }) => {
       setImageFile(file);
     }
   };
-
-  const userId = useAuthStore((state) => state.userId);
 
 const handleSave = async () => {
   if (!nickname.trim()) {
@@ -45,7 +58,7 @@ const handleSave = async () => {
     console.log("📦 imageFile:", imageFile);
     console.log("📦 userId from zustand:", userId);
 
-    await updateUserProfile({
+    const response = await updateUserProfile({
       userId,
       profileData: {
         name: nickname.trim(),
@@ -53,6 +66,10 @@ const handleSave = async () => {
       },
       imageFile,
     });
+
+    // Zustand store 업데이트
+    const newProfileImage = imageFile ? URL.createObjectURL(imageFile) : profileImage;
+    updateProfile(nickname.trim(), newProfileImage);
 
     alert("프로필이 저장되었습니다.");
     onClose();

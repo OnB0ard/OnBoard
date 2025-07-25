@@ -198,6 +198,8 @@ const PlanList = () => {
                 onView={() => handleCardClick(plan)}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onEditSuccess={fetchPlans}
+                onDeleteSuccess={fetchPlans}
               />
             ))}
             {/* 계획 추가 버튼 */}

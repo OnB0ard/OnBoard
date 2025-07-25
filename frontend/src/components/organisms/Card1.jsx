@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar"
 import PlanImage from "../atoms/PlanImage"
-import CardDropdown from "../ui/CardDropDown"
+import CardDropdown from "./CardDropDown"
 import { Button } from "../ui/button"
 import ShareModal from "./ShareModal"
 import ViewParticipantModal from "./ViewParticipantModal"

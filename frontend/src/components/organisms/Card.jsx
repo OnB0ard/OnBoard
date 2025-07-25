@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar"
 import PlanImage from "../atoms/PlanImage"
-import CardDropdown from "../ui/CardDropDown"
+import CardDropdown from "./CardDropDown"
 import { Button } from "../ui/button"
 import ShareModal from "./ShareModal"
 import ViewParticipantModal from "./ViewParticipantModal"
@@ -9,18 +9,20 @@ import PlanPostModal from "./PlanPostModal"
 import * as Popover from "@radix-ui/react-popover"
 
 const Card = ({
-  nickname, // 사용자 닉네임
+  userName, // 사용자 닉네임
   name, // 여행 제목(카드 제목)
   description, // 계획 요약
   startDate, // 시작일
   endDate, // 종료일
   hashTag, // 해시태그
   imageUrl, // 여행 계획 첨부 이미지
-  avatarUrl, // 사용자 프로필
+  profileImage, // 사용자 프로필
   participants = [], // 참여자 정보 배열
   onView, // 카드 눌렀을때 계획 페이지로 이동
   onEdit, // 수정 버튼 눌렀을때 호출
   onDelete, // 삭제 버튼 눌렀을때 호출
+  onEditSuccess, // 수정 성공 시 콜백
+  onDeleteSuccess, // 삭제 성공 시 콜백
 }) => {
   const [participantOpen, setParticipantOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -73,18 +75,20 @@ const Card = ({
         <div className="absolute top-4 right-5 z-20">
           <CardDropdown 
             cardData={{
-              nickname,
+              userName,
               name,
               description,
               startDate,
               endDate,
               hashTag,
               imageUrl,
-              avatarUrl,
+              profileImage,
               participants
             }}
             onEdit={handleEdit}
             onDelete={onDelete}
+            onEditSuccess={onEditSuccess}
+            onDeleteSuccess={onDeleteSuccess}
           />
         </div>
 
@@ -109,11 +113,11 @@ const Card = ({
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
               <Avatar>
-                <AvatarImage src={avatarUrl} alt={nickname} />
-                <AvatarFallback>{nickname?.[0] || "?"}</AvatarFallback>
+                <AvatarImage src={profileImage} alt={userName} />
+                <AvatarFallback>{userName?.[0] || "?"}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col justify-center">
-                <div className="font-bold text-sm">{nickname}</div>
+                <div className="font-bold text-sm">{userName}</div>
                 <div className="text-xs text-gray-500 mt-0.5">#{hashTag}</div>
               </div>
             </div>

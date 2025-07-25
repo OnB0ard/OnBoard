@@ -10,6 +10,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -74,9 +75,10 @@ public class JwtUtil {
         Token token = new Token();
         token.setTokenType(TokenType.ACCESS);
         token.setTokenString(accessToken);
+        token.setUser(user);
         LocalDateTime expirationDateTime = expiration.toInstant()
                 .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();;
+                .toLocalDateTime();
         token.setExpireDate(expirationDateTime);
 
         Token savedToken = tokenRepository.save(token);
@@ -111,6 +113,7 @@ public class JwtUtil {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
         token.setExpireDate(expirationDateTime);
+        token.setUser(User.builder().userId(userId).build());
 
         Token savedToken = tokenRepository.save(token);
         return TokenDTO.builder()
@@ -245,7 +248,13 @@ public class JwtUtil {
         return bearerToken;
     }
 
-    @Scheduled(cron = "0 */5 * * * *") // 30분 마다 실행
+    @PostConstruct
+    public void runOnceOnStartup() {
+        System.out.println("token cleanup scheduler initialized.");
+        cleanUpExpiredTokens(); // 스케줄러 로직 직접 호출
+    }
+
+    @Scheduled(cron = "0 */5 * * * *") // 5분 마다 실행
     public void cleanUpExpiredTokens() {
         LocalDateTime now = LocalDateTime.now();
         tokenRepository.deleteAllByExpireDateBefore(now);

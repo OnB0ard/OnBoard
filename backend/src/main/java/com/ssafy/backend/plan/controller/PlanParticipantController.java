@@ -2,7 +2,7 @@ package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
-import com.ssafy.backend.plan.responseDTO.PlanParticipantListResponseDTO;
+import com.ssafy.backend.plan.dto.response.PlanParticipantListResponseDTO;
 import com.ssafy.backend.plan.service.PlanParticipantService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;

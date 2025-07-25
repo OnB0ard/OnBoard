@@ -177,6 +177,8 @@ public class PlanService {
                     .imageUrl(plan.getPlanImage() != null ? s3Util.getUrl(plan.getPlanImage()) : null)
                     .hostName(hostUser != null ? hostUser.getUserName() : null)
                     .hostImageUrl(hostUser != null ? s3Util.getUrl(hostUser.getProfileImage()) : null)
+                    .createdTime(plan.getCreatedAt())
+                    .updatedTime(plan.getUpdatedAt())
                     .build();
         }).toList();
         return responseList;

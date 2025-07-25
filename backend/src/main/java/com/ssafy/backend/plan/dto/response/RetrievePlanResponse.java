@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -17,4 +18,6 @@ public class RetrievePlanResponse {
     private String imageUrl;
     private String hostName;
     private String hostImageUrl;
+    private LocalDateTime createdTime;
+    private LocalDateTime updatedTime;
 }

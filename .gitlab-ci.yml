@@ -26,16 +26,6 @@ cache:
     - .gradle/caches/
     - .gradle/wrapper/
 
-
-services:
-  - name: mysql:8.0
-    alias: mysql
-
-before_script:
-  - echo "Waiting for MySQL to be ready..."
-  - for i in {1..10}; do mysqladmin ping -hmysql -ptestpass && break || sleep 5; done
-  - chmod +x ./gradlew
-
 build:
   stage: build
   tags:

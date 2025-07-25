@@ -32,6 +32,7 @@ build:
     - build
   script:
     - cd backend
+    - chmod +x ./gradlew
     - ./gradlew clean build -Dspring.profiles.active=deploy -x test
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-BE"'
@@ -43,7 +44,6 @@ deploy:
     - deploy
   script:
     - cd backend
-
     - echo "Deploying JAR to $DEPLOY_DIR"
     - mkdir -p $DEPLOY_DIR
     - cp build/libs/$JAR_NAME $DEPLOY_DIR/

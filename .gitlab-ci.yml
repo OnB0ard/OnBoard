@@ -16,7 +16,7 @@ variables:
   JWT_ACCESS_TOKEN_EXPIRATION: 3600
   JWT_REFRESH_TOKEN_EXPIRATION: 604800
   JWT_SECRET: $JWT_SECRET
-  DEPLOY_DIR: ~/deploy
+  DEPLOY_DIR: /home/ubuntu/deploy
   JAR_NAME: backend-0.0.1-SNAPSHOT.jar
   TZ: Asia/Seoul
 

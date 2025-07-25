@@ -2,7 +2,7 @@ image: eclipse-temurin:21-jdk
 
 stages:
   - build
-  - test
+  - deploy
 
 
 variables:

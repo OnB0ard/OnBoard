@@ -31,7 +31,8 @@ build:
   tags:
     - build
   script:
-    - gradle clean build -Dspring.profiles.active=deploy -x test
+    - cd backend
+    - ./gradlew clean build -Dspring.profiles.active=deploy -x test
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-BE"'
       when: always
@@ -41,6 +42,8 @@ deploy:
   tags:
     - deploy
   script:
+    - cd backend
+
     - echo "Deploying JAR to $DEPLOY_DIR"
     - mkdir -p $DEPLOY_DIR
     - cp build/libs/$JAR_NAME $DEPLOY_DIR/

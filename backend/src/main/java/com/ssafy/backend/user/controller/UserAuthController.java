@@ -45,7 +45,20 @@ public class UserAuthController {
     @PostMapping("/logout")
     @PreAuthorize("permitAll()")
     public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
-        return new CommonResponse<>(new SuccessResponseDTO(userAuthService.logout(logoutRequestDTO)), HttpStatus.OK);
+        // 쿠키 삭제를 위한 ResponseCookie 생성
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0) // 쿠키 삭제
+                .sameSite("Strict")
+                .build();
+
+        return CommonResponse.<SuccessResponseDTO>builder()
+                .body(new SuccessResponseDTO(userAuthService.logout(logoutRequestDTO)))
+                .cookie(cookie)
+                .status(HttpStatus.OK)
+                .build();
     }
 
     @GetMapping("/refresh")

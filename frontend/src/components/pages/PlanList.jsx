@@ -6,7 +6,7 @@ import PlanPostModal from "../organisms/PlanPostModal";
 import LoadingOverlay from "../atoms/LoadingOverlay";
 import { getPlanList } from "../../apis/planList";
 import { deletePlan } from "../../apis/planDelete";
-import { createPlan } from "../../apis/PlanCreate";
+import { createPlan } from "../../apis/planCreate";
 import { updatePlan } from "../../apis/planUpdate";
 
 const PlanList = () => {
@@ -29,11 +29,11 @@ const PlanList = () => {
     setIsPageLoading(true);
     try {
       // "계획중인" 여행 목록만 가져옵니다.
-      const ongoingPlanData = await getPlanList({
-        // status: 'ING', // 서버에서 상태 필터링을 지원하는 경우 사용
-        sort: 'CREATED_AT,desc', // 최신순으로 정렬
-      });
-      setOngoingPlans(ongoingPlanData || []);
+      const ongoingPlanData = await getPlanList();
+      
+      // planId 기준으로 내림차순 정렬 (늦게 생성된 것부터)
+      const sortedPlans = (ongoingPlanData || []).sort((a, b) => b.planId - a.planId);
+      setOngoingPlans(sortedPlans);
 
       // 추후 "완료된" 여행 목록도 동일하게 가져올 수 있습니다.
       // const completedPlanData = await getPlanList({ status: 'DONE', ... });

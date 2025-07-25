@@ -33,7 +33,7 @@ public class UserAuthController {
                 .secure(true)
                 .path("/")
                 .maxAge(refreshTokenMaxAge) // 30 days
-                .sameSite("Strict")
+                .sameSite("None")
                 .build();
 
         return CommonResponse.<LoginResponseDTO>builder()
@@ -51,7 +51,7 @@ public class UserAuthController {
                 .secure(true)
                 .path("/")
                 .maxAge(0) // 쿠키 삭제
-                .sameSite("Strict")
+                .sameSite("None")
                 .build();
 
         return CommonResponse.<SuccessResponseDTO>builder()

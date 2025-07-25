@@ -6,6 +6,7 @@ import Navbar from './components/organisms/Navbar'
 import PlanList from './components/pages/PlanList'
 import Test from './components/pages/test'
 import Plan from './components/pages/Plan'
+import MyPage from "./components/pages/Mypage"
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/Test" element={<Test/>} />
         <Route path="/list" element={<PlanList/>} />
         <Route path="/plan/:planId" element={<Plan/>} />
+        <Route path="/mypage" element={<MyPage />} />
         {/* <Route path="/temp" element={<Temp/>} /> */}
       </Routes>
       

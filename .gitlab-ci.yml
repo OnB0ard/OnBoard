@@ -56,7 +56,7 @@ deploy:
     - pkill -f $JAR_NAME || echo "No existing process found."
 
     - cd $DEPLOY_DIR
-    - nohup java -jar -Duser.timezone=$TZ $JAR_NAME -Dspring.profiles.active=deploy > application.log 2> error.log &
+    - nohup java -jar -Duser.timezone=$TZ $JAR_NAME -Dspring.profiles.active=deploy > $DEPLOY_DIR/application.log 2> $DEPLOY_DIR/error.log &
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-BE"'
       when: always

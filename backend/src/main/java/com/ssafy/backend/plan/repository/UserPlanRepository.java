@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface UserPlanRepository extends JpaRepository<UserPlan, Long> {
     boolean existsByPlanAndUser(Plan plan, User user);
@@ -18,4 +20,6 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, Long> {
     boolean existsByPlan(Plan plan);
     boolean existsByUser(User user);
     void deleteUserPlanByPlanAndUser(Plan plan, User user);
+
+    List<UserPlan> findAllUserPlanByPlan(Plan plan);
 }

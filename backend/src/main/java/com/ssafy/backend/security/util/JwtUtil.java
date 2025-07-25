@@ -10,7 +10,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,9 +77,10 @@ public class JwtUtil {
         Token token = new Token();
         token.setTokenType(TokenType.ACCESS);
         token.setTokenString(accessToken);
+        token.setUser(user);
         LocalDateTime expirationDateTime = expiration.toInstant()
                 .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();;
+                .toLocalDateTime();
         token.setExpireDate(expirationDateTime);
 
         Token savedToken = tokenRepository.save(token);
@@ -111,6 +115,7 @@ public class JwtUtil {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
         token.setExpireDate(expirationDateTime);
+        token.setUser(User.builder().userId(userId).build());
 
         Token savedToken = tokenRepository.save(token);
         return TokenDTO.builder()
@@ -196,9 +201,9 @@ public class JwtUtil {
     @Transactional(readOnly = true)
     public boolean validateToken(String token, TokenType tokenType) {
         try {
-            if (!isTokenAvailable(token, tokenType)) {
-                return false;
-            }
+//            if (!isTokenAvailable(token, tokenType)) {
+//                return false;
+//            }
             getJwtParser().parseSignedClaims(token);
             return true;
         } catch (JwtException e) {
@@ -245,7 +250,8 @@ public class JwtUtil {
         return bearerToken;
     }
 
-    @Scheduled(cron = "0 */5 * * * *") // 30분 마다 실행
+    @Transactional
+    @Scheduled(cron = "0 */5 * * * *") // 5분 마다 실행
     public void cleanUpExpiredTokens() {
         LocalDateTime now = LocalDateTime.now();
         tokenRepository.deleteAllByExpireDateBefore(now);

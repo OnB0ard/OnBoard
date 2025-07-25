@@ -1,4 +1,4 @@
-package com.ssafy.backend.plan.responseDTO;
+package com.ssafy.backend.plan.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

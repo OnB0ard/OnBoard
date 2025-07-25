@@ -161,15 +161,15 @@ public class PlanService {
         List<Plan> plansByUser = planRepository.findPlansByUser(user);
 
         List<RetrievePlanResponse> planResponses = plansByUser.stream().map(plan ->
-                RetrievePlanResponse.builder()
-                        .planId(plan.getPlanId())
-                        .name(plan.getPlanName())
-                        .description(plan.getPlanDescription())
-                        .startDate(plan.getStartDate())
-                        .endDate(plan.getEndDate())
-                        .hashTag(plan.getHashTag())
-                        .imageUrl(plan.getPlanImage())
-                        .build()
+            RetrievePlanResponse.builder()
+                    .planId(plan.getPlanId())
+                    .name(plan.getPlanName())
+                    .description(plan.getPlanDescription())
+                    .startDate(plan.getStartDate())
+                    .endDate(plan.getEndDate())
+                    .hashTag(plan.getHashTag())
+                    .imageUrl(plan.getPlanImage() != null ? s3Util.getUrl(plan.getPlanImage()) : null)
+                    .build()
         ).toList();
         return planResponses;
     }

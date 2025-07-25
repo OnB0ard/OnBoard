@@ -1,0 +1,54 @@
+image: eclipse-temurin:21-jdk
+
+stages:
+  - build
+  - test
+
+
+variables:
+  SPRING_PROFILES_ACTIVE: deploy
+  MYSQL_URL: $MYSQL_URL
+  MYSQL_USER: $MYSQL_USER
+  MYSQL_PASSWORD: testpass
+  AWS_ACCESS_KEY: $AWS_ACCESS_KEY
+  AWS_SECRET_KEY: $AWS_SECRET_KEY
+  AWS_REGION: ap-northeast-2
+  AWS_S3_BUCKET: $AWS_S3_BUCKET
+  JWT_ACCESS_TOKEN_EXPIRATION: 3600
+  JWT_REFRESH_TOKEN_EXPIRATION: 604800
+  JWT_SECRET: $JWT_SECRET
+  DEPLOY_DIR: ~/deploy
+  JAR_NAME: backend-0.0.1-SNAPSHOT.jar
+  TZ: Asia/Seoul
+
+
+cache:
+  paths:
+    - .gradle/caches/
+    - .gradle/wrapper/
+
+
+services:
+  - name: mysql:8.0
+    alias: mysql
+
+before_script:
+  - echo "Waiting for MySQL to be ready..."
+  - for i in {1..10}; do mysqladmin ping -hmysql -ptestpass && break || sleep 5; done
+  - chmod +x ./gradlew
+
+build:
+  stage: build
+  environment:
+    name: CICD
+  script:
+    - ./gradlew clean build -Dspring.profiles.active=deploy -x test
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying JAR to $DEPLOY_DIR"
+    - mkdir -p $DEPLOY_DIR
+    - cp build/libs/$JAR_NAME $DEPLOY_DIR/
+    - cd $DEPLOY_DIR
+    - nohup java -jar -Duser.timezone=$TZ $JAR_NAME -Dspring.profiles.active=deploy > application.log 2> error.log &

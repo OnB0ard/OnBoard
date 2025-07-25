@@ -29,9 +29,10 @@ public class UserAuthController {
     public CommonResponse<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
         LoginResponseDTO userInfo = userAuthService.login(loginRequestDTO);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", userInfo.getRefreshToken())
+                .domain("http://localhost:5173/")
                 .httpOnly(true)
                 .secure(true)
-                .path("/")
+                .path("")
                 .maxAge(refreshTokenMaxAge) // 30 days
                 .sameSite("None")
                 .build();
@@ -47,6 +48,7 @@ public class UserAuthController {
     public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
         // 쿠키 삭제를 위한 ResponseCookie 생성
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .domain("http://localhost:5173/")
                 .httpOnly(true)
                 .secure(true)
                 .path("/")

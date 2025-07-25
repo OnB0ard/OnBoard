@@ -9,7 +9,7 @@ export const loginWithGoogle = async (oauthToken) => {
     const response = await apiClient.post("user/login", {
       oauthToken,
     });
-
+    console.log(response.data)
     return response.data; 
   } catch (error) {
     console.error("구글 로그인 API 실패:", error);

@@ -16,6 +16,12 @@ export const useAuthStore = create((set) => ({
       accessToken: authData.accessToken,
       refreshToken: authData.refreshToken,
     }),
+  updateProfile: (userName, profileImage) =>
+    set((state) => ({
+      ...state,
+      userName: userName,
+      profileImage: profileImage,
+    })),
   clearAuth: () =>
     set({
       userId: null,

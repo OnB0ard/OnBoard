@@ -16,6 +16,7 @@ public class LoginResponseDTO {
     private Long userId;
     private String googleEmail;
     private String userName;
+    private String profileImage;
     private String accessToken;
     private LocalDateTime accessTokenExpireDate;
     @JsonIgnore

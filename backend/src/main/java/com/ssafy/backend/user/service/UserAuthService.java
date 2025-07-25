@@ -1,5 +1,6 @@
 package com.ssafy.backend.user.service;
 
+import com.ssafy.backend.common.util.S3Util;
 import com.ssafy.backend.security.dto.TokenDTO;
 import com.ssafy.backend.security.entity.TokenType;
 import com.ssafy.backend.security.util.JwtUtil;
@@ -23,6 +24,7 @@ public class UserAuthService {
     private final GoogleOauthUtil googleOauth;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final S3Util s3Util;
 
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
@@ -45,6 +47,7 @@ public class UserAuthService {
         return LoginResponseDTO.builder()
                 .userId(user.getUserId())
                 .googleEmail(user.getGoogleEmail())
+                .profileImage(user.getProfileImage() != null ? s3Util.getUrl(user.getProfileImage()) : null)
                 .userName(user.getUserName())
                 .accessToken(accessToken.getTokenString())
                 .accessTokenExpireDate(accessToken.getExpireDate())

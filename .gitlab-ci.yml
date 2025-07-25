@@ -4,7 +4,6 @@ stages:
   - build
   - deploy
 
-
 variables:
   SPRING_PROFILES_ACTIVE: deploy
   MYSQL_URL: $MYSQL_URL
@@ -39,8 +38,8 @@ before_script:
 
 build:
   stage: build
-  environment:
-    name: CICD
+  tags:
+    - build
   script:
     - ./gradlew clean build -Dspring.profiles.active=deploy -x test
   rules:
@@ -49,6 +48,8 @@ build:
 
 deploy:
   stage: deploy
+  tags:
+    - deploy
   script:
     - echo "Deploying JAR to $DEPLOY_DIR"
     - mkdir -p $DEPLOY_DIR

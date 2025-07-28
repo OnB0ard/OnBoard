@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   app:
-    image: your-backend-app:latest
+    image: tripwith:latest
     container_name: app-blue
     ports:
       - "8080:8080"

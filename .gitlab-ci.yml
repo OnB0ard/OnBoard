@@ -1,8 +1,5 @@
 image: docker:24.0.7
 
-services:
-  - docker:dind
-
 stages:
   - build
   - deploy

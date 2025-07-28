@@ -28,7 +28,6 @@ sudo docker build -t tripwith:latest ./backend
 # inactive 서비스 실행
 sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml up -d --force-recreate
 
-# 헬스 체크 (간단 버전)
 # 헬스 체크 (최대 30초 동안 재시도)
 echo "헬스체크 중..."
 MAX_RETRIES=10
@@ -55,7 +54,8 @@ fi
 sudo cp ./backend/.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 
 sudo nginx -s reload
 
-# 이전 서비스 종료
+# ✅ 기존 서비스 종료만 수행, 신규 서비스는 유지
+echo "🔁 이전 서비스 $ACTIVE 종료 중..."
 sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${ACTIVE}.yml down
 
-echo "✅ $INACTIVE 배포 완료. Nginx proxy 전환됨."
+echo "✅ $INACTIVE 배포 완료. Nginx proxy 전환됨. 서비스가 계속 유지됩니다."

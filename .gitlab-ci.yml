@@ -38,7 +38,7 @@ build:
     - cd backend
     - chmod +x ./gradlew
     - ./gradlew clean build -x test -Dspring.profiles.active=deploy
-    - docker build -t tripwith:latest .
+    - sudo docker build -t tripwith:latest .
   artifacts:
     paths:
       - backend/build/libs/

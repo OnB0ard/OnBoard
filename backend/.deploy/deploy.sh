@@ -1,5 +1,12 @@
 #!/bin/bash
 
+docker info | grep 'Docker Root Dir'
+hostname
+whoami
+ps aux | grep docker
+
+
+
 set -e
 
 ACTIVE=""

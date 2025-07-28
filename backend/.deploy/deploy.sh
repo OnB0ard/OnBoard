@@ -31,11 +31,11 @@ sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml u
 # 헬스 체크 (간단 버전)
 echo "헬스체크 중..."
 sleep 5
-# curl -f http://localhost:${INACTIVE_PORT}/actuator/health || {
-#   echo "❌ 새 서비스가 비정상입니다. 배포 중단"
-#   docker-compose -f docker-compose.${INACTIVE}.yml down
-#   exit 1
-# }
+curl -f http://localhost:${INACTIVE_PORT}/actuator/health || {
+  echo "❌ 새 서비스가 비정상입니다. 배포 중단"
+  docker-compose -f docker-compose.${INACTIVE}.yml down
+  exit 1
+}
 
 # nginx config 교체
 sudo cp ./backend/.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 

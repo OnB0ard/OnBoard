@@ -1,18 +1,18 @@
 import React, { useState } from "react";
-import SettingModal from "@/components/organisms/SettingModal";
+import InitMap from "@/components/mapTest/MapWithNewSearch";
+import { APIProvider } from "@vis.gl/react-google-maps";
 
 function Test() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 
   return (
-    
-        <div className="flex h-screen items-center justify-center flex-col gap-4">
-
-            <button onClick={() => setIsModalOpen(true)}>Test</button>
-            <SettingModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-        </div>
-    
+        <APIProvider apiKey={apiKey}>
+            <InitMap />
+        </APIProvider>
   )
 }
 
 export default Test;
+
+

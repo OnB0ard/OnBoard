@@ -51,17 +51,17 @@ deploy:
   tags:
     - deploy
   script:
-    - echo "SPRING_PROFILES_ACTIVE=deploy" > .env
-    - echo "MYSQL_URL=$MYSQL_URL" >> .env
-    - echo "MYSQL_USER=$MYSQL_USER" >> .env
-    - echo "MYSQL_PASSWORD=$MYSQL_PASSWORD" >> .env
-    - echo "AWS_ACCESS_KEY=$AWS_ACCESS_KEY" >> .env
-    - echo "AWS_SECRET_KEY=$AWS_SECRET_KEY" >> .env
-    - echo "AWS_REGION=ap-northeast-2" >> .env
-    - echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
-    - echo "JWT_ACCESS_TOKEN_EXPIRATION=3600" >> .env
-    - echo "JWT_REFRESH_TOKEN_EXPIRATION=604800" >> .env
-    - echo "JWT_SECRET=$JWT_SECRET" >> .env
+    - echo "SPRING_PROFILES_ACTIVE=deploy" > ./backend/.deploy/docker/.env
+    - echo "MYSQL_URL=$MYSQL_URL" >> ./backend/.deploy/docker/.env
+    - echo "MYSQL_USER=$MYSQL_USER" >> ./backend/.deploy/docker/.env
+    - echo "MYSQL_PASSWORD=$MYSQL_PASSWORD" >> ./backend/.deploy/docker/.env
+    - echo "AWS_ACCESS_KEY=$AWS_ACCESS_KEY" >> ./backend/.deploy/docker/.env
+    - echo "AWS_SECRET_KEY=$AWS_SECRET_KEY" >> ./backend/.deploy/docker/.env
+    - echo "AWS_REGION=ap-northeast-2" >> ./backend/.deploy/docker/.env
+    - echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> ./backend/.deploy/docker/.env
+    - echo "JWT_ACCESS_TOKEN_EXPIRATION=3600" >> ./backend/.deploy/docker/.env
+    - echo "JWT_REFRESH_TOKEN_EXPIRATION=604800" >> ./backend/.deploy/docker/.env
+    - echo "JWT_SECRET=$JWT_SECRET" >> ./backend/.deploy/docker/.env
     - chmod +x ./backend/.deploy/deploy.sh
     - ./backend/.deploy/deploy.sh
   rules:

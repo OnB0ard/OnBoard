@@ -50,6 +50,10 @@ if [ "$SUCCESS" != "true" ]; then
   exit 1
 fi
 
+# ✅ 여기서 컨테이너 로그 저장
+echo "📝 docker logs (app-${INACTIVE}) 저장 시작: $(date)" | sudo tee -a /home/ubuntu/docker.txt
+sudo docker logs app-${INACTIVE} | sudo tee -a /home/ubuntu/docker.txt
+
 # nginx config 교체
 sudo cp ./backend/.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 
 sudo nginx -s reload

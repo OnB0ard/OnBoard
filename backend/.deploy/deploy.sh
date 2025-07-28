@@ -1,12 +1,5 @@
 #!/bin/bash
 
-docker info | grep 'Docker Root Dir'
-hostname
-whoami
-ps aux | grep docker
-
-
-
 set -e
 
 ACTIVE=""
@@ -14,7 +7,7 @@ INACTIVE=""
 ACTIVE_PORT=""
 INACTIVE_PORT=""
 
-if grep -q "8080" /etc/nginx/nginx.conf; then
+if sudo docker ps --format '{{.Names}}' | grep -q 'app-blue'; then
   ACTIVE=blue
   INACTIVE=green
   ACTIVE_PORT=8080

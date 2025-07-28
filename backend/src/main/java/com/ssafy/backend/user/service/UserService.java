@@ -6,6 +6,7 @@ import com.ssafy.backend.plan.exception.UserNotExistException;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.dto.request.ModifyProfileRequestDTO;
 import com.ssafy.backend.user.dto.response.ModifyProfileResponseDTO;
+import com.ssafy.backend.user.dto.response.RetrieveProfileResponseDTO;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.exception.NotYourAccountException;
 import com.ssafy.backend.user.repository.UserRepository;
@@ -75,5 +76,17 @@ public class UserService {
     private User validateUserExistence(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotExistException("존재하지 않는 사용자입니다. userId=" + userId));
+    }
+
+    public RetrieveProfileResponseDTO getUserProfile(Long userId) {
+        User user = validateUserExistence(userId);
+        return RetrieveProfileResponseDTO.builder()
+                .userId(user.getUserId())
+                .googleEmail(user.getGoogleEmail())
+                .userName(user.getUserName())
+                .profileImageUrl(user.getProfileImage() != null ? s3Util.getUrl(user.getProfileImage()) : null)
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 }

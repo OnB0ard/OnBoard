@@ -24,13 +24,17 @@ public class UserAuthController {
     @Value("${jwt.refresh-token.expiration}")
     private int refreshTokenMaxAge;
 
+    @Value("${frontend.domain}")
+    private String frontendDomain;
+
+
     @PostMapping("/login")
     @PreAuthorize("permitAll()")
     public CommonResponse<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
         LoginResponseDTO userInfo = userAuthService.login(loginRequestDTO);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", userInfo.getRefreshToken())
-                .domain("http://localhost:5173/")
-                .httpOnly(true)
+                .domain(frontendDomain)
+                .httpOnly(true) 
                 .secure(true)
                 .path("")
                 .maxAge(refreshTokenMaxAge) // 30 days
@@ -48,7 +52,7 @@ public class UserAuthController {
     public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
         // 쿠키 삭제를 위한 ResponseCookie 생성
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .domain("http://localhost:5173/")
+                .domain(frontendDomain)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")

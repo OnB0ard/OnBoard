@@ -26,7 +26,7 @@ echo "새 배포는 $INACTIVE (${INACTIVE_PORT}) 쪽으로 실행합니다."
 sudo docker build -t tripwith:latest ./backend
 
 # inactive 서비스 실행
-sudo docker-compose -f ./.deploy/docker/docker-compose-${INACTIVE}.yml up -d --force-recreate
+sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml up -d --force-recreate
 
 # 헬스 체크 (간단 버전)
 echo "헬스체크 중..."
@@ -38,10 +38,10 @@ sleep 5
 # }
 
 # nginx config 교체
-cp ./.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 
+cp ./backend/.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 
 nginx -s reload
 
 # 이전 서비스 종료
-sudo docker-compose -f ./.deploy/docker/docker-compose-${ACTIVE}.yml down
+sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${ACTIVE}.yml down
 
 echo "✅ $INACTIVE 배포 완료. Nginx proxy 전환됨."

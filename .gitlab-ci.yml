@@ -51,8 +51,8 @@ deploy:
   tags:
     - deploy
   script:
-    - chmod +x ./deploy.sh
-    - ./deploy.sh
+    - chmod +x ./.deploy/deploy.sh
+    - ./.deploy/deploy.sh
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-BE" || $CI_COMMIT_BRANCH == "feat/docker-cicd"'
       when: always

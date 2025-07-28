@@ -38,8 +38,8 @@ sleep 5
 # }
 
 # nginx config 교체
-cp ./backend/.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 
-nginx -s reload
+sudo cp ./backend/.deploy/nginx/nginx-${INACTIVE}.conf /etc/nginx/sites-available/default 
+sudo nginx -s reload
 
 # 이전 서비스 종료
 sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${ACTIVE}.yml down

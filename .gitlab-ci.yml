@@ -43,7 +43,7 @@ build:
     paths:
       - backend/build/libs/
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop-BE"'
+    - if: '$CI_COMMIT_BRANCH == "develop-BE" || $CI_COMMIT_BRANCH == "feat/docker-cicd"'
       when: always
 
 deploy:
@@ -54,5 +54,5 @@ deploy:
     - chmod +x ./deploy.sh
     - ./deploy.sh
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop-BE"'
+    - if: '$CI_COMMIT_BRANCH == "develop-BE" || $CI_COMMIT_BRANCH == "feat/docker-cicd"'
       when: always

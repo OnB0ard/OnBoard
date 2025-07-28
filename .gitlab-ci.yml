@@ -1,4 +1,7 @@
-image: eclipse-temurin:17-jdk
+image: docker:24.0.7
+
+services:
+  - docker:dind
 
 stages:
   - build
@@ -19,7 +22,8 @@ variables:
   DEPLOY_DIR: /home/ubuntu/deploy
   JAR_NAME: backend-0.0.1-SNAPSHOT.jar
   TZ: Asia/Seoul
-
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
 
 cache:
   paths:
@@ -33,7 +37,8 @@ build:
   script:
     - cd backend
     - chmod +x ./gradlew
-    - ./gradlew clean build -Dspring.profiles.active=deploy -x test
+    - ./gradlew clean build -x test -Dspring.profiles.active=deploy
+    - docker build -t tripwith:latest .
   artifacts:
     paths:
       - backend/build/libs/
@@ -46,17 +51,8 @@ deploy:
   tags:
     - deploy
   script:
-    - cd backend
-    - echo "Deploying JAR to $DEPLOY_DIR"
-    - mkdir -p $DEPLOY_DIR
-    - cp build/libs/$JAR_NAME $DEPLOY_DIR/
-
-    # 기존 실행 중인 애플리케이션 종료
-    - echo "🔍 기존 실행 중인 애플리케이션 종료 시도"
-    - pkill -f $JAR_NAME || echo "No existing process found."
-
-    - cd $DEPLOY_DIR
-    - nohup java -jar -Duser.timezone=$TZ $JAR_NAME -Dspring.profiles.active=deploy > $DEPLOY_DIR/application.log 2> $DEPLOY_DIR/error.log &
+    - chmod +x ./deploy.sh
+    - ./deploy.sh
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-BE"'
       when: always

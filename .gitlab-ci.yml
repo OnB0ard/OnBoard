@@ -1,10 +1,13 @@
 image: docker:24.0.7
 
+services: [] # ❌ docker:dind 제거
+
 stages:
   - build
   - deploy
 
 variables:
+  DOCKER_HOST: "unix:///var/run/docker.sock"
   SPRING_PROFILES_ACTIVE: deploy
   MYSQL_URL: $MYSQL_URL
   MYSQL_USER: $MYSQL_USER

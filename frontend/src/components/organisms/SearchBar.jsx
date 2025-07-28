@@ -13,10 +13,10 @@ const SearchBar = ({ type = "listsearch", onSearch }) => {
   switch (type) {
     case "mapsearch":
       return (
-        <div className="flex items-center justify-between w-1/5 max-w-[300px] px-4 py-2 bg-[#E1EAFD] rounded-3xl">
+        <div className="flex items-center justify-between w-full px-4 py-2 bg-[#E1EAFD] rounded-3xl">
           <Input
             size="full"
-            placeholder="Which Location?"
+            placeholder="장소를 검색해보세요."
             className="pl-0 text-sm bg-transparent border-none outline-none focus:ring-0"
             value={value}
             onChange={(e) => setValue(e.target.value)}

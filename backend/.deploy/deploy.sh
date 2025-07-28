@@ -26,7 +26,7 @@ echo "새 배포는 $INACTIVE (${INACTIVE_PORT}) 쪽으로 실행합니다."
 sudo docker build -t tripwith:latest ./backend
 
 # inactive 서비스 실행
-sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml up -d --force-recreate
+sudo docker-compose -p ${INACTIVE} -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml up -d --force-recreate
 
 # 헬스 체크 (최대 30초 동안 재시도)
 echo "헬스체크 중..."
@@ -46,7 +46,7 @@ done
 
 if [ "$SUCCESS" != "true" ]; then
   echo "❌ Health check 실패: $INACTIVE 서비스가 30초 내에 기동되지 않았습니다. 롤백합니다."
-  sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml down
+  sudo docker-compose -p ${INACTIVE} -f ./backend/.deploy/docker/docker-compose-${INACTIVE}.yml down
   exit 1
 fi
 
@@ -60,6 +60,6 @@ sudo nginx -s reload
 
 # ✅ 기존 서비스 종료만 수행, 신규 서비스는 유지
 echo "🔁 이전 서비스 $ACTIVE 종료 중..."
-sudo docker-compose -f ./backend/.deploy/docker/docker-compose-${ACTIVE}.yml down
+sudo docker-compose -p ${ACTIVE} -f ./backend/.deploy/docker/docker-compose-${ACTIVE}.yml down
 
 echo "✅ $INACTIVE 배포 완료. Nginx proxy 전환됨. 서비스가 계속 유지됩니다."

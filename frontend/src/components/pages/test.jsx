@@ -1,15 +1,10 @@
 import React, { useState } from "react";
-import InitMap from "@/components/mapTest/MapWithNewSearch";
-import { APIProvider } from "@vis.gl/react-google-maps";
+import Maps from "../mapTest/Maps";
 
 function Test() {
 
-  const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
-
   return (
-        <APIProvider apiKey={apiKey}>
-            <InitMap />
-        </APIProvider>
+    <Maps />
   )
 }
 

@@ -1,15 +1,23 @@
-import {AdvancedMarker, APIProvider, Map} from '@vis.gl/react-google-maps';
+// src/components/TacoMap.jsx
 
-function Maps() {
-  const position = {lat: 53.54992, lng: 10.00678};
+import React from 'react';
+import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import PlaceSearch from './PlaceSearch'; // PlaceSearch 컴포넌트를 불러옵니다.
 
+const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k'; // API 키
+const center = { lat: 37.4161493, lng: -122.0812166 };
+
+export default function TacoMap() {
   return (
-    <APIProvider apiKey={'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k'}>
-      <Map defaultCenter={position} defaultZoom={10} mapId="DEMO_MAP_ID">
-        <AdvancedMarker position={position} />
+    <APIProvider apiKey={apiKey}>
+      <Map
+        style={{ width: '100vw', height: '100vh' }}
+        defaultCenter={center}
+        defaultZoom={11}
+        mapId={'DEMO_MAP_ID'}
+      >
+        <PlaceSearch />
       </Map>
     </APIProvider>
   );
 }
-
-export default Maps;

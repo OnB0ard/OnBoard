@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function PlaceDetails({ place, query }) {
   if (!place) return null;
 
+  const [isOpeningHoursVisible, setIsOpeningHoursVisible] = useState(false);
+
   const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
-  // ✅ 1. 장소 유형을 판별하는 로직 추가
-  let placeType = '장소'; // 기본값
+  let placeType = '장소';
   if (place.types?.includes('restaurant')) {
     placeType = '음식점';
   } else if (place.types?.includes('cafe')) {
@@ -17,11 +18,14 @@ export default function PlaceDetails({ place, query }) {
     placeType = '상점';
   }
 
+  // ✅ 3. 오늘 요일을 계산하는 로직 (월요일=0, 화요일=1, ..., 일요일=6)
+  // getDay()는 일요일=0을 반환하므로, 구글 API 순서에 맞게 조정합니다.
+  const todayIndex = (new Date().getDay() + 6) % 7;
+
   return (
     <div style={{ padding: '10px', fontFamily: 'sans-serif', maxWidth: '300px' }}>
       <div style={headerStyle}>
         <div style={titleStyle}>{place.displayName}</div>
-        {/* ✅ 2. 판별된 유형을 태그로 표시 */}
         <div style={typeStyle}>{placeType}</div>
       </div>
 
@@ -35,6 +39,28 @@ export default function PlaceDetails({ place, query }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <span>⭐</span>
           <span>{place.rating} ({place.userRatingCount} ratings)</span>
+        </div>
+      )}
+
+      {/* ✅ 4. 영업시간 토글 UI */}
+      {place.regularOpeningHours?.weekdayDescriptions && (
+        <div style={{ marginTop: '10px' }}>
+          <div 
+            onClick={() => setIsOpeningHoursVisible(!isOpeningHoursVisible)} 
+            style={toggleHeaderStyle}
+          >
+            <strong style={{ fontSize: '14px' }}>영업시간</strong>
+            <span>{isOpeningHoursVisible ? '▲' : '▼'}</span>
+          </div>
+          {isOpeningHoursVisible && (
+            <ul style={{ listStyle: 'none', padding: '5px 0 0 0', margin: 0, fontSize: '13px', color: '#555' }}>
+              {place.regularOpeningHours.weekdayDescriptions.map((text, index) => (
+                <li key={index} style={index === todayIndex ? todayStyle : {}}>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
       
@@ -60,30 +86,10 @@ export default function PlaceDetails({ place, query }) {
   );
 }
 
-const linkStyle = {
-  color: '#1a73e8',
-  textDecoration: 'none',
-  fontSize: '14px'
-};
-
-const headerStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'baseline',
-  marginBottom: '10px'
-};
-
-const titleStyle = {
-  fontSize: '18px',
-  fontWeight: 'bold',
-  marginRight: '8px'
-};
-
-const typeStyle = {
-  fontSize: '12px',
-  color: 'white',
-  background: '#555',
-  padding: '2px 6px',
-  borderRadius: '4px',
-  flexShrink: 0
-};
+// --- 스타일 ---
+const linkStyle = { color: '#1a73e8', textDecoration: 'none', fontSize: '14px' };
+const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' };
+const titleStyle = { fontSize: '18px', fontWeight: 'bold', marginRight: '8px' };
+const typeStyle = { fontSize: '12px', color: 'white', background: '#555', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 };
+const toggleHeaderStyle = { cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const todayStyle = { fontWeight: 'bold', color: '#000' };

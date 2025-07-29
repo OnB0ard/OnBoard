@@ -46,7 +46,11 @@ const useMapStore = create((set, get) => ({
 
   handleMarkerClick: async (place) => {
     const { setSelectedPlace, setIsModalOpen } = get();
-    const detailFields = ['id', 'displayName', 'formattedAddress', 'photos', 'rating', 'userRatingCount', 'websiteURI'];
+    const detailFields = [
+      'id', 'displayName', 'formattedAddress', 'photos', 
+      'rating', 'userRatingCount', 'websiteURI', 
+      'types', 'regularOpeningHours'
+    ];
     try {
       await place.fetchFields({ fields: detailFields });
       setSelectedPlace(place);

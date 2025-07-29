@@ -44,3 +44,12 @@ jwt:
 
 frontend:
   domain: ${FRONTEND_DOMAIN:localhost}  # 프론트엔드 DOMAIN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # 또는 '*'로 전체 오픈
+  endpoint:
+    health:
+      show-details: always

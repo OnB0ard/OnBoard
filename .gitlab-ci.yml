@@ -1,10 +1,13 @@
-image: eclipse-temurin:17-jdk
+image: docker:24.0.7
+
+services: [] # ❌ docker:dind 제거
 
 stages:
   - build
   - deploy
 
 variables:
+  DOCKER_HOST: "unix:///var/run/docker.sock"
   SPRING_PROFILES_ACTIVE: deploy
   MYSQL_URL: $MYSQL_URL
   MYSQL_USER: $MYSQL_USER
@@ -19,7 +22,8 @@ variables:
   DEPLOY_DIR: /home/ubuntu/deploy
   JAR_NAME: backend-0.0.1-SNAPSHOT.jar
   TZ: Asia/Seoul
-
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
 
 cache:
   paths:
@@ -33,12 +37,13 @@ build:
   script:
     - cd backend
     - chmod +x ./gradlew
-    - ./gradlew clean build -Dspring.profiles.active=deploy -x test
+    - ./gradlew clean build -x test -Dspring.profiles.active=deploy
+    - sudo docker build -t tripwith:latest .
   artifacts:
     paths:
       - backend/build/libs/
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop-BE"'
+    - if: '$CI_COMMIT_BRANCH == "develop-BE" || $CI_COMMIT_BRANCH == "feat/docker-cicd"'
       when: always
 
 deploy:
@@ -46,17 +51,19 @@ deploy:
   tags:
     - deploy
   script:
-    - cd backend
-    - echo "Deploying JAR to $DEPLOY_DIR"
-    - mkdir -p $DEPLOY_DIR
-    - cp build/libs/$JAR_NAME $DEPLOY_DIR/
-
-    # 기존 실행 중인 애플리케이션 종료
-    - echo "🔍 기존 실행 중인 애플리케이션 종료 시도"
-    - pkill -f $JAR_NAME || echo "No existing process found."
-
-    - cd $DEPLOY_DIR
-    - nohup java -jar -Duser.timezone=$TZ $JAR_NAME -Dspring.profiles.active=deploy > $DEPLOY_DIR/application.log 2> $DEPLOY_DIR/error.log &
+    - echo "SPRING_PROFILES_ACTIVE=deploy" > ./backend/.deploy/docker/.env
+    - echo "MYSQL_URL=$MYSQL_URL" >> ./backend/.deploy/docker/.env
+    - echo "MYSQL_USER=$MYSQL_USER" >> ./backend/.deploy/docker/.env
+    - echo "MYSQL_PASSWORD=$MYSQL_PASSWORD" >> ./backend/.deploy/docker/.env
+    - echo "AWS_ACCESS_KEY=$AWS_ACCESS_KEY" >> ./backend/.deploy/docker/.env
+    - echo "AWS_SECRET_KEY=$AWS_SECRET_KEY" >> ./backend/.deploy/docker/.env
+    - echo "AWS_REGION=ap-northeast-2" >> ./backend/.deploy/docker/.env
+    - echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> ./backend/.deploy/docker/.env
+    - echo "JWT_ACCESS_TOKEN_EXPIRATION=3600" >> ./backend/.deploy/docker/.env
+    - echo "JWT_REFRESH_TOKEN_EXPIRATION=604800" >> ./backend/.deploy/docker/.env
+    - echo "JWT_SECRET=$JWT_SECRET" >> ./backend/.deploy/docker/.env
+    - chmod +x ./backend/.deploy/deploy.sh
+    - sudo ./backend/.deploy/deploy.sh
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop-BE"'
+    - if: '$CI_COMMIT_BRANCH == "develop-BE" || $CI_COMMIT_BRANCH == "feat/docker-cicd"'
       when: always

@@ -36,7 +36,7 @@ public class UserAuthController {
 //                .domain(frontendDomain)
                 .httpOnly(true) 
                 .secure(false)
-                .path("")
+                .path("/")
                 .maxAge(refreshTokenMaxAge) // 30 days
                 .sameSite("None")
                 .build();

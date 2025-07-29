@@ -35,7 +35,7 @@ public class UserAuthController {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", userInfo.getRefreshToken())
                 .domain(frontendDomain)
                 .httpOnly(true) 
-                .secure(true)
+                .secure(false)
                 .path("")
                 .maxAge(refreshTokenMaxAge) // 30 days
                 .sameSite("None")
@@ -54,7 +54,7 @@ public class UserAuthController {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
                 .domain(frontendDomain)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(0) // 쿠키 삭제
                 .sameSite("None")

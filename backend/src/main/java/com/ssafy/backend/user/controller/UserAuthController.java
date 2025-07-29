@@ -33,7 +33,7 @@ public class UserAuthController {
     public CommonResponse<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
         LoginResponseDTO userInfo = userAuthService.login(loginRequestDTO);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", userInfo.getRefreshToken())
-                .domain(frontendDomain)
+//                .domain(frontendDomain)
                 .httpOnly(true) 
                 .secure(false)
                 .path("")
@@ -52,7 +52,7 @@ public class UserAuthController {
     public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
         // 쿠키 삭제를 위한 ResponseCookie 생성
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .domain(frontendDomain)
+//                .domain(frontendDomain)
                 .httpOnly(true)
                 .secure(false)
                 .path("/")

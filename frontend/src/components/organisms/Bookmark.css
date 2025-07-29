@@ -4,14 +4,58 @@
   left: 70px; /* 사이드바 너비 + 여백 */
   z-index: 1500;
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   min-width: 300px;
-  max-width: 400px;
+  max-width: 330px;
   max-height: 70vh;
   display: flex;
   flex-direction: column;
+  /* 사이드바와 연결되는 화살표 효과 */
+  position: relative;
+  /* 부드러운 애니메이션 */
+  animation: slideInFromSidebar 0.3s ease-out;
+  transform-origin: top left;
+}
+
+@keyframes slideInFromSidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* 사이드바에서 나오는 화살표 효과 */
+.bookmark-popup::before {
+  content: '';
+  position: absolute;
+  top: 71px; /* 북마크 아이콘 위치에 맞춤 */
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid white;
+  z-index: 1501;
+}
+
+/* 화살표 그림자 효과 */
+.bookmark-popup::after {
+  content: '';
+  position: absolute;
+  top: 71px; /* 북마크 아이콘 위치에 맞춤 */
+  left: -9px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #e5e7eb;
+  z-index: 1500;
 }
 
 .bookmark-popup-container {
@@ -57,6 +101,16 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+}
+
+/* 빈 상태 스타일 */
+.bookmark-popup-content .empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px; /* 검색창과 동일한 높이 */
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* 스크롤바 스타일 */

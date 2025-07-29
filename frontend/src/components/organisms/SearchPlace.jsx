@@ -5,8 +5,71 @@ import PlaceResult from "./PlaceResult";
 import Bookmark from "./Bookmark";
 import "./SearchPlace.css";
 
+// 임시 검색 결과 데이터를 컴포넌트 외부로 이동
+const sampleSearchResults = [
+  {
+    id: 1,
+    name: "한옥집 김치찜",
+    rating: 4.0,
+    reviewCount: 3,
+    category: "한식",
+    address: "논현로85길 5-13",
+    operatingHours: "오후 9:00에 영업 종료",
+    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
+    priceRange: "₩10,000~20,000"
+  },
+  {
+    id: 2,
+    name: "뉴욕김치찌개",
+    rating: 4.0,
+    reviewCount: 59,
+    category: "음식점",
+    address: "역삼동 825-20번지 강남역센트럴푸르지오시티 강남구 서울특별시 KR",
+    operatingHours: "오후 9:30에 영업 종료",
+    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
+    priceRange: "₩10,000~20,000"
+  },
+  {
+    id: 3,
+    name: "장꼬방 묵은 김치찌개 전문",
+    rating: 4.3,
+    reviewCount: 850,
+    category: "한식",
+    address: "효령로 364",
+    operatingHours: "오후 10:00에 영업 종료",
+    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
+    priceRange: "₩10,000~20,000"
+  },
+  {
+    id: 4,
+    name: "한옥집김치찜 GFC몰점",
+    rating: 4.3,
+    reviewCount: 8,
+    category: "한식",
+    address: "역삼1동 테헤란로 152 지하1층",
+    operatingHours: "오후 9:00에 영업 종료",
+    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
+    priceRange: "₩10,000~20,000"
+  },
+  {
+    id: 5,
+    name: "N서울타워",
+    rating: 4.5,
+    reviewCount: 1250,
+    category: "관광지",
+    address: "서울특별시 용산구 남산공원길 105",
+    operatingHours: "오후 11:00에 영업 종료",
+    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
+    priceRange: "₩15,000~25,000"
+  }
+];
+
 const SearchPlace = ({ isOpen, onClose }) => {
   const popupRef = useRef(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [bookmarkedPlaces, setBookmarkedPlaces] = useState(new Set());
 
   // 외부 클릭 감지 및 검색창 열기/닫기 시 초기화
   useEffect(() => {
@@ -29,10 +92,6 @@ const SearchPlace = ({ isOpen, onClose }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, onClose]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [bookmarkedPlaces, setBookmarkedPlaces] = useState(new Set());
 
   // 검색어 나중에 다른 변수로 바꾸기
   const handleSearch = (searchTerm) => {
@@ -40,22 +99,13 @@ const SearchPlace = ({ isOpen, onClose }) => {
     setIsSearching(true);
     setHasSearched(true);
     
-    // TODO: API 호출로 검색 결과 받아오기
-    // 실제 API 호출 예시:
-    // searchPlacesAPI(searchTerm)
-    //   .then(results => {
-    //     setSearchResults(results);
-    //     setIsSearching(false);
-    //   })
-    //   .catch(error => {
-    //     console.error("검색 오류:", error);
-    //     setSearchResults([]);
-    //     setIsSearching(false);
-    //   });
-    
-    // 임시로 빈 배열로 설정 (실제 API 연동 시 위 주석 해제)
+    // 임시 검색 결과 반환 (검색어가 포함된 장소들만 필터링)
     setTimeout(() => {
-      setSearchResults([]);
+      const filteredResults = sampleSearchResults.filter(place => 
+        place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        place.category.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setSearchResults(filteredResults);
       setIsSearching(false);
     }, 500);
   };
@@ -108,6 +158,9 @@ const SearchPlace = ({ isOpen, onClose }) => {
                     }
                     return newSet;
                   });
+                }}
+                onDragStart={(e, place) => {
+                  console.log("드래그 시작:", place.name);
                 }}
               />
             </div>

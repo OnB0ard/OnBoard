@@ -1,11 +1,10 @@
 // 북마크 모음집 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import './Bookmark.css';
 
 const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBookmarkClick }) => {
-  const [localBookmarkedPlaces, setLocalBookmarkedPlaces] = useState(bookmarkedPlaces);
   const popupRef = useRef(null);
 
   // 외부 클릭 감지
@@ -25,15 +24,6 @@ const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBook
     };
   }, [isOpen, onClose]);
 
-
-
-  // props가 변경될 때만 로컬 상태 업데이트
-  useEffect(() => {
-    setLocalBookmarkedPlaces(bookmarkedPlaces);
-  }, [bookmarkedPlaces.length]);
-
-  const displayPlaces = localBookmarkedPlaces;
-
   if (!isOpen) return null;
 
   return (
@@ -44,13 +34,13 @@ const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBook
           <button onClick={onClose} className="bookmark-popup-close">✕</button>
         </div>
         <div className="bookmark-popup-content">
-          {displayPlaces.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray-500">
+          {bookmarkedPlaces.length === 0 ? (
+            <div className="empty-state">
               <p>저장된 장소가 없습니다.</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {displayPlaces.map((place) => (
+              {bookmarkedPlaces.map((place) => (
                 <div 
                   key={place.id} 
                   className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer"
@@ -87,8 +77,6 @@ const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBook
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
-                        // 북마크 취소 시 즉시 로컬 리스트에서 제거
-                        setLocalBookmarkedPlaces(prev => prev.filter(p => p.id !== place.id));
                         onBookmarkClick?.(place);
                       }}
                     />

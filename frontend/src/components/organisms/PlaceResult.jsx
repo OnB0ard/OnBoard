@@ -4,15 +4,27 @@ import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
-const PlaceResult = ({ places = [], onPlaceClick, onBookmarkClick }) => {
+const PlaceResult = ({ places = [], onPlaceClick, onBookmarkClick, onDragStart }) => {
+
+  const handleDragStart = (e, place) => {
+    console.log('PlaceResult 드래그 시작:', place.name);
+    e.dataTransfer.setData('text/plain', JSON.stringify(place));
+    e.dataTransfer.effectAllowed = 'copy';
+    
+    if (onDragStart) {
+      onDragStart(e, place);
+    }
+  };
 
   return (
     <div className="space-y-2">
       {places.map((place, index) => (
         <div 
           key={place.id} 
-          className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer"
+          className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-grab active:cursor-grabbing"
           onClick={() => onPlaceClick?.(place)}
+          draggable="true"
+          onDragStart={(e) => handleDragStart(e, place)}
         >
           {/* 왼쪽: 텍스트 정보 */}
           <div className="flex-1 space-y-1">

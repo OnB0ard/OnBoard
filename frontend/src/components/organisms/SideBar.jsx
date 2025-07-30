@@ -5,10 +5,11 @@ import Bookmark from "./Bookmark";
 import DailyPlanCreate from "./DailyPlanCreate";
 import "./SideBar.css";
 
-const SideBar = () => {
+const SideBar = ({ onDailyPlanModalToggle }) => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
+  const [bookmarkedPlaces, setBookmarkedPlaces] = useState([]);
 
   const handleSearchClick = () => {
     setIsSearchModalOpen(!isSearchModalOpen);
@@ -20,6 +21,10 @@ const SideBar = () => {
 
   const handleDailyPlanClick = () => {
     setIsDailyPlanModalOpen(true);
+    // 부모 컴포넌트에 모달 상태 전달
+    if (onDailyPlanModalToggle) {
+      onDailyPlanModalToggle(true);
+    }
   };
 
   return (
@@ -57,19 +62,27 @@ const SideBar = () => {
       {/* 검색 모달 */}
       <SearchPlace 
         isOpen={isSearchModalOpen} 
-        onClose={() => setIsSearchModalOpen(false)} 
+        onClose={() => setIsSearchModalOpen(false)}
       />
 
       {/* 북마크 모달 */}
       <Bookmark 
         isOpen={isBookmarkModalOpen} 
-        onClose={() => setIsBookmarkModalOpen(false)} 
+        onClose={() => setIsBookmarkModalOpen(false)}
+        bookmarkedPlaces={bookmarkedPlaces}
       />
 
       {/* 일정 추가 모달 */}
       <DailyPlanCreate 
         isOpen={isDailyPlanModalOpen} 
-        onClose={() => setIsDailyPlanModalOpen(false)} 
+        onClose={() => {
+          setIsDailyPlanModalOpen(false);
+          // 부모 컴포넌트에 모달 상태 전달
+          if (onDailyPlanModalToggle) {
+            onDailyPlanModalToggle(false);
+          }
+        }}
+        bookmarkedPlaces={bookmarkedPlaces}
       />
     </>
   );

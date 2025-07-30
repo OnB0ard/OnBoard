@@ -2,14 +2,16 @@
 import Icon from './Icon';
 
 const PlaceImage = ({ imageUrl, isBookmarked = false, onBookmarkClick }) => {
+  const defaultImage = 'https://via.placeholder.com/40x40/E5E7EB/6B7280?text=이미지';
+  
   return (
     <div className="relative group">
       <img 
-        src={imageUrl || 'https://via.placeholder.com/60x60/E5E7EB/6B7280?text=이미지'} 
+        src={imageUrl || defaultImage} 
         alt="장소 이미지"
-        className="w-15 h-15 object-cover rounded-md"
+        className="w-10 h-10 object-cover rounded-md"
         onError={(e) => {
-          e.target.src = 'https://via.placeholder.com/60x60/E5E7EB/6B7280?text=이미지';
+          e.target.src = defaultImage;
         }}
       />
       <button 

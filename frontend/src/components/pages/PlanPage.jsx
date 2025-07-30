@@ -100,45 +100,41 @@ const Plan = () => {
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    setIsDragOver(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
-    setIsDragOver(false);
+    // 일정 추가 모달이 열려있으면 드래그 리브 무시
+    if (isDailyPlanModalOpen) {
+      return;
+    }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    setIsDragOver(false);
     
-    console.log('PlanPage 드롭 이벤트 발생');
+    // 일정 추가 모달이 열려있으면 드롭 무시
+    if (isDailyPlanModalOpen) {
+      return;
+    }
     
     try {
-      const placeData = e.dataTransfer.getData('text/plain');
-      console.log('드롭된 데이터:', placeData);
-      const place = JSON.parse(placeData);
+      const placeData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      console.log('드롭된 장소:', placeData);
       
-      // 드롭한 위치 계산
+      // 드롭 위치 계산
       const rect = e.currentTarget.getBoundingClientRect();
-      const dropX = e.clientX - rect.left;
-      const dropY = e.clientY - rect.top;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
       
-      console.log('드롭 위치:', dropX, dropY);
-      
-      // 새로운 ID 생성 (기존 블록들과 겹치지 않도록)
-      const newId = Math.max(...placeBlocks.map(block => block.id), 0) + 1;
-      
-      // 항상 새로운 블록 생성
-      const newPlace = {
-        ...place,
-        id: newId, // 새로운 ID 할당
-        position: { x: dropX, y: dropY }
+      // 새로운 PlaceBlock 추가
+      const newBlock = {
+        ...placeData,
+        id: Date.now() + Math.random(), // 고유 ID 생성
+        position: { x, y }
       };
       
-      setPlaceBlocks(prev => [...prev, newPlace]);
-      console.log('새로운 장소 블록이 화이트보드에 추가되었습니다:', place.name, 'ID:', newId);
-      
+      setPlaceBlocks(prev => [...prev, newBlock]);
     } catch (error) {
       console.error('드롭 데이터 파싱 오류:', error);
     }

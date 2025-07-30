@@ -2,10 +2,7 @@ package com.ssafy.backend.plan.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,6 +10,8 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "place")
 @Data
+@Builder
+@AllArgsConstructor
 public class Place extends DateEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,12 +36,13 @@ public class Place extends DateEntity {
     @Column(name = "google_url")
     private String googleUrl;
 
+    @Column(name = "google_img")
+    private String googleImg;
+
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlanPlace> planPlaces;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Bookmark> bookMarks;
 
-    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlacePhoto>  placePhotos;
 }

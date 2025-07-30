@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { APIProvider, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { APIProvider } from '@vis.gl/react-google-maps';
+import CustomMarker from '../atoms/CustomMarker';
 import SideBar from '../organisms/SideBar';
 import WhiteBoard from '../organisms/WhiteBoard';
 import Map from '../organisms/Map';
@@ -9,7 +10,10 @@ import PlaceBlock from '../organisms/PlaceBlock';
 import DailyPlanCreate from '../organisms/DailyPlanCreate';
 import useMapStore from '../../store/useMapStore';
 
+
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
+
+
 
 const Plan = () => {
   const { planId } = useParams();
@@ -31,6 +35,8 @@ const Plan = () => {
 
   // 일정 추가 모달 상태
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
+
+  
 
   // PlaceBlock 삭제
   const handleRemove = (id) => {
@@ -130,7 +136,15 @@ const Plan = () => {
       {isMapVisible && (
         <APIProvider apiKey={apiKey}>
           <Map>
-            {markerPosition && <AdvancedMarker position={markerPosition} />}
+            {markerPosition && (
+              <CustomMarker
+                position={{
+                  lat: markerPosition.lat(),
+                  lng: markerPosition.lng(),
+                }}
+                color="red"
+              />
+            )}
           </Map>
         </APIProvider>
       )}

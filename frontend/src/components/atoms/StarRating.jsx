@@ -2,8 +2,16 @@
 import React from 'react';
 
 const StarRating = ({ rating, reviewCount }) => {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
+  // rating이 유효한 숫자가 아니면 0으로 기본값 설정
+  const numericRating = typeof rating === 'number' && !isNaN(rating) ? rating : 0;
+
+  // 평점이 0이면 아무것도 렌더링하지 않음
+  if (numericRating === 0) {
+    return null;
+  }
+
+  const fullStars = Math.floor(numericRating);
+  const hasHalfStar = numericRating % 1 !== 0;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
   // 별점 아이콘들
@@ -34,7 +42,7 @@ const StarRating = ({ rating, reviewCount }) => {
 
   return (
     <div className="flex items-center gap-1">
-      <span className="text-xs font-medium text-gray-900">{rating}</span>
+      <span className="text-xs font-medium text-gray-900">{numericRating.toFixed(1)}</span>
       <div className="flex items-center">
         {[...Array(fullStars)].map((_, i) => (
           <StarFilled key={`full-${i}`} />

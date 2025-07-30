@@ -1,8 +1,7 @@
 // src/components/pages/test.jsx
-
 import React from "react";
 import { APIProvider } from '@vis.gl/react-google-maps';
-import TacoMap from "../mapTest/TacoMap";
+import Map from "../organisms/Map";
 import StandaloneAutocomplete from "../mapTest/StandaloneAutocomplete";
 import useMapStore from "../../store/useMapStore";
 
@@ -27,7 +26,7 @@ function Test() {
           </button>
         )}
 
-        {isMapVisible && <TacoMap />}
+        {isMapVisible && <Map />}
       </div>
     </APIProvider>
   );

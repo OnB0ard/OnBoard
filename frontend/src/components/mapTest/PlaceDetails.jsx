@@ -18,8 +18,6 @@ export default function PlaceDetails({ place, query }) {
     placeType = '상점';
   }
 
-  // ✅ 3. 오늘 요일을 계산하는 로직 (월요일=0, 화요일=1, ..., 일요일=6)
-  // getDay()는 일요일=0을 반환하므로, 구글 API 순서에 맞게 조정합니다.
   const todayIndex = (new Date().getDay() + 6) % 7;
 
   return (
@@ -42,7 +40,6 @@ export default function PlaceDetails({ place, query }) {
         </div>
       )}
 
-      {/* ✅ 4. 영업시간 토글 UI */}
       {place.regularOpeningHours?.weekdayDescriptions && (
         <div style={{ marginTop: '10px' }}>
           <div 

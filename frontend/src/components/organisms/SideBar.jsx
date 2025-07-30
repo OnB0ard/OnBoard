@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { APIProvider } from "@vis.gl/react-google-maps";
 import Icon from "../atoms/Icon";
-import SearchPlace from "./SearchPlace";
+import AutocompleteSearchModal from "./AutocompleteSearchModal";
 import Bookmark from "./Bookmark";
 import DailyPlanCreate from "./DailyPlanCreate";
+import useMapStore from "../../store/useMapStore";
 import "./SideBar.css";
 
 const SideBar = ({ onDailyPlanModalToggle }) => {
@@ -10,6 +12,9 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
   const [bookmarkedPlaces, setBookmarkedPlaces] = useState([]);
+  const { isMapVisible, setIsMapVisible } = useMapStore();
+
+  const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 
   const handleSearchClick = () => {
     setIsSearchModalOpen(!isSearchModalOpen);
@@ -25,6 +30,10 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
     if (onDailyPlanModalToggle) {
       onDailyPlanModalToggle(true);
     }
+  };
+
+  const handleMapClick = () => {
+    setIsMapVisible(!isMapVisible);
   };
 
   return (
@@ -57,13 +66,26 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
         >
           <Icon type="plus" />
         </button>
+
+        {/* 지도 아이콘 */}
+        <button 
+          onClick={handleMapClick}
+          className={`sidebar-icon ${isMapVisible ? 'active' : ''}`}
+          title={isMapVisible ? "지도 닫기" : "지도 열기"}
+        >
+          <Icon type="map" />
+        </button>
       </div>
+  
+
 
       {/* 검색 모달 */}
-      <SearchPlace 
-        isOpen={isSearchModalOpen} 
-        onClose={() => setIsSearchModalOpen(false)}
-      />
+      <APIProvider apiKey={apiKey}>
+        <AutocompleteSearchModal 
+          isOpen={isSearchModalOpen} 
+          onClose={() => setIsSearchModalOpen(false)}
+        />
+      </APIProvider>
 
       {/* 북마크 모달 */}
       <Bookmark 

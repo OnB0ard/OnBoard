@@ -33,6 +33,28 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
     }
   };
 
+  // 안전한 위치 계산
+  const getSafePosition = () => {
+    try {
+      // 일정짜기 모달의 위치와 크기를 기준으로 북마크 모달 위치 계산
+      // 일정짜기 모달은 left: 70px, width: 330px, top: 90px
+      const dailyPlanLeft = 70;
+      const dailyPlanWidth = 330;
+      const dailyPlanRight = dailyPlanLeft + dailyPlanWidth;
+      const dailyPlanTop = 90; // 일정짜기 모달과 같은 top 위치
+      
+      // 북마크 모달을 일정짜기 모달 오른쪽에 배치
+      const x = dailyPlanRight + 20; // 일정짜기 모달 오른쪽에서 20px 떨어진 위치
+      const y = dailyPlanTop; // 일정짜기 모달과 같은 top 위치
+      
+      console.log('북마크 모달 고정 위치:', { x, y });
+      return { x, y };
+    } catch (error) {
+      console.error('북마크 모달 위치 계산 오류:', error);
+      return { x: 420, y: 90 };
+    }
+  };
+
   // 북마크 모달만 닫는 함수
   const handleCloseBookmarkModal = (e) => {
     if (e) {
@@ -55,6 +77,8 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
 
   if (!isOpen) return null;
 
+  const safePosition = getSafePosition();
+
   return (
     <div className="bookmark-modal">
       <div 
@@ -62,8 +86,8 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
         ref={modalRef}
         style={{
           position: 'fixed',
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+          left: `${safePosition.x}px`,
+          top: `${safePosition.y}px`,
           margin: 0
         }}
       >

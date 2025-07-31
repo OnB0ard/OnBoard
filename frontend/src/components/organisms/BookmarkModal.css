@@ -1,14 +1,11 @@
 .bookmark-modal {
   position: fixed;
-  top: 0;
   left: 0;
-  width: 90vw;
+  top: 90px;
+  width: 100vw;
   height: 100vh;
   background-color: transparent; /* 배경을 투명하게 */
-  display: flex;
-  align-items: flex-start; /* 상단 정렬 */
-  justify-content: flex-start; /* 왼쪽 정렬 */
-  z-index: 1400;
+  z-index: 1600; /* DailyPlanCreate(1500)보다 높게 설정 */
   pointer-events: none; /* 모달 외부 클릭 방지 */
 }
 
@@ -16,8 +13,8 @@
   background-color: white;
   border-radius: 8px;
   width: 300px;
-  max-height: 400px;
-  overflow-y: auto;
+  max-height: calc(100vh - 100px); /* 일정짜기 모달과 똑같은 높이 */
+  overflow-y: auto; /* 세로 스크롤 활성화 */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid #e5e7eb;
   pointer-events: auto;

@@ -1,0 +1,51 @@
+.SideBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: transparent;
+  padding-top: 80px; /* NavBar 높이만큼 여백 */
+  width: 60px;
+}
+
+.sidebar-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-icon:hover {
+  background-color: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-icon svg {
+  width: 20px;
+  height: 20px;
+  color: #333;
+}
+
+/* 첫 번째 아이콘 (검색) */
+.sidebar-icon:first-child {
+  margin-top: 0;
+}
+
+/* 마지막 아이콘 (추가) */
+.sidebar-icon:last-child {
+  margin-bottom: 0;
+} 

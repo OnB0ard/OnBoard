@@ -1,0 +1,265 @@
+.daily-plan-modal {
+  position: fixed;
+  top: 90px; /* NavBar 높이만큼 여백 */
+  left: 70px; /* 사이드바 너비 + 여백 */
+  z-index: 1500;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e5e7eb;
+  min-width: 300px;
+  max-width: 330px;
+  max-height: calc(100vh - 100px); /* 화면 높이에서 여백 제외 */
+  display: flex;
+  flex-direction: column;
+  /* 사이드바와 연결되는 화살표 효과 */
+  position: relative;
+  /* 부드러운 애니메이션 */
+  animation: slideInFromSidebar 0.3s ease-out;
+  transform-origin: top left;
+}
+
+@keyframes slideInFromSidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* 사이드바에서 나오는 화살표 효과 */
+.daily-plan-modal::before {
+  content: '';
+  position: absolute;
+  top: 120px; /* + 아이콘 위치에 맞춤 */
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid white;
+  z-index: 1501;
+}
+
+/* 화살표 그림자 효과 */
+.daily-plan-modal::after {
+  content: '';
+  position: absolute;
+  top: 120px; /* + 아이콘 위치에 맞춤 */
+  left: -9px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #e5e7eb;
+  z-index: 1500;
+}
+
+.daily-plan-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* 내용이 삐져나오지 않도록 */
+}
+
+.daily-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 8px 16px; /* 패딩 줄임 */
+  border-bottom: 1px solid #f3f4f6;
+  background-color: #f9fafb;
+  border-radius: 8px 8px 0 0;
+  flex-shrink: 0; /* 헤더는 고정 크기 */
+}
+
+.daily-plan-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.daily-plan-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  min-height: 0; /* flex 아이템이 축소될 수 있도록 */
+}
+
+.daily-plan-block {
+  background-color: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.daily-plan-block:hover {
+  border-color: #d1d5db;
+}
+
+.daily-plan-block.drag-over {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.daily-plan-block.drag-over .places-container {
+  border-color: #d1d5db;
+  background-color: white;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.day-title-input {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.day-title-input:focus {
+  background-color: white;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.remove-day-button {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap; /* 텍스트가 한 줄로만 나오도록 */
+}
+
+.remove-day-button:hover {
+  background-color: #dc2626;
+}
+
+.places-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 50px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+.place-item {
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.place-item:active {
+  cursor: grabbing;
+}
+
+.place-item.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+.add-place-button {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+}
+
+.add-place-button:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.add-day-button {
+  background-color: #E1EAFD;
+  color: #3F4756;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-top: 8px;
+  flex-shrink: 0; /* 버튼은 고정 크기 */
+}
+
+.add-day-button:hover {
+  background-color: #88acf9;
+  transform: translateY(-1px);
+}
+
+/* 드롭 영역 스타일 */
+.places-container.drag-over {
+  border-color: #d1d5db;
+  background-color: white;
+}
+
+/* 스크롤바 스타일 */
+.daily-plan-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.daily-plan-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.daily-plan-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.daily-plan-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+} 

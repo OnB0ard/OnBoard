@@ -1,0 +1,103 @@
+.bookmark-modal {
+  position: fixed;
+  left: 0;
+  top: 90px;
+  width: 100vw;
+  height: 100vh;
+  background-color: transparent; /* 배경을 투명하게 */
+  z-index: 1600; /* DailyPlanCreate(1500)보다 높게 설정 */
+  pointer-events: none; /* 모달 외부 클릭 방지 */
+}
+
+.bookmark-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 300px;
+  max-height: calc(100vh - 100px); /* 일정짜기 모달과 똑같은 높이 */
+  overflow-y: auto; /* 세로 스크롤 활성화 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  pointer-events: auto;
+  /* margin 제거 - 동적 위치 설정 사용 */
+}
+
+.bookmark-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 8px 16px; /* 패딩 줄임 */
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bookmark-modal-header h3 {
+  font-size: 14px; /* 폰트 크기 줄임 */
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 16px; /* 폰트 크기 줄임 */
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px; /* 패딩 줄임 */
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.bookmark-modal-body {
+  padding: 12px; /* 패딩 줄임 */
+}
+
+.bookmark-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* 간격 줄임 */
+}
+
+.bookmark-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bookmark-item:hover {
+  transform: translateY(-1px); /* 호버 효과 줄임 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px; /* 높이 줄임 */
+  color: #6b7280;
+  font-size: 12px; /* 폰트 크기 줄임 */
+}
+
+/* 스크롤바 스타일 */
+.bookmark-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bookmark-modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.bookmark-modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.bookmark-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

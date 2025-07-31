@@ -2,6 +2,7 @@ package com.ssafy.backend.plan.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
 import com.ssafy.backend.user.entity.UserPlan;
+import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,15 +37,16 @@ public class Plan extends DateEntity {
     @Column(name = "hash_tag")
     private String hashTag;
 
+
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserPlan> userPlans;
 
     @OneToMany(mappedBy = "plan",cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlanPlace> planPlaces;
+    private List<DaySchedule> daySchedules;
 
-    @OneToMany(mappedBy = "plan",cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Bookmark> bookmarks;
 
-//    @OneToMany(mappedBy = "plan")
-//    private List<WhiteBoard> whiteBoards;
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WhiteBoardObject> whiteBoardObjects;
 }

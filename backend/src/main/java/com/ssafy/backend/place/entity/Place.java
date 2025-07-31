@@ -1,6 +1,8 @@
-package com.ssafy.backend.plan.entity;
+package com.ssafy.backend.place.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
+import com.ssafy.backend.plan.entity.Bookmark;
+import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,18 +33,24 @@ public class Place extends DateEntity {
     private String address;
 
     private Double rating;
+
     @Column(name = "rating_count")
     private Integer ratingCount;
-    @Column(name = "google_url")
-    private String googleUrl;
 
-    @Column(name = "google_img")
-    private String googleImg;
+    @Column(name = "place_url")
+    private String placeUrl;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "site_url")
+    private String siteUrl;
+
+    private String category;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlanPlace> planPlaces;
+    private List<WhiteBoardObject> WhiteBoardObjects;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Bookmark> bookMarks;
-
 }

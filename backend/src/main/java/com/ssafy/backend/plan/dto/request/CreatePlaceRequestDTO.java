@@ -12,6 +12,8 @@ public class CreatePlaceRequestDTO {
     private String address;
     private Double rating;
     private Integer ratingCount;
-    private String googleUrl;
-    private String googleImg;
+    private String placeUrl;
+    private String imageUrl;
+    private String siteUrl;
+    private String category;
 }

@@ -1,8 +1,8 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
+import com.ssafy.backend.place.entity.Place;
 import com.ssafy.backend.plan.entity.Bookmark;
-import com.ssafy.backend.plan.entity.Place;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.BookmarkExistException;
 import com.ssafy.backend.plan.exception.PlanNotExistException;
@@ -36,8 +36,10 @@ public class BookmarkService {
                                 .address(createPlaceRequestDTO.getAddress())
                                 .rating(createPlaceRequestDTO.getRating())
                                 .ratingCount(createPlaceRequestDTO.getRatingCount())
-                                .googleUrl(createPlaceRequestDTO.getGoogleUrl())
-                                .googleImg(createPlaceRequestDTO.getGoogleImg())
+                                .placeUrl(createPlaceRequestDTO.getPlaceUrl())
+                                .imageUrl(createPlaceRequestDTO.getImageUrl())
+                                .siteUrl(createPlaceRequestDTO.getSiteUrl())
+                                .category(createPlaceRequestDTO.getCategory())
                                 .build()
                 ));
 

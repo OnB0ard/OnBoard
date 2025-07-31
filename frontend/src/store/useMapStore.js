@@ -131,10 +131,12 @@ const useMapStore = create((set, get) => ({
 
       const fieldsToFetch = [
         'id', 'displayName', 'formattedAddress', 'location', 'photos',
-        'rating', 'types', 'websiteURI', 'primaryType'
+        'rating', 'types', 'websiteURI', 'userRatingCount', 'nationalPhoneNumber', 'reviews'
       ];
 
       await place.fetchFields({ fields: fieldsToFetch });
+
+      console.log(place);
 
       set({
         selectedPlace: place,

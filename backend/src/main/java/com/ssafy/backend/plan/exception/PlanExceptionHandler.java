@@ -65,4 +65,11 @@ public class PlanExceptionHandler {
         return new CommonResponse<>(new ErrorBody("PLAN-017", "아직 초대되지 않은 방입니다."),
                 HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(BookmarkExistException.class)
+    public  CommonResponse<ErrorBody> BookmarkExistException(BookmarkExistException e, HttpServletRequest request) {
+        log.warn("PLAN-018> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-018", "이미 북마크 되어있습니다."),
+                HttpStatus.BAD_REQUEST);
+    }
 }

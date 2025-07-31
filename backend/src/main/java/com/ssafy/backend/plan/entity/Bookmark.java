@@ -1,9 +1,8 @@
 package com.ssafy.backend.plan.entity;
 
+import com.ssafy.backend.place.entity.Place;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity

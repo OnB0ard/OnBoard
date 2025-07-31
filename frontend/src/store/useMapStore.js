@@ -4,6 +4,7 @@ const useMapStore = create((set, get) => ({
   placeBlocks: [], // 화이트보드에 있는 장소 블록들
   mapInstance: null,
   placesService: null,
+  placeConstructor: null,
   // --- 상태 (State) ---
   textQuery: '',
   places: [],
@@ -16,6 +17,8 @@ const useMapStore = create((set, get) => ({
   searchResults: [], // 검색 결과
   hasSearched: false, // 검색 실행 여부
   isSearching: false, // 검색 중 상태
+  isLoadingMore: false, // 추가 결과 로딩 중 상태
+  pagination: null, // 검색 결과 페이지네이션 객체
   markerPosition: null, // 지도에 표시할 마커 위치
   autocompletePredictions: [], // 자동완성 예측 결과를 저장할 상태,
   lastMapPosition: null, // 마지막 지도 위치(center, zoom) 저장
@@ -23,13 +26,16 @@ const useMapStore = create((set, get) => ({
   // --- 액션 (Actions) ---
   setTextQuery: (query) => set({ textQuery: query }),
   setPlaces: (places) => set({ places }),
-  setSelectedPlace: (place) => set({ selectedPlace: place }),
+  setSelectedPlace: (place) => {
+    set({ selectedPlace: place });
+  },
   setIsMapVisible: (visible) => set({ isMapVisible: visible }),
   setIsModalOpen: (open) => set({ isModalOpen: open }),
   setMapInstance: (map) => set({ mapInstance: map }),
   setLastMapPosition: (position) => set({ lastMapPosition: position }),
   // Autocomplete Search Modal Actions
   setPlacesService: (service) => set({ placesService: service }),
+  setPlaceConstructor: (constructor) => set({ placeConstructor: constructor }),
   setInputValue: (value) => set({ inputValue: value }),
   clearSearch: () => set({ 
     inputValue: '',
@@ -39,6 +45,8 @@ const useMapStore = create((set, get) => ({
     autocompletePredictions: [],
     markerPosition: null, // 마커 위치 초기화
     isSearching: false,
+    pagination: null, // 페이지네이션 초기화
+    isLoadingMore: false, // 추가 로딩 상태 초기화
   }),
 
   // PlaceBlock 관련 액션
@@ -71,61 +79,80 @@ const useMapStore = create((set, get) => ({
   },
 
   performTextSearch: () => {
-    const { inputValue, placesService } = get();
+    const { inputValue, placesService, mapInstance } = get();
     if (!inputValue.trim() || !placesService) return;
 
     set({ isSearching: true, hasSearched: true, autocompletePredictions: [] });
 
     const request = {
       query: inputValue,
-      fields: ['name', 'formatted_address', 'place_id', 'geometry', 'photos', 'types', 'rating'],
+      fields: ['place_id', 'name', 'formatted_address', 'geometry', 'photos', 'rating', 'types'],
     };
 
-    placesService.textSearch(request, (results, status) => {
+    if (mapInstance) {
+      request.bounds = mapInstance.getBounds();
+    }
+
+    placesService.textSearch(request, (results, status, pagination) => {
+      const { isLoadingMore, searchResults: currentResults } = get();
+
       if (status === 'OK' && results) {
-        set({ searchResults: results, isSearching: false });
+
+        const newSearchResults = isLoadingMore
+          ? [...currentResults, ...results]
+          : results;
+
+        set({
+          searchResults: newSearchResults,
+          isSearching: false,
+          isLoadingMore: false,
+          pagination: pagination,
+        });
       } else {
-        set({ searchResults: [], isSearching: false });
+        set({ 
+          isSearching: false, 
+          isLoadingMore: false, 
+          searchResults: isLoadingMore ? currentResults : [],
+          pagination: isLoadingMore ? get().pagination : null,
+        });
       }
     });
   },
 
-  handlePlaceSelection: (placeId) => {
-    return new Promise((resolve, reject) => {
-      const { placesService, mapInstance } = get();
-      if (!placesService || !placeId) {
-        return reject(new Error('PlacesService not available'));
-      }
+  handlePlaceSelection: async (placeId) => {
+    const { placeConstructor, mapInstance } = get();
+    if (!placeConstructor || !placeId) {
+      console.error('PlacesService not available or invalid placeId');
+      return null;
+    }
 
-      const request = {
-        placeId,
-        fields: ['name', 'formatted_address', 'place_id', 'geometry', 'photos', 'types', 'rating'],
-      };
+    try {
+      const place = new placeConstructor({ id: placeId });
 
-      placesService.getDetails(request, (place, status) => {
-        if (status === 'OK' && place && place.geometry) {
-          const newQuery = place.formatted_address || place.name;
-          set({
-            textQuery: newQuery,
-            inputValue: place.name, // 입력창에는 장소 이름만 표시
-            searchResults: [place], // 검색 결과를 선택된 장소로 설정
-            selectedPlace: place,
-            hasSearched: true, // 검색한 것으로 처리
-            autocompletePredictions: [], // 예측 목록 초기화
-            markerPosition: place.geometry.location, // 마커 위치 업데이트
-          });
+      const fieldsToFetch = [
+        'id', 'displayName', 'formattedAddress', 'location', 'photos',
+        'rating', 'types', 'websiteURI', 'userRatingCount', 'nationalPhoneNumber', 'reviews'
+      ];
 
-          if (mapInstance) {
-            mapInstance.panTo(place.geometry.location);
-            mapInstance.setZoom(15);
-          }
-          resolve(place); // 성공 시 place 객체로 resolve
-        } else {
-          console.error('장소 세부 정보를 가져오는 데 실패했습니다:', status);
-          reject(new Error('Failed to get place details')); // 실패 시 reject
-        }
+      await place.fetchFields({ fields: fieldsToFetch });
+
+      console.log(place);
+
+      set({
+        selectedPlace: place,
+        markerPosition: place.location,
       });
-    });
+
+      if (mapInstance && place.location) {
+        mapInstance.panTo(place.location);
+        mapInstance.setZoom(15);
+      }
+      
+      return place;
+    } catch (error) {
+      console.error('장소 상세 정보 로딩 실패:', error);
+      return null;
+    }
   },
 
   // 자동완성 예측 가져오기
@@ -150,6 +177,17 @@ const useMapStore = create((set, get) => ({
     );
   },
 
+  fetchNextPage: () => {
+    const { pagination, isLoadingMore } = get();
+
+    if (!pagination || !pagination.hasNextPage || isLoadingMore) {
+      return;
+    }
+
+    set({ isLoadingMore: true });
+
+    pagination.nextPage(); // 다음 페이지 결과를 가져옴. 콜백은 최초 textSearch와 동일합니다.
+  },
 
 }));
 

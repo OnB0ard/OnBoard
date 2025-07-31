@@ -8,14 +8,10 @@ import 'react-resizable/css/styles.css';
 const fallbackCenter = { lat: 37.5665, lng: 126.9780 };
 
 export default function Map({ children }) {
-  const { textQuery, setIsMapVisible, mapInstance, setMapInstance } = useMapStore();
+  const { setIsMapVisible } = useMapStore();
+
   const [size, setSize] = useState({ width: 300, height: 300 });
   const [position, setPosition] = useState({ x: 1000, y: 100 });
-  
-  const placesLib = useMapsLibrary('places');
-  const coreLib = useMapsLibrary('core');
-
-
 
   return (
     <>
@@ -100,7 +96,7 @@ export default function Map({ children }) {
             mapId={'47dc3c714439f466fe9fcbd3'}
             disableDefaultUI={true}
           >
-            <MapInitializer setMapInstance={setMapInstance} />
+            <MapInitializer />
             {children}
           </GoogleMap>
         </div>
@@ -109,13 +105,24 @@ export default function Map({ children }) {
   );
 }
 
-function MapInitializer({ setMapInstance }) {
+function MapInitializer() {
   const map = useMap();
-  const { lastMapPosition, setLastMapPosition } = useMapStore();
+  const placesLib = useMapsLibrary('places');
+  const {
+    setMapInstance,
+    setPlacesService,
+    setPlaceConstructor,
+    lastMapPosition,
+    setLastMapPosition,
+  } = useMapStore();
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !placesLib) return;
+
+    // Zustand 스토어에 인스턴스 및 생성자 저장
     setMapInstance(map);
+    setPlacesService(new placesLib.PlacesService(map));
+    setPlaceConstructor(placesLib.Place);
 
     // 마지막 위치가 있으면 그 위치로 설정
     if (lastMapPosition) {
@@ -143,7 +150,7 @@ function MapInitializer({ setMapInstance }) {
       window.google.maps.event.removeListener(dragListener);
       window.google.maps.event.removeListener(zoomListener);
     };
-  }, [map, setMapInstance, lastMapPosition, setLastMapPosition]);
+  }, [map, placesLib, setMapInstance, setPlacesService, setPlaceConstructor, lastMapPosition, setLastMapPosition]);
 
   return null;
 }

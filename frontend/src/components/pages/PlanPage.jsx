@@ -142,7 +142,7 @@ const Plan = () => {
                   lat: markerPosition.lat(),
                   lng: markerPosition.lng(),
                 }}
-                color="red"
+                color="blue"
               />
             )}
           </Map>

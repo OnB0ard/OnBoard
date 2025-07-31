@@ -10,12 +10,18 @@
   width: 30px;
   height: 30px;
   border-radius: 50% 50% 50% 0;
-
   transform: rotate(-45deg);
   border: 2px solid white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   position: relative;
   transition: transform 0.2s ease-in-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pin svg {
+  transform: rotate(45deg);
 }
 
 .custom-marker:hover .pin {

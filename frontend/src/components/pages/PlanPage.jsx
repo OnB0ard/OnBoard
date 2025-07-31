@@ -15,6 +15,19 @@ const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 
 
 
+// Google Place API의 카테고리를 CustomMarker의 type으로 변환
+const getMarkerTypeFromPlace = (place) => {
+  if (!place.types) return 'default';
+
+  if (place.types.includes('lodging')) return 'accommodation';
+  if (place.types.includes('restaurant')) return 'restaurant';
+  if (place.types.includes('cafe')) return 'cafe';
+  if (place.types.includes('store') || place.types.includes('shopping_mall')) return 'store';
+  if (place.types.includes('tourist_attraction') || place.types.includes('point_of_interest')) return 'attraction';
+
+  return 'default';
+};
+
 const Plan = () => {
   const { planId } = useParams();
   const {
@@ -136,13 +149,32 @@ const Plan = () => {
       {isMapVisible && (
         <APIProvider apiKey={apiKey}>
           <Map>
+            {/* 계획에 추가된 장소들의 마커 */}
+            {placeBlocks.map((block) => {
+              // block.geometry.location이 없으면 마커를 렌더링하지 않음
+              if (!block.geometry?.location) return null;
+
+              return (
+                <CustomMarker
+                  key={block.id}
+                  position={{
+                    lat: block.geometry.location.lat(),
+                    lng: block.geometry.location.lng(),
+                  }}
+                  type={getMarkerTypeFromPlace(block)}
+                />
+              );
+            })}
+
+            {/* 현재 선택된 장소의 임시 마커 */}
             {markerPosition && (
               <CustomMarker
                 position={{
                   lat: markerPosition.lat(),
                   lng: markerPosition.lng(),
                 }}
-                color="blue"
+                color="blue" // 임시 마커는 다른 색으로 구분
+                type="accommodation"
               />
             )}
           </Map>

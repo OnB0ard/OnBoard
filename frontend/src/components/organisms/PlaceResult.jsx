@@ -39,11 +39,13 @@ const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
 
   const handleDragStart = (e, place, imageUrl) => {
     const simplifiedPlace = {
-      place_id: place.place_id,
-      name: place.name,
-      formatted_address: place.formatted_address,
+      id: place.place_id || place.id,
+      name: place.name || place.displayName,
+      formatted_address: place.formatted_address || place.address, // Google Places API 호환성
+      address: place.formatted_address || place.address, // 기존 호환성
       rating: place.rating,
-      imageUrl, // getUrl()로 생성된 실제 URL을 전달
+      category: place.types ? place.types.join(', ') : place.category,
+      imageUrl, // 이미지 URL을 전달
     };
     e.dataTransfer.setData('text/plain', JSON.stringify(simplifiedPlace));
     e.dataTransfer.effectAllowed = 'copy';
@@ -67,17 +69,20 @@ const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
 
         return (
           <div
-            key={place.place_id}
+            key={placeId}
             className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-grab active:cursor-grabbing"
-            onClick={() => handlePlaceSelection(place.place_id)}
+            onClick={() => onPlaceClick && onPlaceClick(place)}
             draggable="true"
             onDragStart={(e) => handleDragStart(e, place, imageUrl)}
           >
             <div className="flex-1 space-y-1">
-              <h3 className="text-base font-bold text-gray-900">{place.name}</h3>
-              {place.rating && (
+              <h3 className="text-base font-bold text-gray-900">{placeName}</h3>
+              {placeRating && (
                 <div className="flex items-center gap-3">
-                  <StarRating rating={place.rating} />
+                  <StarRating rating={placeRating} />
+                  {reviewCount && (
+                    <span className="text-xs text-gray-500">({reviewCount}개 리뷰)</span>
+                  )}
                 </div>
               )}
               {Array.isArray(place.types) && <p className="text-xs text-gray-600">{place.types.join(', ')}</p>}
@@ -97,7 +102,8 @@ const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
             </div>
             <div className="flex-shrink-0">
               <PlaceImage
-                imageUrl={imageUrl} // 생성된 URL을 사용
+                imageUrl={imageUrl}
+                isBookmarked={place.isBookmarked}
                 onBookmarkClick={(e) => {
                   e.stopPropagation();
                   onBookmarkClick?.(place);

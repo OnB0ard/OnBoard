@@ -9,12 +9,13 @@
   border: 1px solid #e5e7eb;
   min-width: 300px;
   max-width: 330px;
-  /* 사이드바와 연결되는 화살표 효과 */
-  position: relative;
   /* 부드러운 애니메이션 */
   animation: slideInFromSidebar 0.3s ease-out;
   transform-origin: top left;
+  pointer-events: auto; /* 클릭 이벤트 활성화 */
 }
+
+
 
 @keyframes slideInFromSidebar {
   from {
@@ -76,19 +77,25 @@
 }
 
 .search-popup-results {
-  max-height: 500px;
+  max-height: 750px;
+  min-height: 300px;
   overflow-y: auto;
   padding: 12px;
+  transition: max-height 0.3s ease;
 }
+
+
 
 .search-loading,
 .search-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100px;
+  height: 1000px;
   color: #6b7280;
   font-size: 13px;
+  background-color: #f0f0f0;
+  border: 2px solid red;
 }
 
 .search-results-list {
@@ -113,3 +120,5 @@
 .search-popup-results::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 } 
+
+

@@ -37,7 +37,10 @@ const Plan = () => {
     removePlaceBlock,
     updatePlaceBlockPosition,
     markerPosition,
+    markerType,
+    fetchDetailsAndAddBlock,
   } = useMapStore();
+
 
   // 마우스 드래그 상태
   const [draggedBlockId, setDraggedBlockId] = useState(null);
@@ -113,12 +116,13 @@ const Plan = () => {
     if (isDailyPlanModalOpen) return;
 
     try {
-      const placeData = JSON.parse(e.dataTransfer.getData('text/plain'));
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      addPlaceBlock(placeData, { x, y });
+      const placeJson = e.dataTransfer.getData('application/json');
+      if (placeJson) {
+        const { placeId } = JSON.parse(placeJson);
+        const position = { x: e.clientX, y: e.clientY };
+        // placeId와 위치 정보를 전달하여 상세 정보 로딩 및 블록 추가를 요청합니다.
+        fetchDetailsAndAddBlock(placeId, position);
+      }
     } catch (error) {
       console.error('드롭 데이터 파싱 오류:', error);
     }
@@ -170,11 +174,11 @@ const Plan = () => {
             {markerPosition && (
               <CustomMarker
                 position={{
-                  lat: markerPosition.lat(),
-                  lng: markerPosition.lng(),
+                  lat: markerPosition.lat,
+                  lng: markerPosition.lng,
                 }}
                 color="blue" // 임시 마커는 다른 색으로 구분
-                type="accommodation"
+                type={markerType}
               />
             )}
           </Map>

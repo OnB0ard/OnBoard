@@ -63,8 +63,8 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
       {/* 왼쪽: 작은 이미지 */}
       <div className="place-block-image">
         <img
-          src={place.imageUrl} // 스토어에서 미리 추출한 URL 사용
-          alt={place.name}
+          src={place.googleImg && place.googleImg.length > 0 ? place.googleImg[0] : 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82'}
+          alt={place.placeName}
           className="place-block-thumbnail"
           onError={(e) => {
             e.target.src = 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82';
@@ -76,14 +76,14 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
       <div className="place-block-content">
         {/* 첫 번째 줄: 제목과 별점 */}
         <div className="place-block-header">
-          <h3 className="place-block-title">{place.name}</h3>
+          <h3 className="place-block-title">{place.placeName}</h3>
           <div className="place-block-rating">
-            <StarRating rating={place.rating} reviewCount={null} />
+            <StarRating rating={place.rating} reviewCount={place.ratingCount} />
           </div>
         </div>
         
         {/* 두 번째 줄: 주소 */}
-        <p className="place-block-address">{place.formatted_address}</p>
+        <p className="place-block-address">{place.address}</p>
       </div>
       
       {/* 편집/삭제 버튼 */}

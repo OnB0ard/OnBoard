@@ -18,12 +18,12 @@ const colorPalette = {
 };
 
 const iconComponents = {
-  accommodation: <Bed size={14} color="white" />,
-  restaurant: <Utensils size={14} color="white" />,
-  cafe: <Coffee size={14} color="white" />,
-  store: <Store size={14} color="white" />,
-  attraction: <Camera size={14} color="white" />,
-  default: '',
+  숙소: <Bed size={14} color="white" />,
+  식당: <Utensils size={14} color="white" />,
+  카페: <Coffee size={14} color="white" />,
+  상점: <Store size={14} color="white" />,
+  명소: <Camera size={14} color="white" />,
+  기타: '',
 };
 
 const CustomMarker = ({

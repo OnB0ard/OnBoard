@@ -3,6 +3,7 @@ import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import Icon from '../atoms/Icon';
 import SearchBar from './SearchBar';
 import PlaceResult from './PlaceResult';
+import PlaceDetailModal from './PlaceDetailModal';
 import useMapStore from '../../store/useMapStore';
 import './AutocompleteSearchModal.css';
 
@@ -15,30 +16,39 @@ import './AutocompleteSearchModal.css';
 const AutocompleteSearchModal = ({ isOpen, onClose }) => {
     // Zustand를 사용한 지도 관련 전역 상태 및 액션
   const {
-    mapInstance, // 지도 인스턴스
-    setPlacesService, // PlacesService 인스턴스 설정 함수
-    inputValue, // 검색창의 입력 값
-    searchResults, // 텍스트 검색 결과
-    isSearching, // 검색 진행 중 상태
-    hasSearched, // 검색 실행 여부 상태
-    autocompletePredictions, // 자동완성 추천 목록
-    setInputValue, // 입력 값 변경 함수
-    performTextSearch, // 텍스트 기반 장소 검색 실행 함수
-    handlePlaceSelection, // 선택된 장소 처리 함수
-    fetchAutocompletePredictions, // 자동완성 추천 목록 조회 함수
-    clearSearch, // 검색 상태 초기화 함수
+    mapInstance,
+    placesService,
+    setPlacesService,
+    inputValue,
+    searchResults,
+    isSearching,
+    hasSearched,
+    autocompletePredictions,
+    setInputValue,
+    performTextSearch,
+    handlePlaceSelection,
+    fetchAutocompletePredictions,
+    clearSearch,
+    toggleBookmark,
+    isBookmarked,
   } = useMapStore();
 
-    // Google Maps Places 라이브러리를 로드합니다.
+  // PlaceDetailModal 상태 관리
+  const [showPlaceDetail, setShowPlaceDetail] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [placeDetailPosition, setPlaceDetailPosition] = useState({ x: 0, y: 0 });
+  const [isAutocompleteClicked, setIsAutocompleteClicked] = useState(false);
+
+
   const placesLib = useMapsLibrary('places');
 
     // Places 라이브러리와 지도 인스턴스가 준비되면 PlacesService를 생성하고 전역 상태에 저장합니다.
   useEffect(() => {
-    if (placesLib && mapInstance) {
+    if (placesLib && mapInstance && !placesService) {
       const service = new placesLib.PlacesService(mapInstance);
       setPlacesService(service);
     }
-  }, [placesLib, mapInstance, setPlacesService]);
+  }, [placesLib, mapInstance, placesService, setPlacesService]);
 
     // DOM 요소에 직접 접근하기 위한 Ref
   const inputRef = useRef(null); // 검색 입력창 Ref
@@ -48,6 +58,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
   // 검색 관련 상태를 초기화하고 부모 컴포넌트의 onClose 함수를 호출합니다.
   const handleClose = useCallback(() => {
     clearSearch();
+    setShowPlaceDetail(false); // PlaceDetailModal 닫기
     onClose();
   }, [clearSearch, onClose]);
 
@@ -58,13 +69,13 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         handleClose();
       }
+
+      handleClose();
     };
 
     // 모달이 열려 있을 때만 이벤트 리스너를 추가합니다.
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
     }
 
     // 컴포넌트가 언마운트될 때 이벤트 리스너를 정리합니다.
@@ -78,6 +89,8 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
     if (isOpen && inputRef.current) {
       // 모달이 완전히 표시된 후 포커스를 주기 위해 약간의 지연을 줍니다.
       setTimeout(() => inputRef.current.focus(), 100);
+      // 모달이 열릴 때 자동완성 상태 초기화
+      clearSearch();
     }
   }, [isOpen]);
 
@@ -99,6 +112,32 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error('장소 선택 처리 중 오류 발생:', error);
     }
+  };
+
+  const handlePredictionClickWithEvent = async (e, prediction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    await handlePredictionClick(prediction);
+  };
+
+  // 장소 상세보기 모달 열기
+  const handlePlaceClick = (place) => {
+    console.log("AutocompleteSearchModal에서 장소 선택:", place);
+    
+    // AutocompleteSearchModal의 위치를 기준으로 PlaceDetailModal 위치 계산
+    const searchModalLeft = 70; // 검색 모달의 left 위치
+    const searchModalWidth = 330; // 검색 모달의 원래 너비 (max-width)
+    const searchModalRight = searchModalLeft + searchModalWidth;
+    
+    const position = { 
+      x: searchModalRight + 5, // 검색 모달 오른쪽에서 5px 떨어진 위치 (10px에서 5px로 줄임)
+      y: 80 // 검색 모달과 같은 top 위치
+    };
+    
+    setPlaceDetailPosition(position);
+    setSelectedPlace(place);
+    setShowPlaceDetail(true);
   };
 
   if (!isOpen) return null;
@@ -127,11 +166,12 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
               onSearch={performTextSearch}
             />
             {autocompletePredictions.length > 0 && !hasSearched && (
-              <ul className="autocomplete-predictions-list">
+              <ul className="autocomplete-predictions-list" onClick={(e) => e.stopPropagation()}>
                 {autocompletePredictions.map((prediction) => (
                   <li
                     key={prediction.place_id}
-                    onClick={() => handlePredictionClick(prediction)}
+                    onClick={(e) => handlePredictionClickWithEvent(e, prediction)}
+                    onMouseDown={(e) => e.preventDefault()}
                   >
                     <Icon type="location" />
                     <div className="prediction-text">
@@ -149,7 +189,20 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
               <div className="search-empty"><p>검색 중...</p></div>
             ) : hasSearched ? (
               searchResults.length > 0 ? (
-                <PlaceResult />
+                <PlaceResult 
+                  places={searchResults.map(place => ({
+                    ...place,
+                    isBookmarked: isBookmarked(place.place_id)
+                  }))}
+                  onPlaceClick={handlePlaceClick}
+                  onBookmarkClick={(place) => {
+                    console.log("AutocompleteSearchModal에서 북마크 토글:", place);
+                    toggleBookmark(place);
+                  }}
+                  onDragStart={(e, place) => {
+                    console.log("AutocompleteSearchModal에서 드래그 시작:", place);
+                  }}
+                />
               ) : (
                 <div className="search-empty"><p>검색 결과가 없습니다.</p></div>
               )
@@ -157,6 +210,16 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
           </div>
         </div>
       </div>
+      
+      {/* PlaceDetailModal */}
+      {showPlaceDetail && (
+        <PlaceDetailModal
+          isOpen={showPlaceDetail}
+          onClose={() => setShowPlaceDetail(false)}
+          place={selectedPlace}
+          position={placeDetailPosition}
+        />
+      )}
     </div>
   );
 };

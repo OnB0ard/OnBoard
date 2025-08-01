@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Button } from '../atoms/Button';
 import './PlanMemoModal.css';
 
-const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '' }) => {
+const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '', dayTitle = '', position = { x: 0, y: 0 } }) => {
   const modalRef = useRef(null);
   const textareaRef = useRef(null);
   const [memoText, setMemoText] = useState(memo);
@@ -22,6 +23,11 @@ const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '' }) =
   // 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // DailyPlanCreate 모달 내부 클릭은 무시
+      if (event.target.closest('.daily-plan-modal')) {
+        return;
+      }
+      
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         onClose();
       }
@@ -47,11 +53,57 @@ const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '' }) =
     onClose();
   };
 
+  // 안전한 위치 계산
+  const getSafePosition = () => {
+    try {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const modalWidth = 350;
+      const modalHeight = 350; // 높이를 더 크게 설정
+      
+      let x = position.x || 100;
+      let y = position.y || 100;
+      
+      // 화면 밖으로 나가지 않도록 조정 (더 큰 여백 적용)
+      x = Math.max(50, Math.min(screenWidth - modalWidth - 50, x));
+      y = Math.max(50, Math.min(screenHeight - modalHeight - 50, y));
+      
+      // 추가 안전장치: 모달이 화면을 벗어나지 않도록 한 번 더 확인
+      if (x + modalWidth > screenWidth - 30) {
+        x = screenWidth - modalWidth - 30;
+      }
+      
+      if (y + modalHeight > screenHeight - 30) {
+        y = screenHeight - modalHeight - 30;
+      }
+      
+      // 최소 위치 보장
+      x = Math.max(50, x);
+      y = Math.max(50, y);
+      
+      return { x, y };
+    } catch (error) {
+      console.error('위치 계산 오류:', error);
+      return { x: 100, y: 100 };
+    }
+  };
+
   if (!isOpen) return null;
+
+  const safePosition = getSafePosition();
 
   return (
     <div className="plan-memo-modal">
-      <div className="plan-memo-modal-content" ref={modalRef}>
+      <div 
+        className="plan-memo-modal-content"
+        ref={modalRef}
+        style={{
+          position: 'fixed',
+          left: `${safePosition.x}px`,
+          top: `${safePosition.y}px`,
+          margin: 0
+        }}
+      >
         <div className="plan-memo-modal-header">
           <h3>메모 추가</h3>
           <button onClick={onClose} className="close-button">✕</button>
@@ -59,6 +111,9 @@ const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '' }) =
         
         <div className="plan-memo-modal-body">
           <div className="place-info">
+            {dayTitle && (
+              <p className="day-title">{dayTitle}</p>
+            )}
             <p className="place-name">{placeName}</p>
           </div>
           
@@ -79,12 +134,25 @@ const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '' }) =
         </div>
         
         <div className="plan-memo-modal-footer">
-          <button onClick={handleCancel} className="cancel-button">
+          <Button 
+            onClick={handleCancel} 
+            background="white"
+            textColor="black"
+            border="gray"
+            size="sm"
+            shape="rounded"
+          >
             취소
-          </button>
-          <button onClick={handleSave} className="save-button">
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            background="dark"
+            textColor="white"
+            size="sm"
+            shape="rounded"
+          >
             저장
-          </button>
+          </Button>
         </div>
       </div>
     </div>

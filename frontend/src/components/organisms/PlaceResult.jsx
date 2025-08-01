@@ -58,15 +58,15 @@ const PlaceResult = ({ onBookmarkClick }) => {
 
         return (
           <div
-            key={place.place_id}
+            key={placeId}
             className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-grab active:cursor-grabbing"
-            onClick={() => handlePlaceSelection(place.place_id)}
+            onClick={() => onPlaceClick && onPlaceClick(place)}
             draggable="true"
             onDragStart={(e) => handleDragStart(e, place)}
           >
             <div className="flex-1 space-y-1">
-              <h3 className="text-base font-bold text-gray-900">{place.name}</h3>
-              {place.rating && (
+              <h3 className="text-base font-bold text-gray-900">{placeName}</h3>
+              {placeRating && (
                 <div className="flex items-center gap-3">
                   <StarRating rating={place.rating} reviewCount={place.user_ratings_total} />
                 </div>
@@ -76,7 +76,8 @@ const PlaceResult = ({ onBookmarkClick }) => {
             </div>
             <div className="flex-shrink-0">
               <PlaceImage
-                imageUrl={imageUrl} // 생성된 URL을 사용
+                imageUrl={imageUrl}
+                isBookmarked={place.isBookmarked}
                 onBookmarkClick={(e) => {
                   e.stopPropagation();
                   onBookmarkClick?.(place);

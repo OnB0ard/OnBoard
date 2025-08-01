@@ -67,7 +67,7 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
           alt={place.name}
           className="place-block-thumbnail"
           onError={(e) => {
-            e.target.src = 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지';
+            e.target.src = 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82';
           }}
         />
       </div>

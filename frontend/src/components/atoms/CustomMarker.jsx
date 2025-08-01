@@ -1,6 +1,8 @@
 import React from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
+import { Bed, Utensils, Coffee, Store, Camera, MapPin } from 'lucide-react';
 import './CustomMarker.css';
+
 const colorPalette = {
   red: '#EA4335',
   yellow: '#FBBC05',
@@ -15,15 +17,31 @@ const colorPalette = {
   default: '#4285F4',
 };
 
+const iconComponents = {
+  accommodation: <Bed size={14} color="white" />,
+  restaurant: <Utensils size={14} color="white" />,
+  cafe: <Coffee size={14} color="white" />,
+  store: <Store size={14} color="white" />,
+  attraction: <Camera size={14} color="white" />,
+  default: '',
+};
 
-
-const CustomMarker = ({ position, onClick, children, color = 'default' }) => {
+const CustomMarker = ({
+  position,
+  onClick,
+  children,
+  color = 'default',
+  type = 'default',
+}) => {
   const pinColor = colorPalette[color] || colorPalette.default;
+  const Icon = iconComponents[type] || iconComponents.default;
 
   return (
     <AdvancedMarker position={position} onClick={onClick}>
       <div className="custom-marker">
-        <div className="pin" style={{ backgroundColor: pinColor }}></div>
+        <div className="pin" style={{ backgroundColor: pinColor }}>
+          {Icon}
+        </div>
         <div className="pin-dot"></div>
         {children && <div className="marker-content">{children}</div>}
       </div>

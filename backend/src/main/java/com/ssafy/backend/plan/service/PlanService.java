@@ -16,6 +16,7 @@ import com.ssafy.backend.plan.repository.PlanRepository;
 import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
+import com.ssafy.backend.user.entity.UserStatus;
 import com.ssafy.backend.user.entity.UserType;
 import com.ssafy.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +69,7 @@ public class PlanService {
                 .user(user)
                 .plan(plan)
                 .userType(UserType.CREATOR)
+                .userStatus(UserStatus.APPROVED)
                 .build();
 
         userPlanRepository.save(userPlan);

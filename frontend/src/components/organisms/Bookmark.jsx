@@ -3,9 +3,11 @@ import React, { useEffect, useRef } from 'react';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import './Bookmark.css';
+import {createPortal} from 'react-dom';
 
 const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBookmarkClick }) => {
   const popupRef = useRef(null);
+  // console.log('🧪 Bookmark 렌더링됨?', isOpen, document.getElementById('modal-root'));
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -26,7 +28,7 @@ const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBook
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="bookmark-popup" ref={popupRef}>
       <div className="bookmark-popup-container">
         <div className="bookmark-popup-header">
@@ -87,7 +89,8 @@ const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBook
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.getElementById('modal-root')
   );
 };
 

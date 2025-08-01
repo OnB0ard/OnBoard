@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import DailyPlaceBlock from './DailyPlaceBlock';
 import BookmarkModal from './BookmarkModal';
 import './DailyPlanCreate.css';
+import {createPortal} from 'react-dom';
 
 const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
   const modalRef = useRef(null);
@@ -196,7 +197,7 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="daily-plan-modal">
       <div className="daily-plan-content" ref={modalRef}>
         <div className="daily-plan-header">
@@ -292,7 +293,8 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
           position={bookmarkModalPosition}
         />
       )}
-    </div>
+    </div>,
+    document.getElementById('modal-root')
   );
 };
 

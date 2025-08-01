@@ -8,6 +8,15 @@ import { BrowserRouter } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore';
 import { setAccessTokenGetter } from '@/apis/apiClient';
 
+//Portal 용 DOM 노드 생성
+const modalRootId = 'modal-root';
+let modalRoot = document.getElementById(modalRootId);
+if(!modalRoot){
+  modalRoot = document.createElement('div');
+  modalRoot.id = modalRootId;
+  document.body.appendChild(modalRoot);
+}
+
 setAccessTokenGetter(() => useAuthStore.getState().accessToken);
 
 createRoot(document.getElementById('root')).render(

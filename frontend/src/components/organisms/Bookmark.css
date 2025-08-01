@@ -1,8 +1,8 @@
 .bookmark-popup {
   position: fixed;
-  top: 80px; /* NavBar 높이만큼 여백 */
+  top: 75px; /* NavBar 높이만큼 여백 */
   left: 70px; /* 사이드바 너비 + 여백 */
-  z-index: 1500;
+  z-index: 3000;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);

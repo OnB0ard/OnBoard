@@ -1,4 +1,3 @@
-// WhiteBoard.jsx
 import React, { useRef, useEffect } from 'react';
 import { Stage, Layer, Line, Arrow, Circle, Rect, Text, Transformer } from 'react-konva';
 import { Html } from 'react-konva-utils';
@@ -27,6 +26,8 @@ const WhiteBoard = () => {
   const startPosRef = useRef(null);
   const isDrawing = useRef(false);
 
+  const isErasing = useRef(false);
+
   const {
     shapes,
     lines,
@@ -43,7 +44,11 @@ const WhiteBoard = () => {
     setSelectedId,
     setIsEditingTextId,
     addLine,
-    updateLastLinePoints
+    updateLastLinePoints,
+    undo,
+    redo,
+    removeShapeById,
+    updateShapesAndSave,
   } = useBoardStore();
 
   // cursor <-> select 변환 처리
@@ -62,6 +67,16 @@ const WhiteBoard = () => {
       trRef.current.nodes([]);
     }
   }, [selectedId, isEditingTextId, internalShapeType]);
+
+  useEffect(() => {
+  if (shapeType === 'undo') {
+    undo();
+    setShapeType('select');
+  } else if (shapeType === 'redo') {
+    redo();
+    setShapeType('select');
+  }
+  }, [shapeType]);
 
   const handleMouseDown = (e) => {
     const pos = stageRef.current.getPointerPosition();
@@ -85,31 +100,61 @@ const WhiteBoard = () => {
       setSelectedId(null);
     }
     startPosRef.current = pos;
+
+    if (internalShapeType === 'eraser') {
+      isErasing.current = true;
+      return;
+    }
+
   };
 
+  const erasedIds = useRef(new Set());
+
   const handleMouseMove = (e) => {
-    if (!isDrawing.current || internalShapeType !== 'pen') return;
+  if (shapeType === 'pen' && isDrawing.current) {
     const point = stageRef.current.getPointerPosition();
     const lastLine = lines[lines.length - 1];
     if (!lastLine) return;
     const updatedPoints = [...lastLine.points, point.x, point.y];
     updateLastLinePoints(updatedPoints);
+  }
+
+  if (shapeType === 'eraser' && isErasing.current) {
+    const pos = stageRef.current.getPointerPosition();
+    const allIds = [...shapes.map(s => s.id), ...lines.map(l => l.id)];
+
+    allIds.forEach(id => {
+      if (erasedIds.current.has(id)) return;
+      const node = stageRef.current.findOne(`#${id}`);
+      if (node && node.intersects({ x: pos.x, y: pos.y })) {
+        erasedIds.current.add(id);
+        removeShapeById(id);
+      }
+    });
+  }
+
   };
 
   const handleMouseUp = () => {
+    if (shapeType === 'eraser') {
+      isErasing.current = false;        // 지우개 멈춤
+      erasedIds.current.clear();        // 지운 ID 초기화
+      return;
+    }
+
     if (internalShapeType === 'pen') {
       isDrawing.current = false;
       const lastLine = lines[lines.length - 1];
       if (!lastLine) return;
       const simplified = simplifyPoints(lastLine.points);
       updateLastLinePoints(simplified);
-      console.log('🖍️ Final Pen JSON:', JSON.stringify({ ...lastLine, points: simplified }, null, 2));
+      // console.log('Final Pen JSON:', JSON.stringify({ ...lastLine, points: simplified }, null, 2));
       return;
     }
 
     const end = stageRef.current.getPointerPosition();
     const start = startPosRef.current;
-    if (!start || !end || internalShapeType === 'select') return;
+    if (!start || !end || internalShapeType === 'select' || internalShapeType === 'eraser') return;
 
     const dx = end.x - start.x;
     const dy = end.y - start.y;
@@ -172,8 +217,9 @@ const WhiteBoard = () => {
             rotation: 0
           };
 
-    addShape(newShape);
-    console.log('📐 New Shape JSON:', JSON.stringify(newShape, null, 2));
+    updateShapesAndSave([...shapes, newShape]);
+
+    console.log('New Shape JSON:', JSON.stringify(newShape, null, 2));
     startPosRef.current = null;
   };
 
@@ -219,7 +265,7 @@ const WhiteBoard = () => {
                   rotation: node.rotation()
                 };
                 updateShapeTransform(id, updated);
-                console.log('🔁 Transformed Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
+                console.log('Transformed Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
               },
               onDragEnd: (e) => {
                 const updated = {
@@ -227,7 +273,7 @@ const WhiteBoard = () => {
                   y: e.target.y()
                 };
                 updateShapeTransform(id, updated);
-                console.log('↔️ Dragged Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
+                console.log('Dragged Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
               }
             };
 
@@ -260,6 +306,11 @@ const WhiteBoard = () => {
                           onKeyDown={(e) => {
                             if(e.key === 'Enter' && !e.shiftKey){
                               e.preventDefault();
+
+                              // 마지막 줄바꿈 제거
+                              const cleanedText = e.target.value.replace(/\n$/, '');
+
+                              updateText(id, cleanedText);
                               setIsEditingTextId(null);
                               printText(id);
                             }

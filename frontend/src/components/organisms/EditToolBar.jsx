@@ -10,7 +10,9 @@ const tools = [
   { iconType: 'rectangle', shapeValue: 'rect' },
   { iconType: 'text', shapeValue: 'text' },
   { iconType: 'line', shapeValue: 'pen' },
-  { iconType: 'eraser', shapeValue: 'eraser',}
+  { iconType: 'eraser', shapeValue: 'eraser'},
+  { iconType: 'undo', shapeValue: 'undo'},
+  { iconType: 'redo', shapeValue: 'redo'},
 ];
 
 const EditToolBar = ({ shapeType, setShapeType, color, setColor }) => {

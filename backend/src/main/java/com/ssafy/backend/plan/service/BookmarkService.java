@@ -2,6 +2,9 @@ package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
 import com.ssafy.backend.place.entity.Place;
+import com.ssafy.backend.plan.dto.response.BookmarkDTO;
+import com.ssafy.backend.plan.dto.response.BookmarkListResponseDTO;
+import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.entity.Bookmark;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
@@ -9,16 +12,17 @@ import com.ssafy.backend.plan.repository.BookmarkRepository;
 import com.ssafy.backend.place.repository.PlaceRepository;
 import com.ssafy.backend.plan.repository.PlanRepository;
 import com.ssafy.backend.plan.repository.UserPlanRepository;
-import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
 import com.ssafy.backend.user.entity.UserStatus;
+import com.ssafy.backend.user.entity.UserType;
 import com.ssafy.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.print.Book;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +77,37 @@ public class BookmarkService {
 
         bookmarkRepository.save(bookmark);
         return true;
+    }
+
+    public BookmarkListResponseDTO showBookmark(Long planId, Long userId) {
+        Plan plan = validatePlanExistence(planId);
+        User user = validateUserExistence(userId);
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+
+        List<Bookmark> bookmarks = bookmarkRepository.findBookmarksByPlanId(planId);
+
+        List<BookmarkDTO> bookmarkDTOs = bookmarks.stream()
+                .map(bookmark -> {
+                    Place place = bookmark.getPlace();
+                    return new BookmarkDTO(
+                            place.getPlaceId(),
+                            place.getPlaceName(),
+                            place.getLatitude(),
+                            place.getLongitude(),
+                            place.getAddress(),
+                            place.getRating(),
+                            place.getImageUrl());
+                }).toList();
+
+        return BookmarkListResponseDTO.builder()
+                .bookmarkList(bookmarkDTOs)
+                .build();
     }
 
     @Transactional

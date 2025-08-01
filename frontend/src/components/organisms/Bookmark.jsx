@@ -4,6 +4,7 @@ import useMapStore from '../../store/useMapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import './Bookmark.css';
+import {createPortal} from 'react-dom';
 
 const Bookmark = ({ isOpen, onClose, onPlaceClick }) => {
   const popupRef = useRef(null);
@@ -28,7 +29,7 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="bookmark-popup" ref={popupRef}>
       <div className="bookmark-popup-container">
         <div className="bookmark-popup-header">
@@ -80,7 +81,8 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.getElementById('modal-root')
   );
 };
 

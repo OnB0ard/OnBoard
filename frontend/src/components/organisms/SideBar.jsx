@@ -76,8 +76,6 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
           <Icon type="map" />
         </button>
       </div>
-  
-
 
       {/* 검색 모달 */}
       <APIProvider apiKey={apiKey}>
@@ -85,14 +83,13 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
           isOpen={isSearchModalOpen} 
           onClose={() => setIsSearchModalOpen(false)}
         />
-      </APIProvider>
-
-      {/* 북마크 모달 */}
+        {/* 북마크 모달 */}
       <Bookmark 
         isOpen={isBookmarkModalOpen} 
         onClose={() => setIsBookmarkModalOpen(false)}
         bookmarkedPlaces={bookmarkedPlaces}
       />
+      </APIProvider>
 
       {/* 일정 추가 모달 */}
       <DailyPlanCreate 

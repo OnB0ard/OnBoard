@@ -140,16 +140,20 @@ const Plan = () => {
       onDrop={handleDrop}
       style={{ 
         position: 'relative', 
+        overflow: 'visible',
+        top:'50px',
         width: '100vw', 
         height: '100vh',
         backgroundColor: isDragOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         transition: 'background-color 0.2s ease',
         cursor: draggedBlockId ? 'grabbing' : 'default'
       }}
     >
       <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
       <WhiteBoard />
-      <EditToolBar />
+      {/* <EditToolBar /> */}
       {isMapVisible && (
         <APIProvider apiKey={apiKey}>
           <Map>

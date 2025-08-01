@@ -6,6 +6,7 @@ import PlaceResult from './PlaceResult';
 import PlaceDetailModal from './PlaceDetailModal';
 import useMapStore from '../../store/useMapStore';
 import './AutocompleteSearchModal.css';
+import {createPortal} from 'react-dom';
 
 /**
  * Google 지도 장소 검색 및 자동완성 기능을 제공하는 모달 컴포넌트입니다.
@@ -142,7 +143,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="autocomplete-search-overlay">
       <div className="autocomplete-search-modal" ref={modalRef}>
         <div className="autocomplete-search-header">

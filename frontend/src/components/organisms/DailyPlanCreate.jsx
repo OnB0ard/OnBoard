@@ -4,6 +4,7 @@ import BookmarkModal from './BookmarkModal';
 import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
 import './DailyPlanCreate.css';
+import {createPortal} from 'react-dom';
 
 const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
   const modalRef = useRef(null);
@@ -240,7 +241,7 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="daily-plan-modal">
       <div className="daily-plan-content" ref={modalRef}>
         <div className="daily-plan-header">

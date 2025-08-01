@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import DailyPlaceBlock from './DailyPlaceBlock';
 import BookmarkModal from './BookmarkModal';
+import PlanMemoModal from './PlanMemoModal';
+import { Button } from '../atoms/Button';
 import './DailyPlanCreate.css';
 import {createPortal} from 'react-dom';
 
@@ -13,6 +15,15 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
   const [draggedFromDay, setDraggedFromDay] = useState(null);
   const [draggedFromIndex, setDraggedFromIndex] = useState(null);
   const [bookmarkModalPosition, setBookmarkModalPosition] = useState({ x: 0, y: 0 });
+  
+  // 메모 모달 상태 관리
+  const [showMemoModal, setShowMemoModal] = useState(false);
+  const [memoModalData, setMemoModalData] = useState({
+    place: null,
+    dayTitle: '',
+    memo: '',
+    position: { x: 0, y: 0 }
+  });
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -21,7 +32,8 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
       if (event.target.closest('.place-block') || 
           event.target.closest('.daily-plan-block') ||
           event.target.closest('.places-container') ||
-          event.target.closest('.bookmark-modal')) { // 북마크 모달 클릭도 무시
+          event.target.closest('.bookmark-modal') ||
+          event.target.closest('.plan-memo-modal')) { // 메모 모달 클릭도 무시
         return;
       }
       
@@ -39,10 +51,11 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
     };
   }, [isOpen, onClose]);
 
-  // DailyPlanCreate 모달이 닫힐 때 BookmarkModal도 함께 닫기
+  // DailyPlanCreate 모달이 닫힐 때 다른 모달들도 함께 닫기
   useEffect(() => {
     if (!isOpen) {
       setShowBookmarkModal(false);
+      setShowMemoModal(false);
       setSelectedDayIndex(null);
     }
   }, [isOpen]);
@@ -91,6 +104,9 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
   const handleDropFromWhiteboard = (e, dayIndex) => {
     e.preventDefault();
     console.log('DailyPlanCreate 드롭 이벤트 발생, 일정:', dayIndex + 1);
+    
+    // 메모 모달 닫기
+    setShowMemoModal(false);
     
     try {
       const placeData = e.dataTransfer.getData('text/plain');
@@ -195,6 +211,34 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
     ));
   };
 
+  // 메모 모달 열기
+  const handleOpenMemoModal = (place, dayTitle, position) => {
+    // 북마크 모달 닫기
+    setShowBookmarkModal(false);
+    setSelectedDayIndex(null);
+    
+    setMemoModalData({
+      place,
+      dayTitle,
+      memo: place.memo || '',
+      position
+    });
+    setShowMemoModal(true);
+  };
+
+  // 메모 저장
+  const handleMemoSave = (memo) => {
+    const { place, dayTitle } = memoModalData;
+    const dayIndex = dailyPlans.findIndex(day => day.title === dayTitle);
+    const placeIndex = dailyPlans[dayIndex]?.places.findIndex(p => p.id === place.id);
+    
+    if (dayIndex !== -1 && placeIndex !== -1) {
+      updatePlaceMemo(dayIndex, placeIndex, memo);
+    }
+    
+    setShowMemoModal(false);
+  };
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -244,38 +288,52 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
                       onRemove={() => removePlace(dayIndex, placeIndex)}
                       onEdit={() => {}}
                       onMemoUpdate={(placeId, memo) => updatePlaceMemo(dayIndex, placeIndex, memo)}
+                      dayTitle={day.title}
+                      onOpenMemoModal={handleOpenMemoModal}
                     />
                   </div>
                 ))}
                 
-                <button 
+                <Button 
                   className="add-place-button"
                   onClick={(e) => {
+                    // 메모 모달이 열려있으면 북마크 모달 열지 않음
+                    if (showMemoModal) {
+                      return;
+                    }
+                    
                     // 클릭한 + 버튼의 위치 계산
                     const rect = e.currentTarget.getBoundingClientRect();
+                    console.log('+ 버튼 위치:', rect);
                     
-                    // + 버튼 오른쪽에 북마크 모달 위치 설정
-                    setBookmarkModalPosition({ 
-                      x: rect.right + 10, // + 버튼 오른쪽에서 10px 떨어진 위치
-                      y: rect.top // + 버튼과 같은 높이
-                    });
+                    // 일정짜기 모달 기준으로 북마크 모달 위치 설정 (메모 모달과 같은 간격)
+                    const dailyPlanLeft = 70;
+                    const dailyPlanWidth = 330;
+                    const dailyPlanRight = dailyPlanLeft + dailyPlanWidth;
                     
+                    const modalPosition = { 
+                      x: dailyPlanRight + 10, // 일정짜기 모달 오른쪽에서 10px 떨어진 위치 (메모 모달과 동일)
+                      y: 90 // 일정짜기 모달과 같은 top 위치
+                    };
+                    console.log('북마크 모달 위치:', modalPosition);
+                    
+                    setBookmarkModalPosition(modalPosition);
                     setSelectedDayIndex(dayIndex);
                     setShowBookmarkModal(true);
                   }}
                 >
                   +
-                </button>
+                </Button>
               </div>
             </div>
           ))}
           
-          <button 
+          <Button 
             className="add-day-button"
             onClick={addDailyPlan}
           >
             + 일정 추가
-          </button>
+          </Button>
         </div>
       </div>
       
@@ -293,8 +351,20 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [] }) => {
           position={bookmarkModalPosition}
         />
       )}
-    </div>,
-    document.getElementById('modal-root')
+
+      {/* 메모 모달 */}
+      {showMemoModal && (
+        <PlanMemoModal
+          isOpen={showMemoModal}
+          onClose={() => setShowMemoModal(false)}
+          memo={memoModalData.memo}
+          onSave={handleMemoSave}
+          placeName={memoModalData.place.name}
+          dayTitle={memoModalData.dayTitle}
+          position={memoModalData.position}
+        />
+      )}
+    </div>
   );
 };
 

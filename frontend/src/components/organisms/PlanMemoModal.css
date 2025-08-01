@@ -4,32 +4,48 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 1600; /* DailyPlanCreate(1500)보다 높게 */
+  pointer-events: none; /* 배경 클릭을 통과시킴 */
 }
 
 .plan-memo-modal-content {
   background-color: white;
   border-radius: 12px;
-  width: 400px;
-  max-width: 90vw;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  width: 300px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e5e7eb;
   overflow: hidden;
+  pointer-events: auto; /* 모달 내용은 클릭 가능 */
+  position: relative;
+  /* 부드러운 애니메이션 */
+  animation: slideInFromSidebar 0.3s ease-out;
+  transform-origin: top left;
 }
+
+@keyframes slideInFromSidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 
 .plan-memo-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 16px; /* 16px 20px에서 8px 16px로 줄임 */
+  border-bottom: 1px solid #f3f4f6;
+  background-color: #f9fafb;
+  border-radius: 8px 8px 0 0;
 }
 
 .plan-memo-modal-header h3 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #111827;
   margin: 0;
@@ -47,26 +63,38 @@
 }
 
 .close-button:hover {
-  background-color: #f3f4f6;
+  background-color: #e5e7eb;
   color: #374151;
 }
 
 .plan-memo-modal-body {
-  padding: 20px;
+  padding: 16px;
 }
 
 .place-info {
   margin-bottom: 16px;
 }
 
+.day-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #595959;
+  margin: 0 0 4px 0;
+  padding: 4px 8px;
+  background-color: #E1EAFD;
+  border-radius: 4px;
+  display: inline-block;
+}
+
 .place-name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #374151;
   margin: 0;
   padding: 8px 12px;
   background-color: #f9fafb;
   border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
 .memo-input-container {
@@ -78,7 +106,7 @@
   padding: 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.5;
   resize: vertical;
   min-height: 100px;
@@ -88,7 +116,7 @@
 
 .memo-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #6b7280;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -112,8 +140,16 @@
   background-color: #f9fafb;
 }
 
+/* Button 컴포넌트 크기 조절을 위한 CSS */
+.plan-memo-modal-footer button {
+  min-width: 60px; /* 최소 너비 설정 */
+  height: 32px; /* 높이 설정 */
+  font-size: 12px; /* 폰트 크기 조절 */
+  padding: 6px 12px; /* 패딩 조절 */
+}
+
 .cancel-button {
-  background: none;
+  background-color: white;
   border: 1px solid #d1d5db;
   color: #374151;
   padding: 8px 16px;
@@ -124,7 +160,7 @@
 }
 
 .cancel-button:hover {
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
   border-color: #9ca3af;
 }
 

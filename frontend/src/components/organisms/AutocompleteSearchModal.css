@@ -157,8 +157,8 @@
 .autocomplete-predictions-list {
   position: absolute;
   top: 100%; /* 검색창 바로 아래에 위치 */
-  left: 0;
-  right: 0;
+  left: -1px; /* 왼쪽으로 16px 이동 */
+  right: 0px;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-top: none;
@@ -166,9 +166,10 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   list-style-type: none;
   padding: 8px 0;
-  margin: 0 16px; /* SearchBar의 padding과 맞춤 */
+  margin: 0; /* margin 제거 */
   z-index: 10;
   max-height: 250px;
+  width: 330px;
   overflow-y: auto;
 }
 
@@ -178,6 +179,8 @@
   padding: 10px 16px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  pointer-events: auto;
+  user-select: none;
 }
 
 .autocomplete-predictions-list li:hover {

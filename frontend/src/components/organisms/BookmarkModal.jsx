@@ -1,9 +1,12 @@
 import React, { useRef, useEffect } from 'react';
-import PlaceBlock from './PlaceBlock';
+import useMapStore from '../../store/useMapStore';
+import StarRating from '../atoms/StarRating';
+import PlaceImage from '../atoms/PlaceImage';
 import './BookmarkModal.css';
 
-const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, position = { x: 0, y: 0 } }) => {
+const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 } }) => {
   const modalRef = useRef(null);
+  const { bookmarkedPlaces } = useMapStore();
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -33,6 +36,28 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
     }
   };
 
+  // 안전한 위치 계산
+  const getSafePosition = () => {
+    try {
+      // 일정짜기 모달의 위치와 크기를 기준으로 북마크 모달 위치 계산
+      // 일정짜기 모달은 left: 70px, width: 330px, top: 90px
+      const dailyPlanLeft = 70;
+      const dailyPlanWidth = 330;
+      const dailyPlanRight = dailyPlanLeft + dailyPlanWidth;
+      const dailyPlanTop = 90; // 일정짜기 모달과 같은 top 위치
+      
+      // 북마크 모달을 일정짜기 모달 오른쪽에 배치
+      const x = dailyPlanRight + 20; // 일정짜기 모달 오른쪽에서 20px 떨어진 위치
+      const y = dailyPlanTop; // 일정짜기 모달과 같은 top 위치
+      
+      console.log('북마크 모달 고정 위치:', { x, y });
+      return { x, y };
+    } catch (error) {
+      console.error('북마크 모달 위치 계산 오류:', error);
+      return { x: 420, y: 90 };
+    }
+  };
+
   // 북마크 모달만 닫는 함수
   const handleCloseBookmarkModal = (e) => {
     if (e) {
@@ -55,6 +80,8 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
 
   if (!isOpen) return null;
 
+  const safePosition = getSafePosition();
+
   return (
     <div className="bookmark-modal">
       <div 
@@ -62,8 +89,8 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
         ref={modalRef}
         style={{
           position: 'fixed',
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+          left: `${safePosition.x}px`,
+          top: `${safePosition.y}px`,
           margin: 0
         }}
       >
@@ -87,16 +114,38 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
           ) : (
             <div className="bookmark-list">
               {bookmarkedPlaces.map((place) => (
-                <div
-                  key={place.id}
+                <div 
+                  key={place.place_id} 
                   className="bookmark-item"
                   onClick={() => handlePlaceClick(place)}
                 >
-                  <PlaceBlock
-                    place={place}
-                    onRemove={() => {}} // 북마크 모달에서는 삭제 기능 없음
-                    onEdit={() => {}}
-                  />
+                  {/* 왼쪽: 텍스트 정보 */}
+                  <div className="bookmark-item-content">
+                    {/* 제목 */}
+                    <h3 className="bookmark-item-title">{place.name}</h3>
+                    
+                    {/* 별점, 리뷰 수 */}
+                    <div className="bookmark-item-rating">
+                      <StarRating rating={place.rating} />
+                    </div>
+                    
+                    
+                    {/* 주소 */}
+                    <p className="bookmark-item-address">{place.formatted_address}</p>
+                    
+                  </div>
+                  
+                  {/* 오른쪽: 이미지 */}
+                  <div className="bookmark-item-image">
+                    <PlaceImage 
+                      imageUrl={place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
+                      isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
+                      onBookmarkClick={(e) => {
+                        e.stopPropagation();
+                        // 북마크 토글 기능은 여기서는 비활성화
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

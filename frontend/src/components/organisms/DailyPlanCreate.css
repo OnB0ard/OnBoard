@@ -1,6 +1,6 @@
 .daily-plan-modal {
   position: fixed;
-  top: 90px; /* NavBar 높이만큼 여백 */
+  top: 100px; /* NavBar 높이만큼 여백 */
   left: 70px; /* 사이드바 너비 + 여백 */
   z-index: 1500;
   background-color: white;
@@ -9,7 +9,7 @@
   border: 1px solid #e5e7eb;
   min-width: 300px;
   max-width: 330px;
-  max-height: calc(100vh - 100px); /* 화면 높이에서 여백 제외 */
+  max-height: calc(100vh - 150px); /* 화면 높이에서 여백 제외 */
   display: flex;
   flex-direction: column;
   /* 사이드바와 연결되는 화살표 효과 */
@@ -34,7 +34,7 @@
 .daily-plan-modal::before {
   content: '';
   position: absolute;
-  top: 120px; /* + 아이콘 위치에 맞춤 */
+  top: 110px; /* + 아이콘 위치에 맞춤 */
   left: -8px;
   width: 0;
   height: 0;
@@ -48,7 +48,7 @@
 .daily-plan-modal::after {
   content: '';
   position: absolute;
-  top: 120px; /* + 아이콘 위치에 맞춤 */
+  top: 110px; /* + 아이콘 위치에 맞춤 */
   left: -9px;
   width: 0;
   height: 0;
@@ -69,7 +69,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px 8px 16px; /* 패딩 줄임 */
   border-bottom: 1px solid #f3f4f6;
   background-color: #f9fafb;
   border-radius: 8px 8px 0 0;
@@ -77,7 +77,7 @@
 }
 
 .daily-plan-header h2 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
   margin: 0;
@@ -120,15 +120,15 @@
 }
 
 .daily-plan-block.drag-over {
-  border-color: #3b82f6;
-  background-color: #dbeafe;
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .daily-plan-block.drag-over .places-container {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
+  border-color: #d1d5db;
+  background-color: white;
 }
 
 .day-header {
@@ -139,7 +139,7 @@
 }
 
 .day-title-input {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #111827;
   background: none;
@@ -159,12 +159,13 @@
   background-color: #ef4444;
   color: white;
   border: none;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap; /* 텍스트가 한 줄로만 나오도록 */
 }
 
 .remove-day-button:hover {
@@ -219,8 +220,8 @@
 }
 
 .add-day-button {
-  background-color: #3b82f6;
-  color: white;
+  background-color: #E1EAFD;
+  color: #3F4756;
   border: none;
   border-radius: 8px;
   padding: 12px 16px;
@@ -234,14 +235,14 @@
 }
 
 .add-day-button:hover {
-  background-color: #2563eb;
+  background-color: #88acf9;
   transform: translateY(-1px);
 }
 
 /* 드롭 영역 스타일 */
 .places-container.drag-over {
-  border-color: #3b82f6;
-  background-color: #dbeafe;
+  border-color: #d1d5db;
+  background-color: white;
 }
 
 /* 스크롤바 스타일 */

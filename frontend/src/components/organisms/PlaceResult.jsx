@@ -1,12 +1,12 @@
 // 장소 검색 후 나올 결과 리스트 
-// 장소 검색 후 나올 결과 리스트 
+
 import React, { useRef, useEffect, useCallback } from 'react';
 import useMapStore from '../../store/useMapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
-const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
+const PlaceResult = ({ onBookmarkClick }) => {
   const { 
     searchResults, 
     isSearching, 
@@ -18,6 +18,13 @@ const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
   } = useMapStore();
 
   const loader = useRef(null);
+
+  // 드래그 시작 시, 장소의 place_id만 데이터로 전달합니다.
+  const handleDragStart = (e, place) => {
+    // place_id만 포함된 간단한 JSON 객체를 전달합니다.
+    e.dataTransfer.setData('application/json', JSON.stringify({ placeId: place.place_id }));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
 
   const handleObserver = useCallback((entries) => {
     const target = entries[0];
@@ -37,21 +44,6 @@ const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
     return () => observer.disconnect();
   }, [handleObserver]);
 
-  const handleDragStart = (e, place, imageUrl) => {
-    const simplifiedPlace = {
-      place_id: place.place_id,
-      name: place.name,
-      formatted_address: place.formatted_address,
-      rating: place.rating,
-      imageUrl, // getUrl()로 생성된 실제 URL을 전달
-    };
-    e.dataTransfer.setData('text/plain', JSON.stringify(simplifiedPlace));
-    e.dataTransfer.effectAllowed = 'copy';
-    if (onDragStart) {
-      onDragStart(e, place);
-    }
-  };
-
   // isSearching은 최초 검색에만 사용하고, 이후에는 isLoadingMore로 추가 로딩을 표시
   if (isSearching && searchResults.length === 0) {
     return <div className="p-4 text-center">검색 중...</div>;
@@ -60,44 +52,32 @@ const PlaceResult = ({ onBookmarkClick, onDragStart }) => {
   return (
     <div className="space-y-2">
       {searchResults.filter(Boolean).map((place) => {
-        // getUrl()을 호출하여 실제 이미지 URL을 가져옵니다.
         const imageUrl = place.photos && place.photos[0]
           ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 })
           : 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82';
 
         return (
           <div
-            key={place.place_id}
+            key={placeId}
             className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-grab active:cursor-grabbing"
-            onClick={() => handlePlaceSelection(place.place_id)}
+            onClick={() => onPlaceClick && onPlaceClick(place)}
             draggable="true"
-            onDragStart={(e) => handleDragStart(e, place, imageUrl)}
+            onDragStart={(e) => handleDragStart(e, place)}
           >
             <div className="flex-1 space-y-1">
-              <h3 className="text-base font-bold text-gray-900">{place.name}</h3>
-              {place.rating && (
+              <h3 className="text-base font-bold text-gray-900">{placeName}</h3>
+              {placeRating && (
                 <div className="flex items-center gap-3">
-                  <StarRating rating={place.rating} />
+                  <StarRating rating={place.rating} reviewCount={place.user_ratings_total} />
                 </div>
               )}
-              {Array.isArray(place.types) && <p className="text-xs text-gray-600">{place.types.join(', ')}</p>}
+              {place.primaryCategory && <p className="text-xs text-gray-600">{place.primaryCategory}</p>}
               <p className="text-sm text-gray-500">{place.formatted_address}</p>
-              {/* 선택된 장소와 현재 장소가 일치하고, 웹사이트 정보가 있을 경우에만 표시 */}
-              {selectedPlace && selectedPlace.id === place.place_id && selectedPlace.websiteURI && (
-                <a 
-                  href={selectedPlace.websiteURI} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-sm text-blue-500 hover:underline mt-1 block truncate"
-                  onClick={(e) => e.stopPropagation()} // 클릭 이벤트가 부모로 전파되는 것을 방지
-                >
-                  {selectedPlace.websiteURI}
-                </a>
-              )}
             </div>
             <div className="flex-shrink-0">
               <PlaceImage
-                imageUrl={imageUrl} // 생성된 URL을 사용
+                imageUrl={imageUrl}
+                isBookmarked={place.isBookmarked}
                 onBookmarkClick={(e) => {
                   e.stopPropagation();
                   onBookmarkClick?.(place);

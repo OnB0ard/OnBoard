@@ -1,13 +1,14 @@
 // 북마크 모음집 
 import React, { useEffect, useRef } from 'react';
+import useMapStore from '../../store/useMapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import './Bookmark.css';
 import {createPortal} from 'react-dom';
 
-const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBookmarkClick }) => {
+const Bookmark = ({ isOpen, onClose, onPlaceClick }) => {
   const popupRef = useRef(null);
-  // console.log('🧪 Bookmark 렌더링됨?', isOpen, document.getElementById('modal-root'));
+  const { bookmarkedPlaces, toggleBookmark } = useMapStore();
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -41,45 +42,36 @@ const Bookmark = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceClick, onBook
               <p>저장된 장소가 없습니다.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="bookmark-list">
               {bookmarkedPlaces.map((place) => (
                 <div 
                   key={place.id} 
-                  className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer"
+                  className="bookmark-item"
                   onClick={() => onPlaceClick?.(place)}
                 >
                   {/* 왼쪽: 텍스트 정보 */}
-                  <div className="flex-1 space-y-1">
+                  <div className="bookmark-item-content">
                     {/* 제목 */}
-                    <h3 className="text-base font-bold text-gray-900">{place.name}</h3>
+                    <h3 className="bookmark-item-title">{place.name}</h3>
                     
-                    {/* 별점, 리뷰 수, 가격대 */}
-                    <div className="flex items-center gap-3">
+                    {/* 별점, 리뷰 수, */}
+                    <div className="bookmark-item-rating">
                       <StarRating rating={place.rating} reviewCount={place.reviewCount} />
-                      {place.priceRange && (
-                        <span className="text-xs text-gray-600">{place.priceRange}</span>
-                      )}
                     </div>
                     
-                    {/* 종류 */}
-                    <p className="text-xs text-gray-600">{place.category}</p>
                     
                     {/* 주소 */}
-                    <p className="text-xs text-gray-500">{place.address}</p>
-                    
-                    {/* 영업 시간 */}
-                    <p className="text-xs text-green-600 font-medium">{place.operatingHours}</p>
-                    
+                    <p className="bookmark-item-address">{place.formatted_address}</p>
                   </div>
                   
                   {/* 오른쪽: 이미지 */}
-                  <div className="flex-shrink-0">
+                  <div className="bookmark-item-image">
                     <PlaceImage 
-                      imageUrl={place.imageUrl}
+                      imageUrl={place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
-                        onBookmarkClick?.(place);
+                        toggleBookmark(place);
                       }}
                     />
                   </div>

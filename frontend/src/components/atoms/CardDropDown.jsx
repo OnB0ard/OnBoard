@@ -1,71 +1,78 @@
-import React, { useState } from "react"
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
-import { MoreVertical } from "lucide-react"
-import { Button } from "../ui/button"
+import React, { useState, useRef, useEffect } from 'react';
+import './CardDropDown.css';
 
-// cardData prop을 받아서 onEdit, onDelete에 넘김
-const CardDropdown = ({ cardData, onEdit, onDelete }) => {
-  const [open, setOpen] = useState(false)
+const CardDropDown = ({ children, items }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const handleEdit = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    console.log('CardDropdown에서 수정 버튼 클릭됨!', cardData)
-    setOpen(false) // 드롭다운 닫기
-    if (onEdit) {
-      onEdit(cardData)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // 드롭다운이 열렸을 때 부모 요소의 호버 효과 방지
+  useEffect(() => {
+    if (isOpen) {
+      // 부모 블록에 클래스 추가
+      const parentBlock = dropdownRef.current?.closest('.daily-place-block');
+      if (parentBlock) {
+        parentBlock.classList.add('dropdown-open');
+      }
+    } else {
+      // 부모 블록에서 클래스 제거
+      const parentBlock = dropdownRef.current?.closest('.daily-place-block');
+      if (parentBlock) {
+        parentBlock.classList.remove('dropdown-open');
+      }
     }
-  }
+  }, [isOpen]);
 
-  const handleDelete = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    console.log('CardDropdown에서 삭제 버튼 클릭됨!', cardData)
-    setOpen(false) // 드롭다운 닫기
-    if (onDelete) {
-      onDelete(cardData)
+  const handleItemClick = (item) => {
+    if (item.onClick) {
+      item.onClick();
     }
-  }
-
-  const handleDropdownClick = (e) => {
-    e.stopPropagation()
-  }
+    setIsOpen(false);
+  };
 
   return (
-    <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-      <DropdownMenu.Trigger asChild>
-        <Button 
-          variant="ghost" 
-          className="p-1 rounded-full hover:bg-gray-100 transition min-w-0 w-auto h-auto"
-          onClick={handleDropdownClick}
-        >
-          <MoreVertical className="w-5 h-5 text-gray-600" />
-        </Button>
-      </DropdownMenu.Trigger>
+    <div className="card-dropdown" ref={dropdownRef}>
+      <button
+        className="card-dropdown-trigger"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+      >
+        {children}
+      </button>
+      
+      {isOpen && (
+        <div className="card-dropdown-menu">
+          {items.map((item, index) => (
+            <button
+              key={index}
+              className={`card-dropdown-item ${item.className || ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleItemClick(item);
+              }}
+            >
+              {item.icon && <span className="dropdown-item-icon">{item.icon}</span>}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          sideOffset={4}
-          className="z-50 min-w-[8rem] rounded-md border bg-white p-1 shadow-lg"
-        >
-          <DropdownMenu.Item
-            className="w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-            onSelect={handleEdit}
-            onClick={handleEdit}
-          >
-            수정
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className="w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
-            onSelect={handleDelete}
-            onClick={handleDelete}
-          >
-            삭제
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  )
-}
-
-export default CardDropdown
+export default CardDropDown;

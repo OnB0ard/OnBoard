@@ -3,88 +3,56 @@ import Icon from "../atoms/Icon";
 import SearchBar from "./SearchBar";
 import PlaceResult from "./PlaceResult";
 import Bookmark from "./Bookmark";
+import PlaceDetailModal from "./PlaceDetailModal";
+import useMapStore from "../../store/useMapStore";
 import "./SearchPlace.css";
-
-// 임시 검색 결과 데이터를 컴포넌트 외부로 이동
-const sampleSearchResults = [
-  {
-    id: 1,
-    name: "한옥집 김치찜",
-    rating: 4.0,
-    reviewCount: 3,
-    category: "한식",
-    address: "논현로85길 5-13",
-    operatingHours: "오후 9:00에 영업 종료",
-    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
-    priceRange: "₩10,000~20,000"
-  },
-  {
-    id: 2,
-    name: "뉴욕김치찌개",
-    rating: 4.0,
-    reviewCount: 59,
-    category: "음식점",
-    address: "역삼동 825-20번지 강남역센트럴푸르지오시티 강남구 서울특별시 KR",
-    operatingHours: "오후 9:30에 영업 종료",
-    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
-    priceRange: "₩10,000~20,000"
-  },
-  {
-    id: 3,
-    name: "장꼬방 묵은 김치찌개 전문",
-    rating: 4.3,
-    reviewCount: 850,
-    category: "한식",
-    address: "효령로 364",
-    operatingHours: "오후 10:00에 영업 종료",
-    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
-    priceRange: "₩10,000~20,000"
-  },
-  {
-    id: 4,
-    name: "한옥집김치찜 GFC몰점",
-    rating: 4.3,
-    reviewCount: 8,
-    category: "한식",
-    address: "역삼1동 테헤란로 152 지하1층",
-    operatingHours: "오후 9:00에 영업 종료",
-    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
-    priceRange: "₩10,000~20,000"
-  },
-  {
-    id: 5,
-    name: "N서울타워",
-    rating: 4.5,
-    reviewCount: 1250,
-    category: "관광지",
-    address: "서울특별시 용산구 남산공원길 105",
-    operatingHours: "오후 11:00에 영업 종료",
-    imageUrl: "https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp",
-    priceRange: "₩15,000~25,000"
-  }
-];
 
 const SearchPlace = ({ isOpen, onClose }) => {
   const popupRef = useRef(null);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [bookmarkedPlaces, setBookmarkedPlaces] = useState(new Set());
+  
+  // useMapStore에서 북마크 관련 함수 가져오기
+  const { toggleBookmark, isBookmarked } = useMapStore();
+  
+  // PlaceDetailModal 상태 관리
+  const [showPlaceDetail, setShowPlaceDetail] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [placeDetailPosition, setPlaceDetailPosition] = useState({ x: 0, y: 0 });
 
   // 외부 클릭 감지 및 검색창 열기/닫기 시 초기화
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
-        onClose();
+      // PlaceDetailModal 영역 클릭 시 검색 모달 닫지 않음
+      if (event.target.closest('.place-detail-modal')) {
+        return;
       }
+      
+      // 검색 모달 내부 클릭 시 닫지 않음
+      if (popupRef.current && popupRef.current.contains(event.target)) {
+        return;
+      }
+      
+      // 검색 모달 자체를 클릭한 경우 닫지 않음
+      if (event.target.closest('.search-popup')) {
+        return;
+      }
+      
+      // 검색바나 검색 결과 영역 클릭 시 닫지 않음
+      if (event.target.closest('.search-popup-searchbar') || event.target.closest('.search-popup-results')) {
+        return;
+      }
+      
+      // 그 외의 경우에만 모달 닫기
+      onClose();
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
-      // 검색창이 닫힐 때 검색 결과와 북마크 상태 초기화
+      // 검색창이 닫힐 때 검색 결과 초기화
       setSearchResults([]);
-      setBookmarkedPlaces(new Set());
       setHasSearched(false);
     }
 
@@ -93,29 +61,44 @@ const SearchPlace = ({ isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  // 검색어 나중에 다른 변수로 바꾸기
+  // 검색 처리
   const handleSearch = (searchTerm) => {
     console.log("검색어:", searchTerm);
     setIsSearching(true);
     setHasSearched(true);
     
-    // 임시 검색 결과 반환 (검색어가 포함된 장소들만 필터링)
+    // 실제 검색 로직은 나중에 구현
     setTimeout(() => {
-      const filteredResults = sampleSearchResults.filter(place => 
-        place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        place.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setSearchResults(filteredResults);
+      setSearchResults([]); // 임시로 빈 결과
       setIsSearching(false);
     }, 500);
   };
 
   const handleSearchModalClose = () => {
     setSearchResults([]); // 검색 결과 초기화
-    setBookmarkedPlaces(new Set()); // 북마크 상태도 초기화
     setHasSearched(false); // 검색 시도 상태 초기화
+    setShowPlaceDetail(false); // PlaceDetailModal 닫기
     onClose();
   }
+
+  // 장소 상세보기 모달 열기
+  const handlePlaceClick = (place) => {
+    console.log("선택된 장소:", place);
+    
+    // 검색 모달의 위치를 기준으로 PlaceDetailModal 위치 계산
+    const searchModalLeft = 70; // 검색 모달의 left 위치
+    const searchModalWidth = 330; // 검색 모달의 원래 너비 (max-width)
+    const searchModalRight = searchModalLeft + searchModalWidth;
+    
+    const position = { 
+      x: searchModalRight + 5, // 검색 모달 오른쪽에서 5px 떨어진 위치
+      y: 80 // 검색 모달과 같은 top 위치
+    };
+    
+    setPlaceDetailPosition(position);
+    setSelectedPlace(place);
+    setShowPlaceDetail(true);
+  };
 
   if (!isOpen) return null;
 
@@ -123,7 +106,7 @@ const SearchPlace = ({ isOpen, onClose }) => {
     <div className="search-popup" ref={popupRef}>
       <div className="search-popup-container">
         {/* 검색바 */}
-        <div className="search-popup-searchbar">
+        <div className="search-popup-searchbar" onClick={(e) => e.stopPropagation()}>
           <SearchBar 
             type="mapsearch" 
             onSearch={handleSearch}
@@ -131,7 +114,8 @@ const SearchPlace = ({ isOpen, onClose }) => {
         </div>
 
         {/* 검색 결과 영역 */}
-        <div className="search-popup-results">
+        <div className="search-popup-results" onClick={(e) => e.stopPropagation()}>
+          {console.log('Search state:', { isSearching, hasSearched, resultsLength: searchResults.length })}
           {isSearching ? (
             <div className="search-loading">
               <p>검색 중...</p>
@@ -141,23 +125,12 @@ const SearchPlace = ({ isOpen, onClose }) => {
               <PlaceResult 
                 places={searchResults.map(place => ({
                   ...place,
-                  isBookmarked: bookmarkedPlaces.has(place.id)
+                  isBookmarked: isBookmarked(place.place_id)
                 }))}
-                onPlaceClick={(place) => {
-                  console.log("선택된 장소:", place);
-                  // TODO: 장소 선택 시 처리
-                }}
+                onPlaceClick={handlePlaceClick}
                 onBookmarkClick={(place) => {
                   console.log("북마크 토글:", place);
-                  setBookmarkedPlaces(prev => {
-                    const newSet = new Set(prev);
-                    if (newSet.has(place.id)) {
-                      newSet.delete(place.id);
-                    } else {
-                      newSet.add(place.id);
-                    }
-                    return newSet;
-                  });
+                  toggleBookmark(place);
                 }}
                 onDragStart={(e, place) => {
                   console.log("드래그 시작:", place.name);
@@ -166,11 +139,21 @@ const SearchPlace = ({ isOpen, onClose }) => {
             </div>
           ) : (
             <div className="search-empty">
-              <p>{hasSearched ? "검색 결과가 없습니다" : "검색어를 입력해주세요"}</p>
+              <p>{hasSearched ? "검색 결과가 없습니다" : "장소를 검색해보세요"}</p>
             </div>
           )}
         </div>
       </div>
+      
+      {/* PlaceDetailModal */}
+      {showPlaceDetail && (
+        <PlaceDetailModal
+          isOpen={showPlaceDetail}
+          onClose={() => setShowPlaceDetail(false)}
+          place={selectedPlace}
+          position={placeDetailPosition}
+        />
+      )}
     </div>
   );
 };

@@ -1,9 +1,12 @@
 import React, { useRef, useEffect } from 'react';
-import PlaceBlock from './PlaceBlock';
+import useMapStore from '../../store/useMapStore';
+import StarRating from '../atoms/StarRating';
+import PlaceImage from '../atoms/PlaceImage';
 import './BookmarkModal.css';
 
-const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, position = { x: 0, y: 0 } }) => {
+const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 } }) => {
   const modalRef = useRef(null);
+  const { bookmarkedPlaces } = useMapStore();
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -111,16 +114,38 @@ const BookmarkModal = ({ isOpen, onClose, bookmarkedPlaces = [], onPlaceSelect, 
           ) : (
             <div className="bookmark-list">
               {bookmarkedPlaces.map((place) => (
-                <div
-                  key={place.id}
+                <div 
+                  key={place.place_id} 
                   className="bookmark-item"
                   onClick={() => handlePlaceClick(place)}
                 >
-                  <PlaceBlock
-                    place={place}
-                    onRemove={() => {}} // 북마크 모달에서는 삭제 기능 없음
-                    onEdit={() => {}}
-                  />
+                  {/* 왼쪽: 텍스트 정보 */}
+                  <div className="bookmark-item-content">
+                    {/* 제목 */}
+                    <h3 className="bookmark-item-title">{place.name}</h3>
+                    
+                    {/* 별점, 리뷰 수 */}
+                    <div className="bookmark-item-rating">
+                      <StarRating rating={place.rating} />
+                    </div>
+                    
+                    
+                    {/* 주소 */}
+                    <p className="bookmark-item-address">{place.formatted_address}</p>
+                    
+                  </div>
+                  
+                  {/* 오른쪽: 이미지 */}
+                  <div className="bookmark-item-image">
+                    <PlaceImage 
+                      imageUrl={place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
+                      isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
+                      onBookmarkClick={(e) => {
+                        e.stopPropagation();
+                        // 북마크 토글 기능은 여기서는 비활성화
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

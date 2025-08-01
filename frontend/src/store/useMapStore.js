@@ -19,6 +19,9 @@ const useMapStore = create((set, get) => ({
   markerPosition: null, // 지도에 표시할 마커 위치
   autocompletePredictions: [], // 자동완성 예측 결과를 저장할 상태,
   lastMapPosition: null, // 마지막 지도 위치(center, zoom) 저장
+  
+  // 북마크 관련 상태
+  bookmarkedPlaces: [], // 북마크된 장소들
 
   // --- 액션 (Actions) ---
   setTextQuery: (query) => set({ textQuery: query }),
@@ -68,6 +71,78 @@ const useMapStore = create((set, get) => ({
         block.id === id ? { ...block, position } : block
       ),
     }));
+  },
+
+  // 북마크 관련 액션
+  addBookmark: (place) => {
+    set((state) => {
+      const isAlreadyBookmarked = state.bookmarkedPlaces.some(
+        bookmarked => bookmarked.place_id === place.place_id
+      );
+      
+      if (isAlreadyBookmarked) {
+        return state; // 이미 북마크되어 있으면 추가하지 않음
+      }
+      
+      const bookmarkData = {
+        place_id: place.place_id,
+        name: place.name,
+        formatted_address: place.formatted_address,
+        rating: place.rating,
+        types: place.types,
+        photos: place.photos,
+        addedAt: new Date().toISOString(),
+      };
+      
+      return {
+        bookmarkedPlaces: [...state.bookmarkedPlaces, bookmarkData]
+      };
+    });
+  },
+
+  removeBookmark: (placeId) => {
+    set((state) => ({
+      bookmarkedPlaces: state.bookmarkedPlaces.filter(
+        place => place.place_id !== placeId
+      )
+    }));
+  },
+
+  toggleBookmark: (place) => {
+    set((state) => {
+      const isBookmarked = state.bookmarkedPlaces.some(
+        bookmarked => bookmarked.place_id === place.place_id
+      );
+      
+      if (isBookmarked) {
+        // 북마크 제거
+        return {
+          bookmarkedPlaces: state.bookmarkedPlaces.filter(
+            bookmarked => bookmarked.place_id !== place.place_id
+          )
+        };
+      } else {
+        // 북마크 추가
+        const bookmarkData = {
+          place_id: place.place_id,
+          name: place.name,
+          formatted_address: place.formatted_address,
+          rating: place.rating,
+          types: place.types,
+          photos: place.photos,
+          addedAt: new Date().toISOString(),
+        };
+        
+        return {
+          bookmarkedPlaces: [...state.bookmarkedPlaces, bookmarkData]
+        };
+      }
+    });
+  },
+
+  isBookmarked: (placeId) => {
+    const state = get();
+    return state.bookmarkedPlaces.some(place => place.place_id === placeId);
   },
 
   performTextSearch: () => {

@@ -78,8 +78,8 @@ const DailyPlaceBlock = ({ place, onRemove, onEdit, onMemoUpdate, dayTitle = '',
       {/* 왼쪽: 작은 이미지 */}
       <div className="daily-place-block-image">
         <img
-          src={place.imageUrl || 'https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp'}
-          alt={place.name}
+          src={place.imageUrl || (place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp')}
+          alt={place.name || place.displayName}
           className="daily-place-block-thumbnail"
           onError={(e) => {
             e.target.src = 'https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp';
@@ -91,14 +91,14 @@ const DailyPlaceBlock = ({ place, onRemove, onEdit, onMemoUpdate, dayTitle = '',
       <div className="daily-place-block-content">
         {/* 첫 번째 줄: 제목과 별점 */}
         <div className="daily-place-block-header">
-          <h3 className="daily-place-block-title" title={place.name}>{place.name}</h3>
+          <h3 className="daily-place-block-title" title={place.name || place.displayName}>{place.name || place.displayName}</h3>
           <div className="daily-place-block-rating">
             <StarRating rating={place.rating} reviewCount={null} />
           </div>
         </div>
         
         {/* 두 번째 줄: 주소 */}
-        <p className="daily-place-block-address" title={place.formatted_address}>{place.formatted_address}</p>
+        <p className="daily-place-block-address" title={place.formatted_address || place.address}>{place.formatted_address || place.address}</p>
         
         {/* 메모 표시 (있는 경우) */}
         {memo && (

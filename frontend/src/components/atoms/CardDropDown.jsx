@@ -4,6 +4,7 @@ import './CardDropDown.css';
 const CardDropDown = ({ children, items }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({});
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -42,20 +43,29 @@ const CardDropDown = ({ children, items }) => {
     setIsOpen(false);
   };
 
+  const toggleDropdown = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setMenuStyle({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
   return (
     <div className="card-dropdown" ref={dropdownRef}>
       <button
         className="card-dropdown-trigger"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
+        onClick={toggleDropdown}
       >
         {children}
       </button>
       
       {isOpen && (
-        <div className="card-dropdown-menu">
+        <div className="card-dropdown-menu" style={menuStyle}>
           {items.map((item, index) => (
             <button
               key={index}

@@ -71,12 +71,12 @@
   color: #6b7280;
 }
 
-.search-help {
+/* .search-help {
   padding: 8px 12px;
   background-color: #fef3c7;
   border-radius: 6px;
   border-left: 3px solid #f59e0b;
-}
+} 
 
 .search-help p {
   margin: 0;
@@ -87,7 +87,7 @@
 
 .search-help p + p {
   margin-top: 2px;
-}
+} */
 
 .search-empty {
   display: flex;

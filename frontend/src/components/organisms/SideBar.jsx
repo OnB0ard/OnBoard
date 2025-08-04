@@ -12,8 +12,9 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-  const [bookmarkedPlaces, setBookmarkedPlaces] = useState([]);
-  const { isMapVisible, setIsMapVisible } = useMapStore();
+  const isMapVisible = useMapStore((state) => state.isMapVisible);
+  const setIsMapVisible = useMapStore((state) => state.setIsMapVisible);
+  const bookmarkedPlaces = useMapStore((state) => state.bookmarkedPlaces);
 
   const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 

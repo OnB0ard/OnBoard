@@ -8,7 +8,9 @@ import MapContainer from '../organisms/Map';
 import EditToolBar from '../organisms/EditToolBar';
 import PlaceBlock from '../organisms/PlaceBlock';
 import DailyPlanCreate from '../organisms/DailyPlanCreate';
+import PlaceDetailModal from '../organisms/PlaceDetailModal';
 import useMapStore from '../../store/useMapStore';
+import { shallow } from 'zustand/shallow';
 
 
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
@@ -27,38 +29,51 @@ function MapInitializer() {
     setLastMapPosition,
   } = useMapStore();
 
+  // 역할 1: 맵 관련 인스턴스를 스토어에 설정 (map, placesLib가 준비되면 한 번만 실행)
   useEffect(() => {
     if (!map || !placesLib) return;
 
     setMapInstance(map);
     setPlacesService(new placesLib.PlacesService(map));
     setPlaceConstructor(placesLib.Place);
+  }, [map, placesLib, setMapInstance, setPlacesService, setPlaceConstructor]);
+
+  // 역할 2: 맵의 초기 위치 설정 (map이 준비되면 한 번만 실행)
+  useEffect(() => {
+    if (!map) return;
 
     if (lastMapPosition) {
       map.setCenter(lastMapPosition.center);
       map.setZoom(lastMapPosition.zoom);
     } else {
+      // 초기 위치가 스토어에 없으면 한국 전체 보기로 설정
       const koreaCenter = { lat: 36.5, lng: 127.5 };
       const koreaZoom = 7;
       map.setCenter(koreaCenter);
       map.setZoom(koreaZoom);
-      setLastMapPosition({ center: koreaCenter, zoom: koreaZoom });
     }
+  }, [map]); // lastMapPosition 의존성 제거
 
-    const dragListener = map.addListener('dragend', () => {
-      setLastMapPosition({ center: map.getCenter().toJSON(), zoom: map.getZoom() });
-    });
-    const zoomListener = map.addListener('zoom_changed', () => {
-      setLastMapPosition({ center: map.getCenter().toJSON(), zoom: map.getZoom() });
-    });
+  // 역할 3: 맵 이벤트 리스너 등록 (map이 준비되면 한 번만 등록)
+  useEffect(() => {
+    if (!map) return;
 
+    const handlePositionChange = () => {
+      setLastMapPosition({
+        center: map.getCenter().toJSON(),
+        zoom: map.getZoom(),
+      });
+    };
+
+    const dragListener = map.addListener('dragend', handlePositionChange);
+    const zoomListener = map.addListener('zoom_changed', handlePositionChange);
+
+    // 컴포넌트 언마운트 시 리스너 제거
     return () => {
       window.google.maps.event.removeListener(dragListener);
       window.google.maps.event.removeListener(zoomListener);
     };
-  }, [map, placesLib, setMapInstance, setPlacesService, setPlaceConstructor, lastMapPosition, setLastMapPosition]);
-
-  return null;
+  }, [map, setLastMapPosition]); // 루프를 유발하던 lastMapPosition 의존성 제거
 }
 
 
@@ -79,18 +94,20 @@ const getMarkerTypeFromPlace = (place) => {
 const Plan = () => {
   const mapsLib = useMapsLibrary('maps');
   const { planId } = useParams();
-  const {
-    isMapVisible,
-    placeBlocks,
-    addPlaceBlock,
-    removePlaceBlock,
-    updatePlaceBlockPosition,
-    markerPosition,
-    markerType,
-    fetchDetailsAndAddBlock,
-    panToPlace,
-  } = useMapStore();
 
+  // ✅ [수정] 스토어 구독 로직 변경: 무한 루프 방지를 위해 각 상태를 개별적으로 구독합니다.
+  const isMapVisible = useMapStore((state) => state.isMapVisible);
+  const placeBlocks = useMapStore((state) => state.placeBlocks);
+  const markerPosition = useMapStore((state) => state.markerPosition);
+  const markerType = useMapStore((state) => state.markerType);
+  const isPlaceDetailModalOpen = useMapStore((state) => state.isPlaceDetailModalOpen);
+  const handlePlaceSelection = useMapStore((state) => state.handlePlaceSelection);
+
+  // 액션 함수들은 리렌더링을 유발하지 않으므로 컴포넌트 외부에서 한 번만 가져오거나, 렌더링 내에서 직접 접근합니다.
+  const fetchDetailsAndAddBlock = useMapStore((state) => state.fetchDetailsAndAddBlock);
+  const removePlaceBlock = useMapStore((state) => state.removePlaceBlock);
+  const updatePlaceBlockPosition = useMapStore((state) => state.updatePlaceBlockPosition);
+  const panToPlace = useMapStore((state) => state.panToPlace);
 
   // 마우스 드래그 상태
   const [draggedBlockId, setDraggedBlockId] = useState(null);
@@ -228,11 +245,17 @@ const Plan = () => {
                       lng: block.longitude,
                     }}
                     type={block.primaryCategory || '기타'}
-                    onClick={() => panToPlace(block)}
+                    onClick={() => {
+                      const placeId = block.place_id || block.googlePlaceId;
+                      if (placeId) {
+                        handlePlaceSelection(placeId);
+                      } else {
+                        console.error('No valid place ID found for this marker', block);
+                      }
+                    }}
                   />
                 );
               })}
-
               {/* 현재 선택된 장소의 임시 마커 */}
               {markerPosition && (
                 <CustomMarker
@@ -269,6 +292,8 @@ const Plan = () => {
           />
         </div>
       ))}
+
+      {isPlaceDetailModalOpen && <PlaceDetailModal />}
     </div>
   );
 };

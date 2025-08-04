@@ -9,17 +9,22 @@ import "./SearchPlace.css";
 
 const SearchPlace = ({ isOpen, onClose }) => {
   const popupRef = useRef(null);
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  
-  // useMapStore에서 북마크 관련 함수 가져오기
-  const { toggleBookmark, isBookmarked } = useMapStore();
-  
-  // PlaceDetailModal 상태 관리
-  const [showPlaceDetail, setShowPlaceDetail] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState(null);
-  const [placeDetailPosition, setPlaceDetailPosition] = useState({ x: 0, y: 0 });
+
+  const {
+    toggleBookmark,
+    isBookmarked,
+    searchPlacesByQuery,
+    clearSearchResults,
+    isSearching,
+    hasSearched,
+    searchResults,
+    setIsPlaceDetailModalOpen,
+    setSelectedPlace,
+    setPlaceDetailPosition,
+    isPlaceDetailModalOpen,
+    selectedPlace,
+    placeDetailPosition,
+  } = useMapStore();
 
   // 외부 클릭 감지 및 검색창 열기/닫기 시 초기화
   useEffect(() => {
@@ -52,52 +57,42 @@ const SearchPlace = ({ isOpen, onClose }) => {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       // 검색창이 닫힐 때 검색 결과 초기화
-      setSearchResults([]);
-      setHasSearched(false);
+      clearSearchResults();
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, clearSearchResults]);
 
   // 검색 처리
   const handleSearch = (searchTerm) => {
     console.log("검색어:", searchTerm);
-    setIsSearching(true);
-    setHasSearched(true);
-    
-    // 실제 검색 로직은 나중에 구현
-    setTimeout(() => {
-      setSearchResults([]); // 임시로 빈 결과
-      setIsSearching(false);
-    }, 500);
+    searchPlacesByQuery(searchTerm);
   };
 
   const handleSearchModalClose = () => {
-    setSearchResults([]); // 검색 결과 초기화
-    setHasSearched(false); // 검색 시도 상태 초기화
-    setShowPlaceDetail(false); // PlaceDetailModal 닫기
+    clearSearchResults(); // 검색 결과 및 상태 초기화
+    setIsPlaceDetailModalOpen(false); // PlaceDetailModal 닫기
     onClose();
   }
 
   // 장소 상세보기 모달 열기
   const handlePlaceClick = (place) => {
     console.log("선택된 장소:", place);
-    
-    // 검색 모달의 위치를 기준으로 PlaceDetailModal 위치 계산
+
     const searchModalLeft = 70; // 검색 모달의 left 위치
     const searchModalWidth = 330; // 검색 모달의 원래 너비 (max-width)
     const searchModalRight = searchModalLeft + searchModalWidth;
-    
-    const position = { 
+
+    const position = {
       x: searchModalRight + 5, // 검색 모달 오른쪽에서 5px 떨어진 위치
-      y: 80 // 검색 모달과 같은 top 위치
+      y: 80, // 검색 모달과 같은 top 위치
     };
-    
+
     setPlaceDetailPosition(position);
     setSelectedPlace(place);
-    setShowPlaceDetail(true);
+    setIsPlaceDetailModalOpen(true);
   };
 
   if (!isOpen) return null;
@@ -146,10 +141,10 @@ const SearchPlace = ({ isOpen, onClose }) => {
       </div>
       
       {/* PlaceDetailModal */}
-      {showPlaceDetail && (
+      {isPlaceDetailModalOpen && (
         <PlaceDetailModal
-          isOpen={showPlaceDetail}
-          onClose={() => setShowPlaceDetail(false)}
+          isOpen={isPlaceDetailModalOpen}
+          onClose={() => setIsPlaceDetailModalOpen(false)}
           place={selectedPlace}
           position={placeDetailPosition}
         />

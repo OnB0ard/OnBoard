@@ -4,7 +4,7 @@ import PlanImage from "../atoms/PlanImage";
 import CardDropdown from "../atoms/CardDropDown";
 import { Button } from "../ui/button";
 import ShareModal from "./ShareModal";
-import ViewParticipantModal from "./ViewParticipantModal";
+import ViewParticipantModal1 from "./ViewParticipantModal1";
 import * as Popover from "@radix-ui/react-popover";
 import { useCardStore } from "../../store/useCardStore";
 
@@ -89,7 +89,7 @@ const Card = ({
               </Button>
             </Popover.Trigger>
             <Popover.Content side="top" align="center" sideOffset={8} className="z-50">
-              <ViewParticipantModal isOpen={true} participants={participants} />
+              <ViewParticipantModal1 isOpen={true} participants={participants} />
             </Popover.Content>
           </Popover.Root>
           

@@ -7,15 +7,11 @@ import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
 const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
-  const { 
-    searchResults, 
-    isSearching, 
-    handlePlaceSelection, 
-    fetchNextPage, 
-    pagination, 
-    isLoadingMore, 
-    selectedPlace 
-  } = useMapStore();
+  const searchResults = useMapStore((state) => state.searchResults);
+  const isSearching = useMapStore((state) => state.isSearching);
+  const fetchNextPage = useMapStore((state) => state.fetchNextPage);
+  const pagination = useMapStore((state) => state.pagination);
+  const isLoadingMore = useMapStore((state) => state.isLoadingMore);
 
   const loader = useRef(null);
 

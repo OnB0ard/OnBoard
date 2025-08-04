@@ -8,7 +8,8 @@ import {createPortal} from 'react-dom';
 
 const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
   const popupRef = useRef(null);
-  const { bookmarkedPlaces, toggleBookmark } = useMapStore();
+  const bookmarkedPlaces = useMapStore((state) => state.bookmarkedPlaces);
+  const toggleBookmark = useMapStore((state) => state.toggleBookmark);
 
   // 외부 클릭 감지
   useEffect(() => {

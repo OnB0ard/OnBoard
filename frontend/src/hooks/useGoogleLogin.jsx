@@ -1,9 +1,11 @@
 import { useCallback } from "react";
 import { loginWithGoogle } from "@/apis/authApi";
 import { useAuthStore } from "@/store/useAuthStore"; // Zustand 스토어 불러오기
+import { setAccessTokenGetter } from "@/apis/apiClient"; // apiClient 토큰 getter 설정
 
 export const useGoogleLogin = () => {
   const setAuth = useAuthStore((state) => state.setAuth); // 상태 업데이트 함수
+  const getAccessToken = useAuthStore((state) => state.accessToken); // 토큰 getter
 
   return useCallback(() => {
     const clientId = "406153969379-njhcgskl5tuv1utb2unqmvgoe4igjfe9.apps.googleusercontent.com";
@@ -37,6 +39,9 @@ export const useGoogleLogin = () => {
               accessToken: data.accessToken,
               refreshToken: data.refreshToken,
             });
+
+            // ✅ apiClient에 토큰 getter 설정
+            setAccessTokenGetter(() => data.accessToken);
 
             console.log("로그인 성공! 사용자 상태 저장 완료");
             console.log(data);

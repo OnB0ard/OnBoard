@@ -322,7 +322,7 @@ const useMapStore = create((set, get) => ({
         return null; // 처리할 수 없는 경우
       }).filter(Boolean) || [];
             
-      console.log(photoUrls); // 생성된 이미지 URL 배열 확인
+
       const processedPlace = {
         googlePlaceId: place.id,
         placeName: place.displayName,

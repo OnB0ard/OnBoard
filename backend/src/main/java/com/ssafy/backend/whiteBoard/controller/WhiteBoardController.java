@@ -40,4 +40,9 @@ public class WhiteBoardController {
         whiteBoardService.modifyWhiteBoardObject(planId,whiteObjectId,modifyWhiteBoardObjectRequestDTO);
         return new CommonResponse<>(new SuccessResponseDTO(true), HttpStatus.OK);
     }
+    @DeleteMapping("/{whiteObjectId}")
+    public CommonResponse<SuccessResponseDTO> deleteWhiteBoardObject(@PathVariable Long planId,@PathVariable Long whiteObjectId) throws JsonProcessingException {
+        whiteBoardService.deleteWhiteBoardObject(planId,whiteObjectId);
+        return new CommonResponse<>(new SuccessResponseDTO(true), HttpStatus.OK);
+    }
 }

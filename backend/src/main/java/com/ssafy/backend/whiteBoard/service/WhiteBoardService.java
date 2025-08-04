@@ -179,6 +179,19 @@ public class WhiteBoardService {
         }
 
     }
+    @Transactional
+    public void deleteWhiteBoardObject(Long planId, Long whiteObjectId) {
+        Plan plan = validatePlanExistence(planId);
+        WhiteBoardObject whiteBoardObject = validateWhiteBoardObject(whiteObjectId);
+
+        if (!whiteBoardObject.getPlan().equals(plan)) {
+            throw new WhiteBoardObjectPlanMismatchException("요청한 플랜에 속하지 않는 화이트보드 객체입니다.");
+        }
+        whiteBoardRepository.delete(whiteBoardObject);
+
+        // 화이트보드객체를 지운다음 day_place에 남아있는건 어떻게 되는지
+        // -> 화이트보드객체를 지우면 day_place에 있는 것도 지워짐
+    }
     private WhiteBoardObject validateWhiteBoardObject(Long whiteObjectId) {
         return whiteBoardRepository.findById(whiteObjectId)
                 .orElseThrow(() -> new WhiteBoardObjectNotExistException("존재하지 않는 화이트보드 객체입니다. whiteObjectId=" + whiteObjectId));
@@ -187,6 +200,7 @@ public class WhiteBoardService {
         return planRepository.findById(planId)
                 .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다. planId=" + planId));
     }
+
     private User validateUserExistence(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotExistException("존재하지 않는 사용자입니다. userId=" + userId));

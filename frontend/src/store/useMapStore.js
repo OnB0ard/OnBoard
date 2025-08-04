@@ -310,7 +310,17 @@ const useMapStore = create((set, get) => ({
       // Google Place 객체를 일반 객체로 변환하여 안정성을 확보합니다.
             // Photo 객체에서 URL을 미리 추출하여 문자열 배열로 변환합니다.
 
-      const photoUrls = ''
+      const photoUrls = place.photos?.map(p => {
+        // Photo 객체에 getUrl 메서드가 있는지 확인
+        if (p && typeof p.getUrl === 'function') {
+          return p.getUrl({ maxHeight: 400, maxWidth: 400 });
+        }
+        // 이미 URL 문자열인 경우, 그대로 반환
+        if (typeof p === 'string') {
+          return p;
+        }
+        return null; // 처리할 수 없는 경우
+      }).filter(Boolean) || [];
             
       console.log(photoUrls); // 생성된 이미지 URL 배열 확인
       const processedPlace = {
@@ -382,6 +392,57 @@ const useMapStore = create((set, get) => ({
     set({ isLoadingMore: true });
 
     pagination.nextPage(); // 다음 페이지 결과를 가져옴. 콜백은 최초 textSearch와 동일합니다.
+  },
+
+  // 지도에 선택된 장소를 표시하고 해당 위치로 지도를 이동시키는 함수
+  panToPlace: (place) => {
+    const { mapInstance } = get();
+    if (!mapInstance) {
+      console.error('panToPlace: Map instance is not available.');
+      return;
+    }
+    if (!place) {
+      console.error('panToPlace: Place data is missing.');
+      return;
+    }
+
+    let location;
+    // Google Place Result 객체 (geometry.location)
+    if (place.geometry && typeof place.geometry.location?.lat === 'function') {
+      location = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+    } 
+    // 내부적으로 처리된 객체 (latitude, longitude)
+    else if (typeof place.latitude === 'number' && typeof place.longitude === 'number') {
+      location = { lat: place.latitude, lng: place.longitude };
+    } 
+    // LatLng 객체 또는 유사 객체 ({lat: number, lng: number})
+    else if (typeof place.lat === 'number' && typeof place.lng === 'number') {
+      location = place;
+    }
+    else {
+      console.error('panToPlace: Could not determine location from place object.', place);
+      return;
+    }
+
+    console.log('panToPlace: Panning to', location);
+    mapInstance.panTo(location);
+    mapInstance.setZoom(15);
+
+    console.log('Setting markerPosition to:', location); // 마커 위치 설정 값 확인 로그
+
+    set(state => {
+      console.log('Previous markerPosition:', state.markerPosition); // 이전 상태 확인
+      return {
+        selectedPlace: place,
+        markerPosition: location, // 마커 위치 업데이트
+        markerType: place.primaryCategory || '기타',
+      };
+    });
+
+    // 상태가 업데이트된 직후의 값을 확인하기 위한 로그
+    setTimeout(() => {
+      console.log('Current markerPosition in store:', get().markerPosition);
+    }, 0);
   },
 
 }));

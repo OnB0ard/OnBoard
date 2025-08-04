@@ -1,7 +1,5 @@
 .bookmark-popup {
   position: fixed;
-  top: 75px; /* NavBar 높이만큼 여백 */
-  left: 70px; /* 사이드바 너비 + 여백 */
   z-index: 3000;
   background-color: white;
   border-radius: 12px;
@@ -12,50 +10,6 @@
   max-height: 70vh; /* 최대 높이만 설정 */
   display: flex;
   flex-direction: column;
-  /* 사이드바와 연결되는 화살표 효과 */
-  position: relative;
-  /* 부드러운 애니메이션 */
-  animation: slideInFromSidebar 0.3s ease-out;
-  transform-origin: top left;
-}
-
-@keyframes slideInFromSidebar {
-  from {
-    opacity: 0;
-    transform: translateX(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
-
-/* 사이드바에서 나오는 화살표 효과 */
-.bookmark-popup::before {
-  content: '';
-  position: absolute;
-  top: 71px; /* 북마크 아이콘 위치에 맞춤 */
-  left: -8px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid white;
-  z-index: 1501;
-}
-
-/* 화살표 그림자 효과 */
-.bookmark-popup::after {
-  content: '';
-  position: absolute;
-  top: 71px; /* 북마크 아이콘 위치에 맞춤 */
-  left: -9px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid #e5e7eb;
-  z-index: 1500;
 }
 
 .bookmark-popup-container {

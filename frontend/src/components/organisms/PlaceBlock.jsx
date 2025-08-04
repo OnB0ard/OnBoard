@@ -4,7 +4,7 @@ import useMapStore from '../../store/useMapStore';
 import './PlaceBlock.css';
 
 const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, isDailyPlanModalOpen = false }) => {
-  const { handlePlaceSelection } = useMapStore();
+  const { panToPlace } = useMapStore();
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
@@ -43,9 +43,7 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
   const handleMouseUp = () => {
     if (!isDragging) {
       // 드래그가 아니면 클릭으로 처리
-      if (place && place.place_id) {
-        handlePlaceSelection(place.place_id);
-      }
+      panToPlace(place);
     }
     // 드래그 상태 초기화
     setIsDragging(false);
@@ -53,7 +51,7 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
 
   return (
     <div 
-      className="place-block"
+      className={`place-block ${isDailyPlanModalOpen ? 'grayscale' : ''}`}
       draggable={isDailyPlanModalOpen}
       onDragStart={handleDragStart}
       onMouseDown={handleMouseDown}

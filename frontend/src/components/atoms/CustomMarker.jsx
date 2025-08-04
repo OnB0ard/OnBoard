@@ -32,17 +32,18 @@ const CustomMarker = ({
   children,
   color = 'default',
   type = 'default',
+  isTemporary = false, // 임시 마커 여부
 }) => {
-  const pinColor = colorPalette[color] || colorPalette.default;
+  const pinColor = isTemporary ? colorPalette.blue : (colorPalette[color] || colorPalette.default);
   const Icon = iconComponents[type] || iconComponents.default;
+  const zIndex = isTemporary ? 10 : 1;
 
   return (
-    <AdvancedMarker position={position} onClick={onClick}>
+    <AdvancedMarker position={position} onClick={onClick} zIndex={zIndex}>
       <div className="custom-marker">
         <div className="pin" style={{ backgroundColor: pinColor }}>
           {Icon}
         </div>
-        <div className="pin-dot"></div>
         {children && <div className="marker-content">{children}</div>}
       </div>
     </AdvancedMarker>

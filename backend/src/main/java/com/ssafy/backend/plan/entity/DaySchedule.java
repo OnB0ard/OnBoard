@@ -1,17 +1,19 @@
 package com.ssafy.backend.plan.entity;
 
-import com.ssafy.backend.user.entity.UserPlan;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalTime;
 import java.util.List;
 
 @Entity
 @NoArgsConstructor
 @Table(name = "day_schedule")
 @Data
+@Builder
+@AllArgsConstructor
 public class DaySchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

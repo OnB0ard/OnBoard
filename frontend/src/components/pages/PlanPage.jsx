@@ -29,38 +29,51 @@ function MapInitializer() {
     setLastMapPosition,
   } = useMapStore();
 
+  // 역할 1: 맵 관련 인스턴스를 스토어에 설정 (map, placesLib가 준비되면 한 번만 실행)
   useEffect(() => {
     if (!map || !placesLib) return;
 
     setMapInstance(map);
     setPlacesService(new placesLib.PlacesService(map));
     setPlaceConstructor(placesLib.Place);
+  }, [map, placesLib, setMapInstance, setPlacesService, setPlaceConstructor]);
+
+  // 역할 2: 맵의 초기 위치 설정 (map이 준비되면 한 번만 실행)
+  useEffect(() => {
+    if (!map) return;
 
     if (lastMapPosition) {
       map.setCenter(lastMapPosition.center);
       map.setZoom(lastMapPosition.zoom);
     } else {
+      // 초기 위치가 스토어에 없으면 한국 전체 보기로 설정
       const koreaCenter = { lat: 36.5, lng: 127.5 };
       const koreaZoom = 7;
       map.setCenter(koreaCenter);
       map.setZoom(koreaZoom);
-      setLastMapPosition({ center: koreaCenter, zoom: koreaZoom });
     }
+  }, [map]); // lastMapPosition 의존성 제거
 
-    const dragListener = map.addListener('dragend', () => {
-      setLastMapPosition({ center: map.getCenter().toJSON(), zoom: map.getZoom() });
-    });
-    const zoomListener = map.addListener('zoom_changed', () => {
-      setLastMapPosition({ center: map.getCenter().toJSON(), zoom: map.getZoom() });
-    });
+  // 역할 3: 맵 이벤트 리스너 등록 (map이 준비되면 한 번만 등록)
+  useEffect(() => {
+    if (!map) return;
 
+    const handlePositionChange = () => {
+      setLastMapPosition({
+        center: map.getCenter().toJSON(),
+        zoom: map.getZoom(),
+      });
+    };
+
+    const dragListener = map.addListener('dragend', handlePositionChange);
+    const zoomListener = map.addListener('zoom_changed', handlePositionChange);
+
+    // 컴포넌트 언마운트 시 리스너 제거
     return () => {
       window.google.maps.event.removeListener(dragListener);
       window.google.maps.event.removeListener(zoomListener);
     };
-  }, [map, placesLib, setMapInstance, setPlacesService, setPlaceConstructor, lastMapPosition, setLastMapPosition]);
-
-  return null;
+  }, [map, setLastMapPosition]); // 루프를 유발하던 lastMapPosition 의존성 제거
 }
 
 // Google Place API의 카테고리를 CustomMarker의 type으로 변환

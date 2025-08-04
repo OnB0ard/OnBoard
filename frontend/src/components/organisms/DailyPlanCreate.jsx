@@ -38,6 +38,22 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
     }
   }, [isOpen]);
 
+  // 데이터 구조를 DailyPlaceBlock에 맞게 통일하는 함수
+  const normalizePlaceData = (place) => {
+    const photoUrl = place.imageUrl || (place.photos && place.photos[0]?.getUrl({ maxWidth: 100, maxHeight: 100 })) || (place.googleImg && place.googleImg[0]);
+    
+    return {
+      id: place.id || place.place_id || place.googlePlaceId,
+      name: place.name || place.displayName || place.placeName,
+      address: place.address || place.formatted_address,
+      rating: place.rating,
+      ratingCount: place.ratingCount || place.user_ratings_total,
+      imageUrl: photoUrl,
+      // 원본 데이터도 포함하여 혹시 모를 다른 정보도 유지
+      originalData: place,
+    };
+  };
+
   const addDailyPlan = () => {
     const newDay = {
       id: Date.now(),
@@ -59,9 +75,10 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
 
   const addPlaceFromBookmark = (place) => {
     if (selectedDayIndex !== null) {
+      const normalizedPlace = normalizePlaceData(place);
       const newPlace = {
-        ...place,
-        id: `${place.id}-${Date.now()}`
+        ...normalizedPlace,
+        id: `${normalizedPlace.id}-${Date.now()}` // 고유 ID 보장
       };
       
       setDailyPlans(prev => prev.map((day, index) => 
@@ -81,10 +98,11 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
     try {
       const placeData = e.dataTransfer.getData('text/plain');
       const place = JSON.parse(placeData);
+      const normalizedPlace = normalizePlaceData(place);
       
       const newPlace = {
-        ...place,
-        id: `${place.id}-${Date.now()}`
+        ...normalizedPlace,
+        id: `${normalizedPlace.id}-${Date.now()}` // 고유 ID 보장
       };
       
       setDailyPlans(prev => prev.map((day, index) => 

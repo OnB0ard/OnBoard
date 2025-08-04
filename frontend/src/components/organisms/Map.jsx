@@ -4,7 +4,7 @@ import useMapStore from '../../store/useMapStore';
 import 'react-resizable/css/styles.css';
 
 export default function Map({ children }) {
-  const { setIsMapVisible } = useMapStore();
+  const setIsMapVisible = useMapStore((state) => state.setIsMapVisible);
 
   const [size, setSize] = useState({ width: 400, height: 400 });
   const [position, setPosition] = useState({ x: 950, y: 100 });

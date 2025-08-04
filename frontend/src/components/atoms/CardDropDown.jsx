@@ -5,6 +5,7 @@ const CardDropDown = ({ children, items }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState('bottom-right');
   const dropdownRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({});
 
   useEffect(() => {
     const handleClickOutside = (event) => {

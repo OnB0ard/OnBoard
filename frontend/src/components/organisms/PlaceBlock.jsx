@@ -4,7 +4,7 @@ import useMapStore from '../../store/useMapStore';
 import './PlaceBlock.css';
 
 const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, isDailyPlanModalOpen = false }) => {
-  const { panToPlace } = useMapStore();
+  const panToPlace = useMapStore((state) => state.panToPlace);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
@@ -53,7 +53,7 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
 
   return (
     <div 
-      className={`place-block ${isDailyPlanModalOpen ? 'grayscale' : ''}`}
+      className="place-block"
       draggable={isDailyPlanModalOpen}
       onDragStart={handleDragStart}
       onMouseDown={handleMouseDown}

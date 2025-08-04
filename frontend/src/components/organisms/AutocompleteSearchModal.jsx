@@ -16,24 +16,22 @@ import {createPortal} from 'react-dom';
  */
 const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
   const panToPlace = useMapStore((state) => state.panToPlace);
-    // Zustand를 사용한 지도 관련 전역 상태 및 액션
-  const {
-    mapInstance,
-    placesService,
-    setPlacesService,
-    inputValue,
-    searchResults,
-    isSearching,
-    hasSearched,
-    autocompletePredictions,
-    setInputValue,
-    performTextSearch,
-    handlePlaceSelection,
-    fetchAutocompletePredictions,
-    clearSearch,
-    toggleBookmark,
-    isBookmarked,
-  } = useMapStore();
+  // Zustand 스토어에서 필요한 상태와 액션을 개별적으로 구독합니다.
+  const mapInstance = useMapStore((state) => state.mapInstance);
+  const placesService = useMapStore((state) => state.placesService);
+  const setPlacesService = useMapStore((state) => state.setPlacesService);
+  const inputValue = useMapStore((state) => state.inputValue);
+  const searchResults = useMapStore((state) => state.searchResults);
+  const isSearching = useMapStore((state) => state.isSearching);
+  const hasSearched = useMapStore((state) => state.hasSearched);
+  const autocompletePredictions = useMapStore((state) => state.autocompletePredictions);
+  const setInputValue = useMapStore((state) => state.setInputValue);
+  const performTextSearch = useMapStore((state) => state.performTextSearch);
+  const handlePlaceSelection = useMapStore((state) => state.handlePlaceSelection);
+  const fetchAutocompletePredictions = useMapStore((state) => state.fetchAutocompletePredictions);
+  const clearSearch = useMapStore((state) => state.clearSearch);
+  const toggleBookmark = useMapStore((state) => state.toggleBookmark);
+  const isBookmarked = useMapStore((state) => state.isBookmarked);
 
   // PlaceDetailModal 상태 관리
   const [showPlaceDetail, setShowPlaceDetail] = useState(false);
@@ -64,14 +62,20 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
   const handleClose = useCallback(() => {
     clearSearch();
     setShowPlaceDetail(false); // PlaceDetailModal 닫기
-    onClose();
+    if (onClose) {
+      onClose();
+      clearSearch(); // 모달이 닫힐 때 검색 관련 상태 초기화
+    }
   }, [clearSearch, onClose]);
 
     // 모달 외부를 클릭했을 때 모달을 닫는 기능을 처리하는 Hook
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // 모달 영역(modalRef)의 바깥쪽을 클릭했는지 확인합니다.
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
+      // 클릭된 위치가 검색 모달 내부나 상세 정보 모달 내부가 아닐 경우에만 닫기
+      const isOutsideSearchModal = modalRef.current && !modalRef.current.contains(event.target);
+      const isOutsideDetailModal = !event.target.closest('.place-detail-modal-content');
+
+      if (isOutsideSearchModal && isOutsideDetailModal) {
         handleClose();
       }
     };
@@ -129,26 +133,33 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
   };
 
   // 장소 상세보기 모달 열기
-  // 장소 상세보기 모달 열기 및 지도 이동/마커 표시
-  const handlePlaceClick = (place) => {
-    console.log("AutocompleteSearchModal에서 장소 선택:", place);
+  // 장소 상세보기 모달 열기
+  const handlePlaceClick = async (place) => {
+    console.log("AutocompleteSearchModal에서 장소 선택 시도:", place);
+    if (!place || !place.place_id) {
+      console.error("handlePlaceClick에 유효한 장소 정보가 전달되지 않았습니다.");
+      return;
+    }
 
-    // 1. 지도를 해당 위치로 이동하고 마커를 표시합니다.
-    panToPlace(place);
+    try {
+      // 1. place_id로 장소의 전체 상세 정보를 가져옵니다.
+      const placeDetails = await handlePlaceSelection(place.place_id);
+      console.log("handlePlaceSelection에서 반환된 상세 정보:", placeDetails);
 
-    // 2. PlaceDetailModal을 엽니다.
-    const searchModalLeft = 70; // 검색 모달의 left 위치
-    const searchModalWidth = 330; // 검색 모달의 원래 너비 (max-width)
-    const searchModalRight = searchModalLeft + searchModalWidth;
-    
-    const position = { 
-      x: searchModalRight + 5, // 검색 모달 오른쪽에서 5px 떨어진 위치
-      y: 80 // 검색 모달과 같은 top 위치
-    };
-    
-    setPlaceDetailPosition(position);
-    setSelectedPlace(place);
-    setShowPlaceDetail(true);
+      if (placeDetails) {
+        // 2. 가져온 상세 정보로 지도를 이동하고 모달을 엽니다.
+        panToPlace(placeDetails);
+
+        const position = { x: 405, y: 80 };
+        setPlaceDetailPosition(position);
+        setSelectedPlace(placeDetails); // 상세 정보로 상태 업데이트
+        setShowPlaceDetail(true);
+      } else {
+        console.error('handlePlaceSelection이 상세 정보를 반환하지 않았습니다.');
+      }
+    } catch (error) {
+      console.error('장소 상세 정보를 가져오거나 모달을 여는 중 오류 발생:', error);
+    }
   };
 
   if (!isOpen) return null;
@@ -185,6 +196,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
                 {autocompletePredictions.map((prediction) => (
                   <li
                     key={prediction.place_id}
+                    className="autocomplete-prediction-item"
                     onClick={() => handlePredictionClick(prediction)}
                   >
                     <Icon type="location" />
@@ -208,7 +220,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
                     ...place,
                     isBookmarked: isBookmarked(place.place_id)
                   }))}
-                  onPlaceClick={handlePlaceClick}
+                  onPlaceClick={(place) => handlePlaceClick(place)}
                   onBookmarkClick={toggleBookmark}
                   onDragStart={(e, place) => {
                     console.log("AutocompleteSearchModal에서 드래그 시작:", place);
@@ -219,7 +231,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
               )
             ) : (
               <div className="search-help">
-                <p>장소를 검색하거나 키워드를 입력하세요.</p>
+                {/* <p>장소를 검색하거나 키워드를 입력하세요.</p> */}
               </div>
             )}
           </div>

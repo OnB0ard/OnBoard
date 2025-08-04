@@ -1,30 +1,28 @@
 import { create } from 'zustand';
 
 const useMapStore = create((set, get) => ({
-  placeBlocks: [], // 화이트보드에 있는 장소 블록들
+  // --- 상태 (State) ---
+  placeBlocks: [],
   mapInstance: null,
   placesService: null,
-  placeConstructor: null,
-  // --- 상태 (State) ---
+  placeConstructor: null, // Note: This might be part of a legacy or different API approach.
   textQuery: '',
   places: [],
   selectedPlace: null,
   isMapVisible: true,
   isModalOpen: false,
-
-  // Autocomplete Search Modal State
+  isPlaceDetailModalOpen: false,
+  placeDetailPosition: { x: 0, y: 0 },
   inputValue: '',
   searchResults: [], // 검색 결과
-  hasSearched: false, // 검색 실행 여부
-  isSearching: false, // 검색 중 상태
-  isLoadingMore: false, // 추가 결과 로딩 중 상태
+  hasSearched: false, // 검색이 실행되었는지 여부
+  isSearching: false, // 현재 검색 중인지 여부
   pagination: null, // 검색 결과 페이지네이션 객체
-  markerPosition: null, // 지도에 표시할 마커 위치
-  autocompletePredictions: [], // 자동완성 예측 결과를 저장할 상태,
-  lastMapPosition: null, // 마지막 지도 위치(center, zoom) 저장
-  
-  // 북마크 관련 상태
-  bookmarkedPlaces: [], // 북마크된 장소들
+  autocompletePredictions: [], // 자동완성 추천 목록
+  markerPosition: null,
+  markerType: null,
+  lastMapPosition: null,
+  bookmarkedPlaces: [],
 
   // --- 헬퍼 함수 (Helper Function) ---
   // Google Maps API의 types를 사용자 친화적인 카테고리로 분류하는 함수
@@ -58,7 +56,7 @@ const useMapStore = create((set, get) => ({
       // 기타/다중 분류 (Other/Multi-category)
       bakery: '기타/상점/카페/식당', // 베이커리는 문맥에 따라 다르게 분류될 수 있음
       // 'establishment'는 너무 광범위하므로 다른 유형이 없을 때만 고려
-      establishment: '기타', 
+      establishment: '기타',
     };
 
     // primaryCategory 결정을 위한 카테고리 우선순위 (높은 순서)
@@ -68,10 +66,10 @@ const useMapStore = create((set, get) => ({
       const mappedCategory = typeMap[type];
       if (mappedCategory) {
         // 다중 카테고리 (예: '기타/상점/카페/식당') 처리
-        if (mappedCategory.includes('/')) { 
-            mappedCategory.split('/').forEach(cat => categories.add(cat));
+        if (mappedCategory.includes('/')) {
+          mappedCategory.split('/').forEach(cat => categories.add(cat));
         } else {
-            categories.add(mappedCategory);
+          categories.add(mappedCategory);
         }
       } else {
         categories.add('기타'); // 매핑되지 않은 타입은 '기타'로 분류
@@ -80,18 +78,18 @@ const useMapStore = create((set, get) => ({
 
     // primaryCategory 결정 로직
     for (const orderCat of categoryOrder) {
-        if (categories.has(orderCat)) {
-            primaryCategory = orderCat;
+      if (categories.has(orderCat)) {
+        primaryCategory = orderCat;
             break; // 우선순위가 높은 카테고리를 찾으면 중단
-        }
+      }
     }
-    
+
     // 특정 타입에 대한 primaryCategory 예외 처리 (e.g., bakery)
     // 다른 더 명확한 카테고리가 없으면 '상점'으로 우선 지정
     if (types.includes('bakery')) {
-        if (!categories.has('식당') && !categories.has('카페')) {
-            primaryCategory = '상점'; 
-        }
+      if (!categories.has('식당') && !categories.has('카페')) {
+        primaryCategory = '상점';
+      }
     }
 
     return {
@@ -101,138 +99,205 @@ const useMapStore = create((set, get) => ({
   },
 
   // --- 액션 (Actions) ---
-  setTextQuery: (query) => set({ textQuery: query }),
-  setPlaces: (places) => set({ places }),
-  setSelectedPlace: (place) => {
-    set({ selectedPlace: place });
+  // 내부 헬퍼: 장소 상세 정보를 가져와 처리하는 비동기 함수
+  _fetchAndProcessPlaceDetails: (placeId) => {
+    return new Promise((resolve, reject) => {
+      const { placesService, categorizePlaceTypes } = get();
+      if (!placesService) {
+        console.error('PlacesService is not initialized.');
+        return reject(new Error('PlacesService is not initialized.'));
+      }
+
+      const request = {
+        placeId: placeId,
+        fields: [
+          'place_id', 'name', 'formatted_address', 'geometry', 'photos',
+          'rating', 'types', 'user_ratings_total', 'reviews', 'opening_hours',
+          'website', 'international_phone_number'
+        ],
+      };
+
+      placesService.getDetails(request, (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+          const { primaryCategory, categories } = categorizePlaceTypes(place.types);
+          const photoUrl = place.photos && place.photos.length > 0
+            ? place.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+            : null;
+
+          const processedPlace = {
+            ...place,
+            googlePlaceId: place.place_id,
+            primaryCategory,
+            categories,
+            photoUrl,
+          };
+          resolve(processedPlace);
+        } else {
+          console.error(`Place details request failed for placeId ${placeId} with status: ${status}`);
+          reject(new Error(`Failed to fetch place details: ${status}`));
+        }
+      });
+    });
   },
-  setIsMapVisible: (visible) => set({ isMapVisible: visible }),
-  setIsModalOpen: (open) => set({ isModalOpen: open }),
+
   setMapInstance: (map) => set({ mapInstance: map }),
-  setLastMapPosition: (position) => set({ lastMapPosition: position }),
-  // Autocomplete Search Modal Actions
   setPlacesService: (service) => set({ placesService: service }),
   setPlaceConstructor: (constructor) => set({ placeConstructor: constructor }),
   setInputValue: (value) => set({ inputValue: value }),
-  clearSearch: () => set({ 
-    inputValue: '',
-    textQuery: '',
-    searchResults: [], 
-    hasSearched: false, 
-    autocompletePredictions: [],
-    markerPosition: null, // 마커 위치 초기화
-    isSearching: false,
-    pagination: null, // 페이지네이션 초기화
-    isLoadingMore: false, // 추가 로딩 상태 초기화
-  }),
+  setLastMapPosition: (position) => set({ lastMapPosition: position }),
+  setIsMapVisible: (isVisible) => set({ isMapVisible: isVisible }),
+  setIsPlaceDetailModalOpen: (isOpen) => set({ isPlaceDetailModalOpen: isOpen }),
+  closePlaceDetailModal: () => set({ isPlaceDetailModalOpen: false }),
+  clearSearch: () => {
+    const { isPlaceDetailModalOpen } = get();
+    // 상세 정보 모달이 열려있을 때는 검색창을 닫지 않음
+    if (isPlaceDetailModalOpen) {
+      set({ inputValue: '', autocompletePredictions: [] });
+      return;
+    }
 
-  // PlaceBlock 관련 액션
-  // processedPlace 객체를 받아 화이트보드에 블록을 추가하는 액션
-  addPlaceBlock: (place, position) => {
-    const newBlock = {
-      ...place, // 상세 정보 전체를 복사
-      id: Date.now() + Math.random(), // 고유 ID 생성
-      position, // 드롭된 위치
-    };
-    set((state) => ({ placeBlocks: [...state.placeBlocks, newBlock] }));
+    set({
+      inputValue: '',
+      searchResults: [],
+      hasSearched: false,
+      isSearching: false,
+      autocompletePredictions: [],
+    });
   },
 
-  // place_id로 상세 정보를 가져온 후 PlaceBlock을 추가하는 통합 액션
+  fetchAutocompletePredictions: (input) => {
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+      console.error('Google Maps JavaScript API with Places library is not loaded.');
+      return;
+    }
+
+    if (!input) {
+      set({ autocompletePredictions: [] });
+      return;
+    }
+
+    const autocompleteService = new window.google.maps.places.AutocompleteService();
+    autocompleteService.getPlacePredictions(
+      { input },
+      (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          set({ autocompletePredictions: predictions, hasSearched: false });
+        } else {
+          set({ autocompletePredictions: [] });
+        }
+      }
+    );
+  },
+
+  handlePlaceSelection: async (placeId, openModal = true) => {
+    const { placeConstructor, mapInstance, categorizePlaceTypes, panToPlace } = get();
+    if (!placeConstructor || !placeId) {
+      console.error('PlacesService not available or invalid placeId');
+      return null;
+    }
+
+    try {
+      const place = new placeConstructor({ id: placeId });
+
+      const fieldsToFetch = [
+        'id', 'displayName', 'formattedAddress', 'location', 'photos',
+        'rating', 'types', 'websiteURI', 'userRatingCount', 'nationalPhoneNumber', 'reviews',
+      ];
+
+      await place.fetchFields({ fields: fieldsToFetch });
+
+      const categorized = categorizePlaceTypes(place.types);
+      const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.displayName)}&query_place_id=${place.id}`;
+
+      // --- 👇 여기가 핵심 수정 부분입니다 ---
+      // getUrl() 대신 getURI()를 사용합니다.
+      const photoUrls = (place.photos && place.photos.length > 0)
+        ? place.photos.map(p => p.getURI())
+        : [];
+      // --- 👆 여기까지 ---
+
+
+      const processedPlace = {
+        googlePlaceId: place.id,
+        placeName: place.displayName,
+        address: place.formattedAddress,
+        latitude: place.location.lat(),
+        longitude: place.location.lng(),
+        googleImg: photoUrls,
+        rating: place.rating,
+        ratingCount: place.userRatingCount,
+        siteUrl: place.websiteURI,
+        phoneNumber: place.nationalPhoneNumber,
+        reviews: place.reviews ? place.reviews.map(r => ({ author_name: r.author_name, rating: r.rating, text: r.text, relative_time_description: r.relative_time_description })) : [],
+        primaryCategory: categorized.primaryCategory,
+        categories: categorized.categories,
+        googleUrl: searchUrl,
+      };
+
+      set({
+        selectedPlace: processedPlace,
+        isPlaceDetailModalOpen: openModal,
+      });
+
+      if (mapInstance) {
+        panToPlace(processedPlace);
+      }
+      return processedPlace;
+    } catch (error) {
+      console.error('장소 상세 정보 로딩 실패:', error);
+      set({ isPlaceDetailModalOpen: false });
+      return null;
+    }
+  },
+
   fetchDetailsAndAddBlock: async (placeId, position) => {
     const { handlePlaceSelection, addPlaceBlock } = get();
-    // 상세 정보를 비동기적으로 가져옵니다.
-    const detailedPlace = await handlePlaceSelection(placeId);
+    const detailedPlace = await handlePlaceSelection(placeId, false);
     if (detailedPlace) {
-      // 상세 정보를 기반으로 블록을 추가합니다.
       addPlaceBlock(detailedPlace, position);
     }
   },
 
-  removePlaceBlock: (id) => {
-    set((state) => ({ 
-      placeBlocks: state.placeBlocks.filter((block) => block.id !== id) 
-    }));
-  },
-
-  // Pin(PlaceBlock)의 위치를 업데이트하는 액션
-  updatePlaceBlockPosition: (id, position) => {
-    set((state) => ({
-      placeBlocks: state.placeBlocks.map((block) => 
-        block.id === id ? { ...block, position } : block
-      ),
-    }));
-  },
-
-  // 북마크 관련 액션
-  addBookmark: (place) => {
-    set((state) => {
-      const isAlreadyBookmarked = state.bookmarkedPlaces.some(
-        bookmarked => bookmarked.place_id === place.place_id
-      );
-      
-      if (isAlreadyBookmarked) {
-        return state; // 이미 북마크되어 있으면 추가하지 않음
-      }
-      
-      const bookmarkData = {
-        place_id: place.place_id,
-        name: place.name,
-        formatted_address: place.formatted_address,
-        rating: place.rating,
-        types: place.types,
-        photos: place.photos,
-        addedAt: new Date().toISOString(),
-      };
-      
-      return {
-        bookmarkedPlaces: [...state.bookmarkedPlaces, bookmarkData]
-      };
-    });
-  },
-
-  removeBookmark: (placeId) => {
-    set((state) => ({
-      bookmarkedPlaces: state.bookmarkedPlaces.filter(
-        place => place.place_id !== placeId
-      )
-    }));
-  },
-
   toggleBookmark: (place) => {
     set((state) => {
-      const isBookmarked = state.bookmarkedPlaces.some(
-        bookmarked => bookmarked.place_id === place.place_id
+      const googlePlaceId = place.googlePlaceId || place.place_id;
+      const isCurrentlyBookmarked = state.bookmarkedPlaces.some(
+        (p) => (p.googlePlaceId || p.place_id) === googlePlaceId
       );
-      
-      if (isBookmarked) {
-        // 북마크 제거
-        return {
-          bookmarkedPlaces: state.bookmarkedPlaces.filter(
-            bookmarked => bookmarked.place_id !== place.place_id
+
+      const newBookmarkedPlaces = isCurrentlyBookmarked
+        ? state.bookmarkedPlaces.filter(
+            (p) => (p.googlePlaceId || p.place_id) !== googlePlaceId
           )
-        };
-      } else {
-        // 북마크 추가
-        const bookmarkData = {
-          place_id: place.place_id,
-          name: place.name,
-          formatted_address: place.formatted_address,
-          rating: place.rating,
-          types: place.types,
-          photos: place.photos,
-          addedAt: new Date().toISOString(),
-        };
-        
-        return {
-          bookmarkedPlaces: [...state.bookmarkedPlaces, bookmarkData]
-        };
-      }
+        : [...state.bookmarkedPlaces, { ...place, googlePlaceId }];
+
+      // searchResults의 북마크 상태 업데이트
+      const newSearchResults = state.searchResults.map((p) =>
+        (p.googlePlaceId || p.place_id) === googlePlaceId
+          ? { ...p, isBookmarked: !isCurrentlyBookmarked }
+          : p
+      );
+
+      // selectedPlace의 북마크 상태 업데이트
+      const newSelectedPlace =
+        state.selectedPlace &&
+        (state.selectedPlace.googlePlaceId || state.selectedPlace.place_id) ===
+          googlePlaceId
+          ? { ...state.selectedPlace, isBookmarked: !isCurrentlyBookmarked }
+          : state.selectedPlace;
+
+      return {
+        bookmarkedPlaces: newBookmarkedPlaces,
+        searchResults: newSearchResults,
+        selectedPlace: newSelectedPlace,
+      };
     });
   },
 
-  isBookmarked: (placeId) => {
-    const state = get();
-    return state.bookmarkedPlaces.some(place => place.place_id === placeId);
+  isBookmarked: (googlePlaceId) => {
+    if (!googlePlaceId) return false;
+    const { bookmarkedPlaces } = get();
+    return bookmarkedPlaces.some(p => (p.googlePlaceId || p.place_id) === googlePlaceId);
   },
 
   performTextSearch: () => {
@@ -243,7 +308,7 @@ const useMapStore = create((set, get) => ({
 
     const request = {
       query: inputValue,
-      fields: ['place_id', 'name', 'formatted_address', 'geometry', 'photos', 'rating', 'types', 'userRatingCount'],
+      fields: ['place_id', 'name', 'formatted_address', 'geometry', 'photos', 'rating', 'types', 'user_ratings_total'],
     };
 
     if (mapInstance) {
@@ -254,7 +319,6 @@ const useMapStore = create((set, get) => ({
       const { isLoadingMore, searchResults: currentResults } = get();
 
       if (status === 'OK' && results) {
-        // 검색 결과의 각 장소에 대해 types 데이터를 전처리하여 카테고리 정보를 추가
         const processedResults = results.map(place => {
           const categorized = categorizePlaceTypes(place.types);
           return {
@@ -272,7 +336,7 @@ const useMapStore = create((set, get) => ({
           searchResults: newSearchResults,
           isSearching: false,
           isLoadingMore: false,
-          pagination: pagination,
+          pagination: pagination.hasNextPage ? pagination : null,
         });
       } else {
         set({ 
@@ -285,166 +349,53 @@ const useMapStore = create((set, get) => ({
     });
   },
 
-  handlePlaceSelection: async (placeId) => {
-    const { placeConstructor, mapInstance, categorizePlaceTypes } = get();
-    if (!placeConstructor || !placeId) {
-      console.error('PlacesService not available or invalid placeId');
-      return null;
-    }
-
-    try {
-      const place = new placeConstructor({ id: placeId });
-
-      const fieldsToFetch = [
-        'id', 'displayName', 'formattedAddress', 'location', 'photos',
-        'rating', 'types', 'websiteURI', 'userRatingCount', 'nationalPhoneNumber', 'reviews',
-      ];
-
-      await place.fetchFields({ fields: fieldsToFetch });
-
-      // 상세 정보로 가져온 장소의 types 데이터를 전처리하여 카테고리 정보 추가
-      const categorized = categorizePlaceTypes(place.types);
-
-      const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.displayName)}`;
-
-      // Google Place 객체를 일반 객체로 변환하여 안정성을 확보합니다.
-            // Photo 객체에서 URL을 미리 추출하여 문자열 배열로 변환합니다.
-
-      const photoUrls = place.photos?.map(p => {
-        // Photo 객체에 getUrl 메서드가 있는지 확인
-        if (p && typeof p.getUrl === 'function') {
-          return p.getUrl({ maxHeight: 400, maxWidth: 400 });
-        }
-        // 이미 URL 문자열인 경우, 그대로 반환
-        if (typeof p === 'string') {
-          return p;
-        }
-        return null; // 처리할 수 없는 경우
-      }).filter(Boolean) || [];
-            
-
-      const processedPlace = {
-        googlePlaceId: place.id,
-        placeName: place.displayName,
-        address: place.formattedAddress,
-        latitude: place.location.lat(),
-        longitude: place.location.lng(),
-        googleImg: photoUrls, // URL 문자열 배열을 저장
-        rating: place.rating,
-        ratingCount: place.userRatingCount,
-        siteUrl: place.websiteURI,
-        phoneNumber: place.nationalPhoneNumber,
-        reviews: place.reviews ? place.reviews.map(r => ({ author_name: r.author_name, rating: r.rating, text: r.text, relative_time_description: r.relative_time_description })) : [],
-        primaryCategory: categorized.primaryCategory,
-        categories: categorized.categories,
-        googleUrl: searchUrl,
-      };
-      console.log(processedPlace)
-
-      const newLocation = { lat: processedPlace.latitude, lng: processedPlace.longitude };
-
-      set({
-        selectedPlace: processedPlace,
-        markerPosition: newLocation,
-        markerType: categorized.primaryCategory,
-      });
-
-      if (mapInstance && newLocation) {
-        mapInstance.panTo(newLocation);
-        mapInstance.setZoom(15);
-      }
-      return processedPlace;
-    } catch (error) {
-      console.error('장소 상세 정보 로딩 실패:', error);
-      return null;
-    }
+  // Other actions can be kept as they are if they don't need changes.
+  // For example:
+  addPlaceBlock: (place, position) => {
+    const newBlock = {
+      ...place,
+      id: Date.now() + Math.random(),
+      position,
+    };
+    set((state) => ({ placeBlocks: [...state.placeBlocks, newBlock] }));
   },
 
-  // 자동완성 예측 가져오기
-  fetchAutocompletePredictions: (input) => {
-    // 사용자가 다시 입력을 시작하면, 이전 검색 결과 상태를 초기화합니다.
-    set({ hasSearched: false, searchResults: [] });
-
-    if (!input) {
-      set({ autocompletePredictions: [] });
-      return;
-    }
-    const autocompleteService = new window.google.maps.places.AutocompleteService();
-    autocompleteService.getPlacePredictions(
-      { input },
-      (predictions, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          set({ autocompletePredictions: predictions });
-        } else {
-          set({ autocompletePredictions: [] });
-        }
-      }
-    );
+  removePlaceBlock: (id) => {
+    set((state) => ({ 
+      placeBlocks: state.placeBlocks.filter((block) => block.id !== id) 
+    }));
   },
 
-  fetchNextPage: () => {
-    const { pagination, isLoadingMore } = get();
-
-    if (!pagination || !pagination.hasNextPage || isLoadingMore) {
-      return;
-    }
-
-    set({ isLoadingMore: true });
-
-    pagination.nextPage(); // 다음 페이지 결과를 가져옴. 콜백은 최초 textSearch와 동일합니다.
+  updatePlaceBlockPosition: (id, position) => {
+    set((state) => ({
+      placeBlocks: state.placeBlocks.map((block) => 
+        block.id === id ? { ...block, position } : block
+      ),
+    }));
   },
 
-  // 지도에 선택된 장소를 표시하고 해당 위치로 지도를 이동시키는 함수
   panToPlace: (place) => {
     const { mapInstance } = get();
-    if (!mapInstance) {
-      console.error('panToPlace: Map instance is not available.');
-      return;
-    }
-    if (!place) {
-      console.error('panToPlace: Place data is missing.');
-      return;
-    }
+    if (!mapInstance || !place) return;
 
     let location;
-    // Google Place Result 객체 (geometry.location)
-    if (place.geometry && typeof place.geometry.location?.lat === 'function') {
-      location = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
-    } 
-    // 내부적으로 처리된 객체 (latitude, longitude)
-    else if (typeof place.latitude === 'number' && typeof place.longitude === 'number') {
+    if (typeof place.latitude === 'number' && typeof place.longitude === 'number') {
       location = { lat: place.latitude, lng: place.longitude };
-    } 
-    // LatLng 객체 또는 유사 객체 ({lat: number, lng: number})
-    else if (typeof place.lat === 'number' && typeof place.lng === 'number') {
-      location = place;
-    }
-    else {
+    } else if (place.geometry && typeof place.geometry.location?.lat === 'function') {
+      location = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+    } else {
       console.error('panToPlace: Could not determine location from place object.', place);
       return;
     }
 
-    console.log('panToPlace: Panning to', location);
     mapInstance.panTo(location);
     mapInstance.setZoom(15);
 
-    console.log('Setting markerPosition to:', location); // 마커 위치 설정 값 확인 로그
-
-    set(state => {
-      console.log('Previous markerPosition:', state.markerPosition); // 이전 상태 확인
-      return {
-        selectedPlace: place,
-        markerPosition: location, // 마커 위치 업데이트
-        markerType: place.primaryCategory || '기타',
-      };
+    set({
+      markerPosition: location,
+      markerType: place.primaryCategory || '기타',
     });
-
-    // 상태가 업데이트된 직후의 값을 확인하기 위한 로그
-    setTimeout(() => {
-      console.log('Current markerPosition in store:', get().markerPosition);
-    }, 0);
   },
-
 }));
 
 export default useMapStore;

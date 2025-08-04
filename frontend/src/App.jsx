@@ -8,6 +8,7 @@ import Test from './components/pages/Test'
 import PlanPage from './components/pages/PlanPage'
 import MyPage from "./components/pages/Mypage"
 
+
 function App() {
 
   return (
@@ -21,10 +22,6 @@ function App() {
         <Route path="/mypage" element={<MyPage />} />
         {/* <Route path="/temp" element={<Temp/>} /> */}
       </Routes>
-
-      
-
-      
     </>
   )
 }

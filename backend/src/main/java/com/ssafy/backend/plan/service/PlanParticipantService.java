@@ -6,7 +6,7 @@ import com.ssafy.backend.plan.repository.PlanRepository;
 import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.plan.dto.response.CreatorResponseDTO;
 import com.ssafy.backend.plan.dto.response.ParticipantResponseDTO;
-import com.ssafy.backend.plan.dto.response.PlanParticipantListResponseDTO;
+import com.ssafy.backend.plan.dto.response.PlanParticipantUserListResponseDTO;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
@@ -119,7 +119,7 @@ public class PlanParticipantService {
         return true;
     }
 
-    public PlanParticipantListResponseDTO getUserList(Long planId, JwtUserInfo jwtUserInfo) {
+    public PlanParticipantUserListResponseDTO getUserList(Long planId, JwtUserInfo jwtUserInfo) {
 
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(jwtUserInfo.getUserId());
@@ -167,7 +167,7 @@ public class PlanParticipantService {
             }
         }
 
-        return PlanParticipantListResponseDTO.builder()
+        return PlanParticipantUserListResponseDTO.builder()
                 .creator(creatorResponseDTO)
                 .userlist(participantListDTO)
                 .build();

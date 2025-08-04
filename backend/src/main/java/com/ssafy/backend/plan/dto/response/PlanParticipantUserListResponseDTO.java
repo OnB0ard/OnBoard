@@ -8,7 +8,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PlanParticipantListResponseDTO {
+public class PlanParticipantUserListResponseDTO {
     private CreatorResponseDTO creator;
     private List<ParticipantResponseDTO> userlist;
 }

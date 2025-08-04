@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserPlanRepository extends JpaRepository<UserPlan, Long> {
@@ -22,4 +23,6 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, Long> {
     void deleteUserPlanByPlanAndUser(Plan plan, User user);
 
     List<UserPlan> findAllUserPlanByPlan(Plan plan);
+
+    Optional<UserPlan> findByPlanAndUser(Plan plan, User user);
 }

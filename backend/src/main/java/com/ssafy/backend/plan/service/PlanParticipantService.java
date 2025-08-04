@@ -4,8 +4,8 @@ import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
 import com.ssafy.backend.plan.repository.PlanRepository;
 import com.ssafy.backend.plan.repository.UserPlanRepository;
-import com.ssafy.backend.plan.dto.response.CreatorDTO;
-import com.ssafy.backend.plan.dto.response.ParticipantDTO;
+import com.ssafy.backend.plan.dto.response.CreatorResponseDTO;
+import com.ssafy.backend.plan.dto.response.ParticipantResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanParticipantListResponseDTO;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.entity.User;
@@ -134,13 +134,13 @@ public class PlanParticipantService {
 
 
         List<UserPlan> userPlanList = planParticipantRepository.findAllUserPlanByPlan(plan);
-        List<ParticipantDTO> participantListDTO = new ArrayList<>();
-        CreatorDTO creatorDTO = new CreatorDTO();
+        List<ParticipantResponseDTO> participantListDTO = new ArrayList<>();
+        CreatorResponseDTO creatorResponseDTO = new CreatorResponseDTO();
 
         for(UserPlan up : userPlanList){
             if(up.getUserType() == UserType.CREATOR) {
                 User c = up.getUser();
-                creatorDTO = CreatorDTO.builder()
+                creatorResponseDTO = CreatorResponseDTO.builder()
                         .userId(c.getUserId())
                         .userName(c.getUserName())
                         .googleEmail(c.getGoogleEmail())
@@ -152,7 +152,7 @@ public class PlanParticipantService {
             } else {
                 User p = up.getUser();
 
-                ParticipantDTO participantDTO = ParticipantDTO.builder()
+                ParticipantResponseDTO participantResponseDTO = ParticipantResponseDTO.builder()
                         .userId(p.getUserId())
                         .userName(p.getUserName())
                         .googleEmail(p.getGoogleEmail())
@@ -163,12 +163,12 @@ public class PlanParticipantService {
                         .userStatus(up.getUserStatus())
                         .build();
 
-                participantListDTO.add(participantDTO);
+                participantListDTO.add(participantResponseDTO);
             }
         }
 
         return PlanParticipantListResponseDTO.builder()
-                .creator(creatorDTO)
+                .creator(creatorResponseDTO)
                 .userlist(participantListDTO)
                 .build();
     }

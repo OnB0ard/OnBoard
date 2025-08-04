@@ -12,5 +12,5 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class BookmarkListResponseDTO {
-    private List<BookmarkDTO> bookmarkList;
+    private List<BookmarkResponseDTO> bookmarkList;
 }

@@ -2,9 +2,8 @@ package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
 import com.ssafy.backend.place.entity.Place;
-import com.ssafy.backend.plan.dto.response.BookmarkDTO;
+import com.ssafy.backend.plan.dto.response.BookmarkResponseDTO;
 import com.ssafy.backend.plan.dto.response.BookmarkListResponseDTO;
-import com.ssafy.backend.plan.dto.response.RetrievePlanResponse;
 import com.ssafy.backend.plan.entity.Bookmark;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
@@ -15,13 +14,11 @@ import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
 import com.ssafy.backend.user.entity.UserStatus;
-import com.ssafy.backend.user.entity.UserType;
 import com.ssafy.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.print.Book;
 import java.util.List;
 
 @Service
@@ -92,10 +89,10 @@ public class BookmarkService {
 
         List<Bookmark> bookmarks = bookmarkRepository.findBookmarksByPlanId(planId);
 
-        List<BookmarkDTO> bookmarkDTOs = bookmarks.stream()
+        List<BookmarkResponseDTO> bookmarkResponseDTOS = bookmarks.stream()
                 .map(bookmark -> {
                     Place place = bookmark.getPlace();
-                    return new BookmarkDTO(
+                    return new BookmarkResponseDTO(
                             place.getPlaceId(),
                             place.getPlaceName(),
                             place.getLatitude(),
@@ -106,7 +103,7 @@ public class BookmarkService {
                 }).toList();
 
         return BookmarkListResponseDTO.builder()
-                .bookmarkList(bookmarkDTOs)
+                .bookmarkList(bookmarkResponseDTOS)
                 .build();
     }
 

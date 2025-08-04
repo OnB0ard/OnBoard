@@ -1,15 +1,12 @@
 package com.ssafy.backend.plan.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@Builder
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
-public class BookmarkDTO {
+@NoArgsConstructor
+@Builder
+public class BookmarkResponseDTO {
     private Long placeId;
     private String placeName;
     private Double latitude;

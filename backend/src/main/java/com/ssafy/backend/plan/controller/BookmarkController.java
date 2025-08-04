@@ -12,22 +12,22 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/plan")
+@RequestMapping("/api/v1/plan/{planId}/bookmark")
 public class BookmarkController {
     private final BookmarkService bookmarkService;
 
-    @PostMapping("/{planId}/bookmark")
+    @PostMapping("")
     public CommonResponse<SuccessResponseDTO> addBookmark(@PathVariable Long planId, @RequestBody CreatePlaceRequestDTO createPlaceRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(bookmarkService.addBookmark(planId, createPlaceRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
     }
 
-    @GetMapping("/{planId}/bookmark")
+    @GetMapping("")
     public CommonResponse<BookmarkListResponseDTO> showBookmark(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(bookmarkService.showBookmark(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
-    @DeleteMapping("/{planId}/{bookmarkId}")
+    @DeleteMapping("/{bookmarkId}")
     public CommonResponse<SuccessResponseDTO> deleteBookmark(@PathVariable Long planId, @PathVariable Long bookmarkId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(bookmarkService.deleteBookmark(planId, bookmarkId, jwtUserInfo.getUserId())), HttpStatus.OK);
     }

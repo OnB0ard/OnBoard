@@ -1,13 +1,11 @@
 package com.ssafy.backend.plan.dto.response;
 
 import com.ssafy.backend.user.entity.UserStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

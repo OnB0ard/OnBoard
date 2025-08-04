@@ -2,7 +2,6 @@
 
     import com.querydsl.jpa.impl.JPAQueryFactory;
     import com.ssafy.backend.place.entity.QPlace;
-    import com.ssafy.backend.plan.dto.response.BookmarkDTO;
     import com.ssafy.backend.plan.entity.Bookmark;
     import com.ssafy.backend.plan.entity.QBookmark;
     import lombok.RequiredArgsConstructor;

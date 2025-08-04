@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookmarkDTO {
+public class BookmarkResponseDTO {
     private Long placeId;
     private String placeName;
     private Double latitude;

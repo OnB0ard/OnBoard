@@ -12,6 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class PlanParticipantListResponseDTO {
-    private CreatorDTO creator;
-    private List<ParticipantDTO> userlist;
+    private CreatorResponseDTO creator;
+    private List<ParticipantResponseDTO> userlist;
 }

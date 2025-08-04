@@ -17,31 +17,73 @@ const PlanList = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   
-  // "계획중인 여행"과 "완료된 여행"을 위한 상태를 분리할 수 있으나, 우선 "계획중인 여행"만 가져옵니다.
+  // "계획중인 여행"과 "완료된 여행"을 위한 상태를 분리
   const [ongoingPlans, setOngoingPlans] = useState([]);
-  // const [completedPlans, setCompletedPlans] = useState([]); // 추후 완료된 여행 목록을 위해 사용
+  const [completedPlans, setCompletedPlans] = useState([]);
 
   // 팝오버가 하나라도 열려있는지 관리하는 상태
   const [isAnyPopoverOpen, setIsAnyPopoverOpen] = useState(false);
+  
+  // 정렬 상태 관리
+  const [sortType, setSortType] = useState('created'); // 'created' | 'date'
+  const [isSorting, setIsSorting] = useState(false); // 정렬 중 로딩 상태
+
+  // 정렬 함수
+  const sortPlans = (plans, type) => {
+    const sortedPlans = [...plans];
+    
+    if (type === 'created') {
+      // 생성순: planId 기준으로 내림차순 (늦게 생성된 것부터)
+      return sortedPlans.sort((a, b) => b.planId - a.planId);
+    } else if (type === 'date') {
+      // 날짜순: startDate 기준으로 오름차순 (빠른 날짜부터)
+      return sortedPlans.sort((a, b) => {
+        const dateA = new Date(a.startDate || '9999-12-31');
+        const dateB = new Date(b.startDate || '9999-12-31');
+        return dateA - dateB;
+      });
+    }
+    
+    return sortedPlans;
+  };
+
+  // 여행 계획을 진행 중/완료로 분류하는 함수
+  const classifyPlans = (plans) => {
+    const today = new Date(new Date().toISOString().split('T')[0]);
+    
+    const ongoing = [];
+    const completed = [];
+    
+    plans.forEach(plan => {
+      if (plan.endDate && new Date(plan.endDate) < today) {
+        completed.push(plan);
+      } else {
+        ongoing.push(plan);
+      }
+    });
+    
+    return { ongoing, completed };
+  };
 
   // 여행 계획 목록 조회
   const fetchPlans = async () => {
     setIsPageLoading(true);
     try {
-      // "계획중인" 여행 목록만 가져옵니다.
-      const ongoingPlanData = await getPlanList();
+      const planData = await getPlanList();
       
-      // planId 기준으로 내림차순 정렬 (늦게 생성된 것부터)
-      const sortedPlans = (ongoingPlanData || []).sort((a, b) => b.planId - a.planId);
-      setOngoingPlans(sortedPlans);
-
-      // 추후 "완료된" 여행 목록도 동일하게 가져올 수 있습니다.
-      // const completedPlanData = await getPlanList({ status: 'DONE', ... });
-      // setCompletedPlans(completedPlanData || []);
+      // 현재 정렬 타입에 따라 정렬
+      const sortedPlans = sortPlans(planData || [], sortType);
+      
+      // 진행 중/완료로 분류
+      const { ongoing, completed } = classifyPlans(sortedPlans);
+      
+      setOngoingPlans(ongoing);
+      setCompletedPlans(completed);
 
     } catch (error) {
       console.error('여행 계획 목록 조회 실패:', error);
       setOngoingPlans([]);
+      setCompletedPlans([]);
     } finally {
       setIsPageLoading(false);
     }
@@ -49,7 +91,7 @@ const PlanList = () => {
 
   useEffect(() => {
     fetchPlans();
-  }, []);
+  }, [sortType]); // sortType이 변경될 때마다 fetchPlans 실행
 
   // 카드 클릭 핸들러
   const handleCardClick = (planData) => {
@@ -78,6 +120,18 @@ const PlanList = () => {
     }
   };
 
+  // 정렬 변경 핸들러
+  const handleSortChange = async (newSortType) => {
+    if (newSortType === sortType) return; // 같은 정렬 타입이면 무시
+    
+    setIsSorting(true);
+    setSortType(newSortType);
+    
+    // 부드러운 전환을 위한 짧은 지연
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setIsSorting(false);
+  };
+
   // 생성/수정 모달 제출 성공 시 공통 처리
   const handleSubmissionSuccess = async () => {
     setIsCreateModalOpen(false);
@@ -97,10 +151,70 @@ const PlanList = () => {
         <div className="plan-ing mb-8">
           <div className="flex items-end justify-between">
             <h2 className="text-2xl font-extrabold mb-2 mt-8">계획중인 여행</h2>
-            <div className="text-base font-normal text-gray-400 mb-2">생성순 | 날짜순</div>
+                         <div className="flex gap-4 text-base font-normal text-gray-400 mb-2">
+               <button 
+                 className={`cursor-pointer ${sortType === 'created' ? 'text-blue-400 font-semibold' : 'hover:text-gray-600'}`}
+                 onClick={() => handleSortChange('created')}
+               >
+                 생성순
+               </button>
+               <span>|</span>
+               <button 
+                 className={`cursor-pointer ${sortType === 'date' ? 'text-blue-400 font-semibold' : 'hover:text-gray-600'}`}
+                 onClick={() => handleSortChange('date')}
+               >
+                 날짜순
+               </button>
+             </div>
           </div>
-          <div className="main-content-ing grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 py-8">
-            {ongoingPlans.map((plan) => (
+                                                                                                                                                                                                                                                                                                                                                               <div className={`main-content-ing grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 py-8 transition-all duration-500 ease-in-out ${isSorting ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+                {ongoingPlans.map((plan, index) => (
+                                                                           <div
+                      key={plan.planId}
+                      className={`transition-all duration-500 ease-out ${
+                        isSorting 
+                          ? 'opacity-0 transform -translate-y-4' 
+                          : 'opacity-100 transform translate-y-0'
+                      }`}
+                      style={{
+                        transitionDelay: isSorting ? '0ms' : `${index * 50}ms`
+                      }}
+                    >
+                    <Card
+                      planData={plan}
+                      onView={() => handleCardClick(plan)}
+                      onEdit={() => handleEditClick(plan)}
+                      onDelete={() => handleDeleteClick(plan)}
+                      isAnyPopoverOpen={isAnyPopoverOpen}
+                      onPopoverOpenChange={setIsAnyPopoverOpen}
+                    />
+                  </div>
+                ))}
+                                                                   <div
+                    className={`transition-all duration-500 ease-out ${
+                      isSorting 
+                        ? 'opacity-0 transform -translate-y-4' 
+                        : 'opacity-100 transform translate-y-0'
+                    }`}
+                    style={{
+                      transitionDelay: isSorting ? '0ms' : `${ongoingPlans.length * 50}ms`
+                    }}
+                  >
+                  <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
+                </div>
+              </div>
+        </div>
+
+        {/* 완료된 여행 */}
+        <div className="plan-done mb-8">
+          <div className="flex items-end justify-between">
+            <h2 className="text-2xl font-extrabold mb-2 mt-8">완료된 여행</h2>
+            <div className="text-base font-normal text-gray-400 mb-2">
+              {completedPlans.length}개의 여행 완료
+            </div>
+          </div>
+          <div className="main-content-done grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 py-8">
+            {completedPlans.map((plan) => (
               <Card
                 key={plan.planId}
                 planData={plan}
@@ -111,15 +225,6 @@ const PlanList = () => {
                 onPopoverOpenChange={setIsAnyPopoverOpen}
               />
             ))}
-            <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
-          </div>
-        </div>
-
-        {/* 완료된 여행 */}
-        <div className="plan-done">
-          <h2 className="text-2xl font-extrabold mb-2 mt-8">완료된 여행</h2>
-          <div className="main-content-done grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 py-8">
-            {/* 추후 완료된 여행 데이터를 여기에 맵핑합니다. */}
           </div>
         </div>
       </div>

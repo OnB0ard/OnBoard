@@ -1,15 +1,15 @@
 .bookmark-popup {
   position: fixed;
-  top: 75px; /* NavBar 높이만큼 여백 */
+  top: 80px; /* NavBar 높이만큼 여백 */
   left: 70px; /* 사이드바 너비 + 여백 */
-  z-index: 3000;
+  z-index: 1500;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   min-width: 300px;
   max-width: 330px;
-  max-height: 70vh; /* 최대 높이만 설정 */
+  max-height: 70vh;
   display: flex;
   flex-direction: column;
   /* 사이드바와 연결되는 화살표 효과 */
@@ -62,7 +62,6 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden; /* 컨테이너에서 오버플로우 숨김 */
 }
 
 .bookmark-popup-header {
@@ -76,7 +75,7 @@
 }
 
 .bookmark-popup-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #111827;
   margin: 0;
@@ -102,8 +101,6 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  min-height: 0; /* flex 아이템이 부모 컨테이너를 넘지 않도록 */
-  max-height: calc(70vh - 60px); /* 헤더 높이를 뺀 최대 높이 */
 }
 
 /* 빈 상태 스타일 */
@@ -133,55 +130,4 @@
 
 .bookmark-popup-content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
-}
-
-/* 북마크 리스트 스타일 */
-.bookmark-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bookmark-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.bookmark-item:hover {
-  background-color: #f9fafb;
-}
-
-.bookmark-item-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.bookmark-item-title {
-  font-size: 13px;
-  font-weight: bold;
-  color: #111827;
-  margin: 0;
-}
-
-.bookmark-item-rating {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-
-.bookmark-item-address {
-  font-size: 10px;
-  color: #6b7280;
-  margin: 0;
-}
-
-.bookmark-item-image {
-  flex-shrink: 0;
 } 

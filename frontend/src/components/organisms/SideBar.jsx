@@ -11,20 +11,29 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [bookmarkedPlaces, setBookmarkedPlaces] = useState([]);
   const { isMapVisible, setIsMapVisible } = useMapStore();
 
   const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 
-  const handleSearchClick = () => {
+  const handleSearchClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setModalPosition({ x: rect.right + 15, y: 75 });
     setIsSearchModalOpen(!isSearchModalOpen);
+    setIsDailyPlanModalOpen(false);
   };
 
-  const handleBookmarkClick = () => {
+  const handleBookmarkClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setModalPosition({ x: rect.right + 15, y: 75 });
     setIsBookmarkModalOpen(true);
+    setIsDailyPlanModalOpen(false);
   };
 
-  const handleDailyPlanClick = () => {
+  const handleDailyPlanClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setModalPosition({ x: rect.right + 15, y: 75 }); // y좌표를 75px로 고정
     setIsDailyPlanModalOpen(true);
     // 부모 컴포넌트에 모달 상태 전달
     if (onDailyPlanModalToggle) {
@@ -34,6 +43,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
 
   const handleMapClick = () => {
     setIsMapVisible(!isMapVisible);
+    setIsDailyPlanModalOpen(false);
   };
 
   return (
@@ -42,7 +52,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
       <div className="SideBar">
         {/* 검색 아이콘 */}
         <button
-          onClick={handleSearchClick}
+          onClick={(e) => handleSearchClick(e)}
           className="sidebar-icon"
           title="장소 검색"
         >
@@ -51,7 +61,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
 
         {/* 북마크 아이콘 */}
         <button
-          onClick={handleBookmarkClick}
+          onClick={(e) => handleBookmarkClick(e)}
           className="sidebar-icon"
           title="북마크"
         >
@@ -60,7 +70,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
 
         {/* 추가 아이콘 */}
         <button
-          onClick={handleDailyPlanClick}
+          onClick={(e) => handleDailyPlanClick(e)}
           className="sidebar-icon"
           title="일정 추가"
         >
@@ -82,18 +92,21 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
         <AutocompleteSearchModal 
           isOpen={isSearchModalOpen} 
           onClose={() => setIsSearchModalOpen(false)}
+          position={modalPosition}
         />
         {/* 북마크 모달 */}
       <Bookmark 
         isOpen={isBookmarkModalOpen} 
         onClose={() => setIsBookmarkModalOpen(false)}
         bookmarkedPlaces={bookmarkedPlaces}
+        position={modalPosition}
       />
       </APIProvider>
 
       {/* 일정 추가 모달 */}
       <DailyPlanCreate 
         isOpen={isDailyPlanModalOpen} 
+        position={modalPosition}
         onClose={() => {
           setIsDailyPlanModalOpen(false);
           // 부모 컴포넌트에 모달 상태 전달

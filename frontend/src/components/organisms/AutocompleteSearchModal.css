@@ -1,21 +1,17 @@
 /* AutocompleteSearchModal.css */
 
 .autocomplete-search-modal {
+  box-sizing: border-box;
   position: fixed;
-  top: 75px; /* NavBar 높이만큼 여백 */
-  left: 70px; /* 사이드바 너비 + 여백 */
-  z-index: 3000;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   min-width: 300px;
   max-width: 330px;
-  /* 사이드바와 연결되는 화살표 효과 */
-  position: relative;
-  /* 부드러운 애니메이션 */
-  animation: slideInFromSidebar 0.3s ease-out;
-  transform-origin: top left;
+  display: flex;
+  flex-direction: column;
+  overflow: visible; /* 수정: 자동완성 목록이 잘리지 않도록 visible로 변경 */
 }
 
 @keyframes slideInFromSidebar {
@@ -27,34 +23,6 @@
     opacity: 1;
     transform: translateX(0) scale(1);
   }
-}
-
-/* 사이드바에서 나오는 화살표 효과 */
-.autocomplete-search-modal::before {
-  content: '';
-  position: absolute;
-  top: 13px;
-  left: -8px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid white;
-  z-index: 1501;
-}
-
-/* 화살표 그림자 효과 */
-.autocomplete-search-modal::after {
-  content: '';
-  position: absolute;
-  top: 13px;
-  left: -9px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid #e5e7eb;
-  z-index: 1500;
 }
 
 .autocomplete-search-container {
@@ -155,10 +123,11 @@
 }
 
 .autocomplete-predictions-list {
+  box-sizing: border-box;
   position: absolute;
   top: 100%; /* 검색창 바로 아래에 위치 */
-  left: -1px; /* 왼쪽으로 16px 이동 */
-  right: 0px;
+  left: 0;
+  right: 0;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-top: none;
@@ -169,7 +138,7 @@
   margin: 0; /* margin 제거 */
   z-index: 10;
   max-height: 250px;
-  width: 330px;
+  width: 100%;
   overflow-y: auto;
 }
 

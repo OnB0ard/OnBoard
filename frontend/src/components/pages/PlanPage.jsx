@@ -1,19 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { APIProvider } from '@vis.gl/react-google-maps';
+import { APIProvider, useMapsLibrary, Map, useMap } from '@vis.gl/react-google-maps';
 import CustomMarker from '../atoms/CustomMarker';
 import SideBar from '../organisms/SideBar';
 import WhiteBoard from '../organisms/WhiteBoard';
-import Map from '../organisms/Map';
+import MapContainer from '../organisms/Map';
 import EditToolBar from '../organisms/EditToolBar';
 import PlaceBlock from '../organisms/PlaceBlock';
 import DailyPlanCreate from '../organisms/DailyPlanCreate';
+
 import useMapStore from '../../store/useMapStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 
+const fallbackCenter = { lat: 37.5665, lng: 126.9780 };
 
+// 지도 초기화 로직을 담당하는 컴포넌트
+function MapInitializer() {
+  const map = useMap();
+  const placesLib = useMapsLibrary('places');
+  const {
+    setMapInstance,
+    setPlacesService,
+    setPlaceConstructor,
+    lastMapPosition,
+    setLastMapPosition,
+  } = useMapStore();
+
+  useEffect(() => {
+    if (!map || !placesLib) return;
+
+    setMapInstance(map);
+    setPlacesService(new placesLib.PlacesService(map));
+    setPlaceConstructor(placesLib.Place);
+
+    if (lastMapPosition) {
+      map.setCenter(lastMapPosition.center);
+      map.setZoom(lastMapPosition.zoom);
+    } else {
+      const koreaCenter = { lat: 36.5, lng: 127.5 };
+      const koreaZoom = 7;
+      map.setCenter(koreaCenter);
+      map.setZoom(koreaZoom);
+      setLastMapPosition({ center: koreaCenter, zoom: koreaZoom });
+    }
+
+    const dragListener = map.addListener('dragend', () => {
+      setLastMapPosition({ center: map.getCenter().toJSON(), zoom: map.getZoom() });
+    });
+    const zoomListener = map.addListener('zoom_changed', () => {
+      setLastMapPosition({ center: map.getCenter().toJSON(), zoom: map.getZoom() });
+    });
+
+    return () => {
+      window.google.maps.event.removeListener(dragListener);
+      window.google.maps.event.removeListener(zoomListener);
+    };
+  }, [map, placesLib, setMapInstance, setPlacesService, setPlaceConstructor, lastMapPosition, setLastMapPosition]);
+
+  return null;
+}
 
 // Google Place API의 카테고리를 CustomMarker의 type으로 변환
 const getMarkerTypeFromPlace = (place) => {
@@ -28,8 +76,13 @@ const getMarkerTypeFromPlace = (place) => {
   return 'default';
 };
 
-const Plan = () => {
+const PlanPage = () => {
+  const mapsLib = useMapsLibrary('maps');
   const { planId } = useParams();
+  
+  // 인증 상태 확인
+  const { userId, userName } = useAuthStore();
+  
   const {
     isMapVisible,
     placeBlocks,
@@ -39,8 +92,8 @@ const Plan = () => {
     markerPosition,
     markerType,
     fetchDetailsAndAddBlock,
+    panToPlace,
   } = useMapStore();
-
 
   // 마우스 드래그 상태
   const [draggedBlockId, setDraggedBlockId] = useState(null);
@@ -51,8 +104,6 @@ const Plan = () => {
 
   // 일정 추가 모달 상태
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
-
-  
 
   // PlaceBlock 삭제
   const handleRemove = (id) => {
@@ -151,67 +202,76 @@ const Plan = () => {
         cursor: draggedBlockId ? 'grabbing' : 'default'
       }}
     >
-      <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
-      <WhiteBoard />
-      {/* <EditToolBar /> */}
-      {isMapVisible && (
-        <APIProvider apiKey={apiKey}>
-          <Map>
-            {/* 계획에 추가된 장소들의 마커 */}
-            {placeBlocks.map((block) => {
-              // block.geometry.location이 없으면 마커를 렌더링하지 않음
-              if (!block.geometry?.location) return null;
+        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
+        <WhiteBoard />
+        {/* <EditToolBar /> */}
+        {isMapVisible && (
+          <MapContainer>
+            <APIProvider apiKey={apiKey}>
+              <Map
+                style={{ width: '100%', height: '100%' }}
+                defaultCenter={fallbackCenter}
+                defaultZoom={15}
+                mapId={'47dc3c714439f466fe9fcbd3'}
+                disableDefaultUI={true}
+              >
+                <MapInitializer />
+                {/* 계획에 추가된 장소들의 마커 */}
+                {placeBlocks.map((block) => {
+                  // block에 위치 정보가 없으면 마커를 렌더링하지 않음
+                  if (!block.latitude || !block.longitude) return null;
 
-              return (
-                <CustomMarker
-                  key={block.id}
-                  position={{
-                    lat: block.geometry.location.lat(),
-                    lng: block.geometry.location.lng(),
-                  }}
-                  type={getMarkerTypeFromPlace(block)}
-                />
-              );
-            })}
+                  return (
+                    <CustomMarker
+                      key={block.id}
+                      position={{
+                        lat: block.latitude,
+                        lng: block.longitude,
+                      }}
+                      type={block.primaryCategory || '기타'}
+                      onClick={() => panToPlace(block)}
+                    />
+                  );
+                })}
 
-            {/* 현재 선택된 장소의 임시 마커 */}
-            {markerPosition && (
-              <CustomMarker
-                position={{
-                  lat: markerPosition.lat,
-                  lng: markerPosition.lng,
-                }}
-                color="blue" // 임시 마커는 다른 색으로 구분
-                type={markerType}
-              />
-            )}
-          </Map>
-        </APIProvider>
-      )}
-      
-      {/* 화이트보드의 PlaceBlock들 */}
-      {placeBlocks.map((block) => (
-        <div
-          key={block.id}
-          style={{
-            position: 'absolute',
-            left: block.position.x,
-            top: block.position.y,
-            zIndex: draggedBlockId === block.id ? 2000 : 1000,
-            cursor: 'grab'
-          }}
-        >
-          <PlaceBlock
-            place={block}
-            onRemove={handleRemove}
-            onEdit={() => {}}
-            onMouseDown={handleMouseDown}
-            isDailyPlanModalOpen={isDailyPlanModalOpen}
-          />
-        </div>
-      ))}
-    </div>
+                {/* 현재 선택된 장소의 임시 마커 */}
+                {markerPosition && (
+                  <CustomMarker
+                    key={`temp-${markerPosition.lat}-${markerPosition.lng}`}
+                    position={markerPosition}
+                    type={markerType}
+                    isTemporary={true}
+                  />
+                )}
+              </Map>
+            </APIProvider>
+          </MapContainer>
+        )}
+        
+        {/* 화이트보드의 PlaceBlock들 */}
+        {placeBlocks.map((block) => (
+          <div
+            key={block.id}
+            style={{
+              position: 'absolute',
+              left: block.position.x,
+              top: block.position.y,
+              zIndex: draggedBlockId === block.id ? 2000 : 1000,
+              cursor: 'grab'
+            }}
+            onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
+          >
+            <PlaceBlock
+              place={block}
+              onRemove={handleRemove}
+              onEdit={() => {}}
+              onMouseDown={handleMouseDown}
+              isDailyPlanModalOpen={isDailyPlanModalOpen}
+            />
+          </div>
+        ))}
+      </div>
   );
 };
 
-export default Plan;
+export default PlanPage;

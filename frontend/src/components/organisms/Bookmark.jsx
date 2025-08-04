@@ -6,7 +6,7 @@ import PlaceImage from '../atoms/PlaceImage';
 import './Bookmark.css';
 import {createPortal} from 'react-dom';
 
-const Bookmark = ({ isOpen, onClose, onPlaceClick }) => {
+const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
   const popupRef = useRef(null);
   const { bookmarkedPlaces, toggleBookmark } = useMapStore();
 
@@ -30,7 +30,11 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick }) => {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="bookmark-popup" ref={popupRef}>
+    <div 
+      className="bookmark-popup" 
+      ref={popupRef}
+      style={position ? { top: `${position.y}px`, left: `${position.x}px` } : {}}
+    >
       <div className="bookmark-popup-container">
         <div className="bookmark-popup-header">
           <h2 className="bookmark-popup-title">저장된 장소</h2>

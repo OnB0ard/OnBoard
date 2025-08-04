@@ -6,7 +6,7 @@ import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
-const PlaceResult = ({ onBookmarkClick }) => {
+const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
   const { 
     searchResults, 
     isSearching, 
@@ -58,15 +58,15 @@ const PlaceResult = ({ onBookmarkClick }) => {
 
         return (
           <div
-            key={placeId}
-            className="flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-grab active:cursor-grabbing"
-            onClick={() => onPlaceClick && onPlaceClick(place)}
+            key={place.googlePlaceId || place.place_id}
+            className="place-result-item flex gap-3 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-grab active:cursor-grabbing"
+            onClick={() => onPlaceClick(place)}
             draggable="true"
             onDragStart={(e) => handleDragStart(e, place)}
           >
             <div className="flex-1 space-y-1">
-              <h3 className="text-base font-bold text-gray-900">{placeName}</h3>
-              {placeRating && (
+              <h3 className="text-base font-bold text-gray-900">{place.name}</h3>
+              {place.rating && (
                 <div className="flex items-center gap-3">
                   <StarRating rating={place.rating} reviewCount={place.user_ratings_total} />
                 </div>

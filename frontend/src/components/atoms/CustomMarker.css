@@ -1,8 +1,7 @@
 .custom-marker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateY(-50%); /* Center the marker on its position */
+  position: relative;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
 }
 
@@ -26,16 +25,6 @@
 
 .custom-marker:hover .pin {
     transform: rotate(-45deg) scale(1.1);
-}
-
-.pin-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: white;
-  position: absolute;
-  top: 7px;
-  left: 7px;
 }
 
 /* Optional: Style for content inside the marker */

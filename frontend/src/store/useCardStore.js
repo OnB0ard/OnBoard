@@ -18,4 +18,7 @@ export const useCardStore = create((set) => ({
     participantOpenId: null,
     shareOpenId: null,
   }),
+
+  // 팝오버가 열려있는지 확인하는 getter
+  isAnyPopoverOpen: (state) => state.participantOpenId !== null || state.shareOpenId !== null,
 }));

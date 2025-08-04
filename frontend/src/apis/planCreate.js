@@ -22,7 +22,8 @@ export const createPlan = async (planData) => {
     description: planData.description,
     startDate: planData.startDate,
     endDate: planData.endDate,
-    hashTag: planData.hashTag
+    hashTag: planData.hashTag,
+    creatorId: planData.creatorId // 생성자 ID 추가
   };
   
   // 2. DTO 객체를 Blob으로 변환하여 FormData에 추가
@@ -33,6 +34,12 @@ export const createPlan = async (planData) => {
 
   // 3. 이미지 파일이 있으면 'image'라는 key로 추가
   if (planData.image && planData.image instanceof File) {
+    // 파일 크기 검증 (5MB 제한)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (planData.image.size > maxSize) {
+      throw new Error(`이미지 파일이 너무 큽니다. 최대 ${maxSize / (1024 * 1024)}MB까지 업로드 가능합니다.`);
+    }
+    
     formData.append('image', planData.image);
     console.log('이미지 파일 추가됨:', planData.image.name, planData.image.size);
   } else {

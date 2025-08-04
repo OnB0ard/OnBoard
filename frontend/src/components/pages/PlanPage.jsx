@@ -8,9 +8,9 @@ import MapContainer from '../organisms/Map';
 import EditToolBar from '../organisms/EditToolBar';
 import PlaceBlock from '../organisms/PlaceBlock';
 import DailyPlanCreate from '../organisms/DailyPlanCreate';
-import PlaceDetailModal from '../organisms/PlaceDetailModal';
+
 import useMapStore from '../../store/useMapStore';
-import { shallow } from 'zustand/shallow';
+import { useAuthStore } from '../../store/useAuthStore';
 
 
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
@@ -76,8 +76,6 @@ function MapInitializer() {
   }, [map, setLastMapPosition]); // 루프를 유발하던 lastMapPosition 의존성 제거
 }
 
-
-
 // Google Place API의 카테고리를 CustomMarker의 type으로 변환
 const getMarkerTypeFromPlace = (place) => {
   if (!place.types) return 'default';
@@ -91,23 +89,24 @@ const getMarkerTypeFromPlace = (place) => {
   return 'default';
 };
 
-const Plan = () => {
+const PlanPage = () => {
   const mapsLib = useMapsLibrary('maps');
   const { planId } = useParams();
-
-  // ✅ [수정] 스토어 구독 로직 변경: 무한 루프 방지를 위해 각 상태를 개별적으로 구독합니다.
-  const isMapVisible = useMapStore((state) => state.isMapVisible);
-  const placeBlocks = useMapStore((state) => state.placeBlocks);
-  const markerPosition = useMapStore((state) => state.markerPosition);
-  const markerType = useMapStore((state) => state.markerType);
-  const isPlaceDetailModalOpen = useMapStore((state) => state.isPlaceDetailModalOpen);
-  const handlePlaceSelection = useMapStore((state) => state.handlePlaceSelection);
-
-  // 액션 함수들은 리렌더링을 유발하지 않으므로 컴포넌트 외부에서 한 번만 가져오거나, 렌더링 내에서 직접 접근합니다.
-  const fetchDetailsAndAddBlock = useMapStore((state) => state.fetchDetailsAndAddBlock);
-  const removePlaceBlock = useMapStore((state) => state.removePlaceBlock);
-  const updatePlaceBlockPosition = useMapStore((state) => state.updatePlaceBlockPosition);
-  const panToPlace = useMapStore((state) => state.panToPlace);
+  
+  // 인증 상태 확인
+  const { userId, userName } = useAuthStore();
+  
+  const {
+    isMapVisible,
+    placeBlocks,
+    addPlaceBlock,
+    removePlaceBlock,
+    updatePlaceBlockPosition,
+    markerPosition,
+    markerType,
+    fetchDetailsAndAddBlock,
+    panToPlace,
+  } = useMapStore();
 
   // 마우스 드래그 상태
   const [draggedBlockId, setDraggedBlockId] = useState(null);
@@ -118,8 +117,6 @@ const Plan = () => {
 
   // 일정 추가 모달 상태
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
-
-  
 
   // PlaceBlock 삭제
   const handleRemove = (id) => {
@@ -218,84 +215,76 @@ const Plan = () => {
         cursor: draggedBlockId ? 'grabbing' : 'default'
       }}
     >
-      <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
-      <WhiteBoard />
-      {/* <EditToolBar /> */}
-      {isMapVisible && (
-        <MapContainer>
-          <APIProvider apiKey={apiKey}>
-            <Map
-              style={{ width: '100%', height: '100%' }}
-              defaultCenter={fallbackCenter}
-              defaultZoom={15}
-              mapId={'47dc3c714439f466fe9fcbd3'}
-              disableDefaultUI={true}
-            >
-              <MapInitializer />
-              {/* 계획에 추가된 장소들의 마커 */}
-              {placeBlocks.map((block) => {
-                // block에 위치 정보가 없으면 마커를 렌더링하지 않음
-                if (!block.latitude || !block.longitude) return null;
+        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
+        <WhiteBoard />
+        {/* <EditToolBar /> */}
+        {isMapVisible && (
+          <MapContainer>
+            <APIProvider apiKey={apiKey}>
+              <Map
+                style={{ width: '100%', height: '100%' }}
+                defaultCenter={fallbackCenter}
+                defaultZoom={15}
+                mapId={'47dc3c714439f466fe9fcbd3'}
+                disableDefaultUI={true}
+              >
+                <MapInitializer />
+                {/* 계획에 추가된 장소들의 마커 */}
+                {placeBlocks.map((block) => {
+                  // block에 위치 정보가 없으면 마커를 렌더링하지 않음
+                  if (!block.latitude || !block.longitude) return null;
 
-                return (
+                  return (
+                    <CustomMarker
+                      key={block.id}
+                      position={{
+                        lat: block.latitude,
+                        lng: block.longitude,
+                      }}
+                      type={block.primaryCategory || '기타'}
+                      onClick={() => panToPlace(block)}
+                    />
+                  );
+                })}
+
+                {/* 현재 선택된 장소의 임시 마커 */}
+                {markerPosition && (
                   <CustomMarker
-                    key={block.id}
-                    position={{
-                      lat: block.latitude,
-                      lng: block.longitude,
-                    }}
-                    type={block.primaryCategory || '기타'}
-                    onClick={() => {
-                      const placeId = block.place_id || block.googlePlaceId;
-                      if (placeId) {
-                        handlePlaceSelection(placeId);
-                      } else {
-                        console.error('No valid place ID found for this marker', block);
-                      }
-                    }}
+                    key={`temp-${markerPosition.lat}-${markerPosition.lng}`}
+                    position={markerPosition}
+                    type={markerType}
+                    isTemporary={true}
                   />
-                );
-              })}
-              {/* 현재 선택된 장소의 임시 마커 */}
-              {markerPosition && (
-                <CustomMarker
-                  key={`temp-${markerPosition.lat}-${markerPosition.lng}`}
-                  position={markerPosition}
-                  type={markerType}
-                  isTemporary={true}
-                />
-              )}
-            </Map>
-          </APIProvider>
-        </MapContainer>
-      )}
-      
-      {/* 화이트보드의 PlaceBlock들 */}
-      {placeBlocks.map((block) => (
-        <div
-          key={block.id}
-          style={{
-            position: 'absolute',
-            left: block.position.x,
-            top: block.position.y,
-            zIndex: draggedBlockId === block.id ? 2000 : 1000,
-            cursor: 'grab'
-          }}
-          onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
-        >
-          <PlaceBlock
-            place={block}
-            onRemove={handleRemove}
-            onEdit={() => {}}
-            onMouseDown={handleMouseDown}
-            isDailyPlanModalOpen={isDailyPlanModalOpen}
-          />
-        </div>
-      ))}
-
-      {isPlaceDetailModalOpen && <PlaceDetailModal />}
-    </div>
+                )}
+              </Map>
+            </APIProvider>
+          </MapContainer>
+        )}
+        
+        {/* 화이트보드의 PlaceBlock들 */}
+        {placeBlocks.map((block) => (
+          <div
+            key={block.id}
+            style={{
+              position: 'absolute',
+              left: block.position.x,
+              top: block.position.y,
+              zIndex: draggedBlockId === block.id ? 2000 : 1000,
+              cursor: 'grab'
+            }}
+            onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
+          >
+            <PlaceBlock
+              place={block}
+              onRemove={handleRemove}
+              onEdit={() => {}}
+              onMouseDown={handleMouseDown}
+              isDailyPlanModalOpen={isDailyPlanModalOpen}
+            />
+          </div>
+        ))}
+      </div>
   );
 };
 
-export default Plan;
+export default PlanPage;

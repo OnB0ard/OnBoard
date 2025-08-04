@@ -3,6 +3,7 @@ import './CardDropDown.css';
 
 const CardDropDown = ({ children, items }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState('bottom-right');
   const dropdownRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
 
@@ -43,15 +44,25 @@ const CardDropDown = ({ children, items }) => {
     setIsOpen(false);
   };
 
-  const toggleDropdown = (e) => {
+  const handleToggle = (e) => {
     e.stopPropagation();
+    
     if (!isOpen) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setMenuStyle({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
+      // 드롭다운을 열 때 위치 계산
+      const rect = dropdownRef.current?.getBoundingClientRect();
+      if (rect) {
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        
+        if (spaceBelow < 100 && spaceAbove > 100) {
+          setDropdownPosition('top-right');
+        } else {
+          setDropdownPosition('bottom-right');
+        }
+      }
     }
+    
     setIsOpen(!isOpen);
   };
 
@@ -59,13 +70,13 @@ const CardDropDown = ({ children, items }) => {
     <div className="card-dropdown" ref={dropdownRef}>
       <button
         className="card-dropdown-trigger"
-        onClick={toggleDropdown}
+        onClick={handleToggle}
       >
         {children}
       </button>
       
       {isOpen && (
-        <div className="card-dropdown-menu" style={menuStyle}>
+        <div className={`card-dropdown-menu ${dropdownPosition}`}>
           {items.map((item, index) => (
             <button
               key={index}

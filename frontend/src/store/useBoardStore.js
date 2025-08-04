@@ -28,50 +28,6 @@ export const useBoardStore = create((set, get) => ({
     });
   },
 
-  // undo: () => {
-  //   const { historyStep, shapesHistory, linesHistory } = get();
-  //   if (historyStep > 0) {
-  //     const prevShapes = shapesHistory[historyStep - 1];
-  //     const prevLines = linesHistory[historyStep - 1];
-  //     const currShapes = shapesHistory[historyStep];
-  //     const currLines = linesHistory[historyStep];
-
-  //     const diffShapes = currShapes.filter(cs => !prevShapes.some(ps => ps.id === cs.id && JSON.stringify(ps) === JSON.stringify(cs)));
-  //     const diffLines = currLines.filter(cl => !prevLines.some(pl => pl.id === cl.id && JSON.stringify(pl) === JSON.stringify(cl)));
-
-  //     if (diffShapes.length > 0) console.log('↩ Undo Changed Shapes:', JSON.stringify(diffShapes, null, 2));
-  //     if (diffLines.length > 0) console.log('↩ Undo Changed Lines:', JSON.stringify(diffLines, null, 2));
-
-  //     set({
-  //       shapes: prevShapes,
-  //       lines: prevLines,
-  //       historyStep: historyStep - 1
-  //     });
-  //   }
-  // },
-
-  // redo: () => {
-  //   const { historyStep, shapesHistory, linesHistory } = get();
-  //   if (historyStep < shapesHistory.length - 1) {
-  //     const nextShapes = shapesHistory[historyStep + 1];
-  //     const nextLines = linesHistory[historyStep + 1];
-  //     const currShapes = shapesHistory[historyStep];
-  //     const currLines = linesHistory[historyStep];
-
-  //     const diffShapes = nextShapes.filter(ns => !currShapes.some(cs => cs.id === ns.id && JSON.stringify(cs) === JSON.stringify(ns)));
-  //     const diffLines = nextLines.filter(nl => !currLines.some(cl => cl.id === nl.id && JSON.stringify(cl) === JSON.stringify(nl)));
-
-  //     if (diffShapes.length > 0) console.log('↪ Redo Changed Shapes:', JSON.stringify(diffShapes, null, 2));
-  //     if (diffLines.length > 0) console.log('↪ Redo Changed Lines:', JSON.stringify(diffLines, null, 2));
-
-  //     set({
-  //       shapes: nextShapes,
-  //       lines: nextLines,
-  //       historyStep: historyStep + 1
-  //     });
-  //   }
-  // },
-
 
   updateShapesAndSave: (newShapes) => {
     const lines = get().lines;
@@ -169,14 +125,26 @@ export const useBoardStore = create((set, get) => ({
   // Pen 라인 추가
   addLine: (line) => {
     const updated = [...get().lines, line];
-    get().saveHistory(get().shapes, updated);
+    // get().saveHistory(get().shapes, updated);
+    set({lines: updated});
   },
 
+  // MouseUp하면 해당 마지막 points를 반영하고 saveHistory
   updateLastLinePoints: (points) => {
     const lines = [...get().lines];
     const last = { ...lines.pop(), points };
     lines.push(last);
     get().saveHistory(get().shapes, lines);
+    // set({lines});
+  },
+  
+  // MouseMove하는 동안의 매 x,y points 반영
+  updateLastLinePointsTemp: (points) => {
+    const lines = [...get().lines];
+    const last = { ...lines.pop(), points };
+    lines.push(last);
+    // get().saveHistory(get().shapes, lines);
+    set({lines});
   },
 
   removeShapeById: (id) => {

@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Stage, Layer, Line, Arrow, Circle, Rect, Text, Transformer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { useBoardStore } from '../../store/useBoardStore';
-import EditToolBar from './EditToolBar'; 
+import EditToolBar from './EditToolBar';
 
 const simplifyPoints = (points, tolerance = 3) => {
   if (points.length <= 4) return points;
@@ -25,8 +25,8 @@ const WhiteBoard = () => {
   const trRef = useRef();
   const startPosRef = useRef(null);
   const isDrawing = useRef(false);
-
   const isErasing = useRef(false);
+  const erasedIds = useRef(new Set());
 
   const {
     shapes,
@@ -45,13 +45,13 @@ const WhiteBoard = () => {
     setIsEditingTextId,
     addLine,
     updateLastLinePoints,
+    updateLastLinePointsTemp,
     undo,
     redo,
     removeShapeById,
     updateShapesAndSave,
   } = useBoardStore();
 
-  // cursor <-> select 변환 처리
   const internalShapeType = shapeType === 'cursor' ? 'select' : shapeType;
 
   useEffect(() => {
@@ -69,13 +69,13 @@ const WhiteBoard = () => {
   }, [selectedId, isEditingTextId, internalShapeType]);
 
   useEffect(() => {
-  if (shapeType === 'undo') {
-    undo();
-    setShapeType('select');
-  } else if (shapeType === 'redo') {
-    redo();
-    setShapeType('select');
-  }
+    if (shapeType === 'undo') {
+      undo();
+      setShapeType('select');
+    } else if (shapeType === 'redo') {
+      redo();
+      setShapeType('select');
+    }
   }, [shapeType]);
 
   const handleMouseDown = (e) => {
@@ -103,151 +103,162 @@ const WhiteBoard = () => {
 
     if (internalShapeType === 'eraser') {
       isErasing.current = true;
-      return;
     }
-
   };
 
-  const erasedIds = useRef(new Set());
+  useEffect(() => {
+    const handleWindowMouseMove = (e) => {
+      if (!stageRef.current) return;
+      const stage = stageRef.current;
+      const rect = stage.container().getBoundingClientRect();
+      const pointer = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
 
-  const handleMouseMove = (e) => {
-  if (shapeType === 'pen' && isDrawing.current) {
-    const point = stageRef.current.getPointerPosition();
-    const lastLine = lines[lines.length - 1];
-    if (!lastLine) return;
-    const updatedPoints = [...lastLine.points, point.x, point.y];
-    updateLastLinePoints(updatedPoints);
-  }
-
-  if (shapeType === 'eraser' && isErasing.current) {
-    const pos = stageRef.current.getPointerPosition();
-    const allIds = [...shapes.map(s => s.id), ...lines.map(l => l.id)];
-
-    allIds.forEach(id => {
-      if (erasedIds.current.has(id)) return;
-      const node = stageRef.current.findOne(`#${id}`);
-      if (node && node.intersects({ x: pos.x, y: pos.y })) {
-        erasedIds.current.add(id);
-        removeShapeById(id);
+      if (shapeType === 'pen' && isDrawing.current) {
+        const lastLine = lines[lines.length - 1];
+        if (!lastLine) return;
+        const updatedPoints = [...lastLine.points, pointer.x, pointer.y];
+        updateLastLinePointsTemp(updatedPoints);
       }
-    });
-  }
 
-  };
-
-  const handleMouseUp = () => {
-    if (shapeType === 'eraser') {
-      isErasing.current = false;        // 지우개 멈춤
-      erasedIds.current.clear();        // 지운 ID 초기화
-      return;
-    }
-
-    if (internalShapeType === 'pen') {
-      isDrawing.current = false;
-      const lastLine = lines[lines.length - 1];
-      if (!lastLine) return;
-      const simplified = simplifyPoints(lastLine.points);
-      updateLastLinePoints(simplified);
-      // console.log('Final Pen JSON:', JSON.stringify({ ...lastLine, points: simplified }, null, 2));
-      return;
-    }
-
-    const end = stageRef.current.getPointerPosition();
-    const start = startPosRef.current;
-    if (!start || !end || internalShapeType === 'select' || internalShapeType === 'eraser') return;
-
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const id = `${Date.now()}`;
-    const newShape =
-      internalShapeType === 'arrow'
-        ? {
-            id,
-            type: 'arrow',
-            x: start.x,
-            y: start.y,
-            points: [0, 0, dx, dy],
-            stroke: color,
-            fill: color,
-            strokeWidth: 2,
-            scaleX: 1,
-            scaleY: 1,
-            rotation: 0
+      if (shapeType === 'eraser' && isErasing.current) {
+        const allIds = [...shapes.map(s => s.id), ...lines.map(l => l.id)];
+        allIds.forEach(id => {
+          if (erasedIds.current.has(id)) return;
+          const node = stage.findOne(`#${id}`);
+          if (node && node.intersects(pointer)) {
+            erasedIds.current.add(id);
+            removeShapeById(id);
           }
-        : internalShapeType === 'circle'
-        ? {
-            id,
-            type: 'circle',
-            x: (start.x + end.x) / 2,
-            y: (start.y + end.y) / 2,
-            radius: Math.sqrt(dx ** 2 + dy ** 2) / 2,
-            stroke: color,
-            fill: 'transparent',
-            strokeWidth: 2,
-            scaleX: 1,
-            scaleY: 1,
-            rotation: 0
-          }
-        : internalShapeType === 'rect'
-        ? {
-            id,
-            type: 'rect',
-            x: Math.min(start.x, end.x),
-            y: Math.min(start.y, end.y),
-            width: Math.abs(dx),
-            height: Math.abs(dy),
-            stroke: color,
-            fill: 'transparent',
-            strokeWidth: 2,
-            scaleX: 1,
-            scaleY: 1,
-            rotation: 0
-          }
-        : {
-            id,
-            type: 'text',
-            x: start.x,
-            y: start.y,
-            text: 'Double click to edit',
-            fill: color,
-            fontSize: 20,
-            fontFamily: 'Arial',
-            scaleX: 1,
-            scaleY: 1,
-            rotation: 0
-          };
+        });
+      }
+    };
 
-    updateShapesAndSave([...shapes, newShape]);
+    const handleWindowMouseUp = (e) => {
+      if (!stageRef.current) return;
+      const stage = stageRef.current;
+      const rect = stage.container().getBoundingClientRect();
+      const pointer = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
 
-    console.log('New Shape JSON:', JSON.stringify(newShape, null, 2));
-    startPosRef.current = null;
-  };
+      if (shapeType === 'pen' && isDrawing.current) {
+        isDrawing.current = false;
+        const lastLine = lines[lines.length - 1];
+        if (!lastLine) return;
+        const simplified = simplifyPoints(lastLine.points);
+        updateLastLinePoints(simplified);  
+        // console.log('Final Pen JSON:', JSON.stringify({ ...lastLine, points: simplified }, null, 2));
+
+        return;
+      }
+
+      if (shapeType === 'eraser') {
+        isErasing.current = false;
+        erasedIds.current.clear();
+        return;
+      }
+
+      const end = pointer;
+      const start = startPosRef.current;
+      if (!start || !end || internalShapeType === 'select') return;
+
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const id = `${Date.now()}`;
+      const newShape =
+        internalShapeType === 'arrow'
+          ? {
+              id,
+              type: 'arrow',
+              x: start.x,
+              y: start.y,
+              points: [0, 0, dx, dy],
+              stroke: color,
+              fill: color,
+              strokeWidth: 2,
+              scaleX: 1,
+              scaleY: 1,
+              rotation: 0
+            }
+          : internalShapeType === 'circle'
+          ? {
+              id,
+              type: 'circle',
+              x: (start.x + end.x) / 2,
+              y: (start.y + end.y) / 2,
+              radius: Math.sqrt(dx ** 2 + dy ** 2) / 2,
+              stroke: color,
+              fill: 'transparent',
+              strokeWidth: 2,
+              scaleX: 1,
+              scaleY: 1,
+              rotation: 0
+            }
+          : internalShapeType === 'rect'
+          ? {
+              id,
+              type: 'rect',
+              x: Math.min(start.x, end.x),
+              y: Math.min(start.y, end.y),
+              width: Math.abs(dx),
+              height: Math.abs(dy),
+              stroke: color,
+              fill: 'transparent',
+              strokeWidth: 2,
+              scaleX: 1,
+              scaleY: 1,
+              rotation: 0
+            }
+          : {
+              id,
+              type: 'text',
+              x: start.x,
+              y: start.y,
+              text: 'Double click to edit',
+              fill: color,
+              fontSize: 20,
+              fontFamily: 'Arial',
+              scaleX: 1,
+              scaleY: 1,
+              rotation: 0
+            };
+
+      updateShapesAndSave([...shapes, newShape]);
+      console.log('New Shape JSON:', JSON.stringify(newShape, null, 2));
+      startPosRef.current = null;
+    };
+
+    // 전역 이벤트 등록
+    // 기존 <Stage> 내부에서 이벤트 추가시 Stage 외부 (ex.Map)에선 이벤트 발생 X
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    // 컴포넌트 unmount시 이벤트 제거
+    // useEffect 내부 return : 클린업 함수
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [shapeType, shapes, lines]);
 
   return (
     <>
-      <EditToolBar
-        shapeType={shapeType}
-        setShapeType={setShapeType}
-        color={color}
-        setColor={setColor}
-      />
-
+      <EditToolBar shapeType={shapeType} setShapeType={setShapeType} color={color} setColor={setColor} />
       <Stage
         width={window.innerWidth}
         height={window.innerHeight}
+        // width={1920}
+        // height={1080}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
         ref={stageRef}
-        style={{
-          position: 'absolute',
-          zIndex:0}}
+        style={{ position: 'absolute', zIndex: 0 }}
       >
         <Layer>
-          {lines.map((line) => (
-            <Line key={line.id} {...line} />
-          ))}
-
+          {lines.map((line) => <Line key={line.id} {...line} />)}
           {shapes.map((shape) => {
             const { id, type, ...rest } = shape;
             const isSelectable = internalShapeType === 'select';
@@ -268,31 +279,20 @@ const WhiteBoard = () => {
                 console.log('Transformed Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
               },
               onDragEnd: (e) => {
-                const updated = {
-                  x: e.target.x(),
-                  y: e.target.y()
-                };
+                const updated = { x: e.target.x(), y: e.target.y() };
                 updateShapeTransform(id, updated);
                 console.log('Dragged Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
               }
             };
 
             switch (type) {
-              case 'arrow':
-                return <Arrow key={id} {...commonProps} {...rest} />;
-              case 'circle':
-                return <Circle key={id} {...commonProps} {...rest} />;
-              case 'rect':
-                return <Rect key={id} {...commonProps} {...rest} />;
+              case 'arrow': return <Arrow key={id} {...commonProps} {...rest} />;
+              case 'circle': return <Circle key={id} {...commonProps} {...rest} />;
+              case 'rect': return <Rect key={id} {...commonProps} {...rest} />;
               case 'text':
                 return (
                   <React.Fragment key={id}>
-                    <Text
-                      {...commonProps}
-                      {...rest}
-                      onDblClick={() => setIsEditingTextId(id)}
-                      visible={isEditingTextId !== id}
-                    />
+                    <Text {...commonProps} {...rest} onDblClick={() => setIsEditingTextId(id)} visible={isEditingTextId !== id} />
                     {isEditingTextId === id && (
                       <Html>
                         <textarea
@@ -304,12 +304,9 @@ const WhiteBoard = () => {
                           }}
                           onChange={(e) => updateText(id, e.target.value)}
                           onKeyDown={(e) => {
-                            if(e.key === 'Enter' && !e.shiftKey){
+                            if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
-
-                              // 마지막 줄바꿈 제거
                               const cleanedText = e.target.value.replace(/\n$/, '');
-
                               updateText(id, cleanedText);
                               setIsEditingTextId(null);
                               printText(id);
@@ -320,11 +317,9 @@ const WhiteBoard = () => {
                     )}
                   </React.Fragment>
                 );
-              default:
-                return null;
+              default: return null;
             }
           })}
-
           <Transformer ref={trRef} />
         </Layer>
       </Stage>

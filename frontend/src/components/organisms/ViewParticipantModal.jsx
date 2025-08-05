@@ -98,6 +98,8 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
             <span className={`font-medium text-gray-800 text-sm flex-1 ${p.status === 'CREATOR' ? "text-blue-600" : ""}`}>
               {p.userName}
               {p.status === 'CREATOR' && <span className="ml-1 text-xs text-blue-400 font-bold">(방장)</span>}
+              {/* 참여자 상태 구분 */}
+              {/* {participants && p.status !== 'CREATOR' && <span className="ml-1 text-xs text-blue-400 font-bold">(참여자)</span>} */}
               {p.userStatus === 'PENDING' && <span className="ml-1 text-xs text-yellow-500 font-bold">(대기중)</span>}
             </span>
             {isCreator && p.userStatus === 'PENDING' && (

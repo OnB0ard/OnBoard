@@ -16,6 +16,8 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
   const [draggedFromDay, setDraggedFromDay] = useState(null);
   const [draggedFromIndex, setDraggedFromIndex] = useState(null);
   const [bookmarkModalPosition, setBookmarkModalPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [memoModalData, setMemoModalData] = useState({
@@ -128,34 +130,131 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
   };
 
   const handlePlaceDragStart = (e, place, dayIndex, placeIndex) => {
+    console.log('드래그 시작:', { place: place.name, dayIndex, placeIndex });
+    
+    // 드래그 데이터 설정
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      placeId: place.id,
+      dayIndex: dayIndex,
+      placeIndex: placeIndex
+    }));
+    
+    // 상태 설정
     setDraggedPlaceId(place.id);
     setDraggedFromDay(dayIndex);
     setDraggedFromIndex(placeIndex);
-    e.dataTransfer.effectAllowed = 'move';
+    setIsDragging(true);
+    
+    // 시각적 피드백
+    e.target.style.opacity = '0.5';
   };
 
   const handlePlaceDrop = (e, targetDayIndex, targetPlaceIndex) => {
     e.preventDefault();
-    if (draggedPlaceId !== null) {
-      setDailyPlans(prev => {
-        const newPlans = [...prev];
-        const draggedPlace = newPlans[draggedFromDay].places[draggedFromIndex];
-        
-        newPlans[draggedFromDay].places.splice(draggedFromIndex, 1);
-        
-        if (targetDayIndex === draggedFromDay) {
-          newPlans[targetDayIndex].places.splice(targetPlaceIndex, 0, draggedPlace);
-        } else {
-          newPlans[targetDayIndex].places.splice(targetPlaceIndex, 0, draggedPlace);
-        }
-        
-        return newPlans;
-      });
+    e.stopPropagation();
+    
+    console.log('드롭 이벤트:', { 
+      targetDayIndex, 
+      targetPlaceIndex,
+      draggedFromDay,
+      draggedFromIndex
+    });
+    
+    // 드래그 데이터 가져오기
+    let dragData;
+    try {
+      const data = e.dataTransfer.getData('application/json');
+      dragData = JSON.parse(data);
+    } catch (error) {
+      console.error('드래그 데이터 파싱 실패:', error);
+      return;
     }
     
+    const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
+    
+    if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === targetPlaceIndex) {
+      console.log('같은 위치로 드롭 - 무시');
+      return;
+    }
+    
+    setDailyPlans(prev => {
+      const newPlans = [...prev];
+      
+      // 드래그된 장소 가져오기
+      const draggedPlace = newPlans[sourceDayIndex].places[sourcePlaceIndex];
+      console.log('드래그된 장소:', draggedPlace.name);
+      
+      // 원래 위치에서 제거
+      newPlans[sourceDayIndex].places.splice(sourcePlaceIndex, 1);
+      
+      // 새로운 위치에 삽입
+      if (sourceDayIndex === targetDayIndex) {
+        // 같은 일정 내에서 순서 변경
+        let adjustedTargetIndex = targetPlaceIndex;
+        if (sourcePlaceIndex < targetPlaceIndex) {
+          adjustedTargetIndex -= 1;
+        }
+        console.log('같은 일정 내 이동:', { from: sourcePlaceIndex, to: adjustedTargetIndex });
+        newPlans[targetDayIndex].places.splice(adjustedTargetIndex, 0, draggedPlace);
+      } else {
+        // 다른 일정으로 이동
+        console.log('다른 일정으로 이동');
+        newPlans[targetDayIndex].places.splice(targetPlaceIndex, 0, draggedPlace);
+      }
+      
+      return newPlans;
+    });
+    
+    // 상태 초기화
     setDraggedPlaceId(null);
     setDraggedFromDay(null);
     setDraggedFromIndex(null);
+    setIsDragging(false);
+    setDragOverIndex(null);
+    
+    // 스타일 초기화
+    const placeItems = document.querySelectorAll('.place-item');
+    placeItems.forEach(item => {
+      item.style.opacity = '1';
+      item.classList.remove('drag-over-place');
+    });
+  };
+
+  const handlePlaceDragOver = (e, dayIndex, placeIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isDragging && draggedFromDay === dayIndex) {
+      setDragOverIndex(placeIndex);
+      e.currentTarget.classList.add('drag-over-place');
+    }
+  };
+
+  const handlePlaceDragLeave = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over-place');
+    setDragOverIndex(null);
+  };
+
+  const handlePlaceDragEnd = (e) => {
+    e.preventDefault();
+    
+    console.log('드래그 종료');
+    
+    // 상태 초기화
+    setIsDragging(false);
+    setDragOverIndex(null);
+    setDraggedPlaceId(null);
+    setDraggedFromDay(null);
+    setDraggedFromIndex(null);
+    
+    // 스타일 초기화
+    const placeItems = document.querySelectorAll('.place-item');
+    placeItems.forEach(item => {
+      item.style.opacity = '1';
+      item.classList.remove('drag-over-place');
+    });
   };
 
   const removePlace = (dayIndex, placeIndex) => {
@@ -251,8 +350,12 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
                     key={place.id}
                     className="place-item"
                     draggable="true"
+                    data-dragging={isDragging && draggedPlaceId === place.id}
+                    data-drop-target={isDragging && dragOverIndex === placeIndex && draggedFromDay === dayIndex}
                     onDragStart={(e) => handlePlaceDragStart(e, place, dayIndex, placeIndex)}
-                    onDragOver={(e) => e.preventDefault()}
+                    onDragOver={(e) => handlePlaceDragOver(e, dayIndex, placeIndex)}
+                    onDragLeave={handlePlaceDragLeave}
+                    onDragEnd={handlePlaceDragEnd}
                     onDrop={(e) => handlePlaceDrop(e, dayIndex, placeIndex)}
                   >
                     <DailyPlaceBlock

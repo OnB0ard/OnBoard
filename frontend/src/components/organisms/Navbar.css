@@ -57,3 +57,12 @@
 .temp:hover {
   cursor: pointer;
 }
+
+/* Landing 페이지에서 사용할 흰색 텍스트 스타일 */
+.landing-text {
+  color: white !important;
+}
+
+.landing-text:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}

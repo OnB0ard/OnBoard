@@ -18,7 +18,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing/>} />
         <Route path="/Test" element={<Test/>} />
-                <Route element={<PrivateRoute />}>
+        <Route element={<PrivateRoute />}>
           <Route path="/list" element={<PlanList/>} />
           <Route path="/plan/:planId" element={<PlanPage/>} />
           <Route path="/mypage" element={<MyPage />} />

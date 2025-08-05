@@ -4,6 +4,7 @@ import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
 import com.ssafy.backend.plan.dto.response.PlanParticipantUserListResponseDTO;
+import com.ssafy.backend.plan.dto.response.UserStatusResponseDTO;
 import com.ssafy.backend.plan.service.PlanParticipantService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
@@ -41,5 +42,10 @@ public class PlanParticipantController {
     @PostMapping("{planId}/delegate")
     public CommonResponse<SuccessResponseDTO> delegateRequest(@PathVariable("planId") Long planId, @RequestBody Long userId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.delegateRequest(planId, userId, jwtUserInfo)), HttpStatus.OK);
+    }
+
+    @GetMapping("{planId}/userStatus")
+    public CommonResponse<UserStatusResponseDTO> getUserStatus(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(planParticipantService.getUserStatus(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
 }

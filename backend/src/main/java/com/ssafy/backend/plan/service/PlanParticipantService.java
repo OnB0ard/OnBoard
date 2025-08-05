@@ -1,6 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
+import com.ssafy.backend.plan.dto.response.UserStatusResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -26,7 +27,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class PlanParticipantService {
 
-    private final UserPlanRepository planParticipantRepository;
+    private final UserPlanRepository userPlanRepository;
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
 
@@ -38,8 +39,8 @@ public class PlanParticipantService {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(jwtUserInfo.getUserId());
 
-        if(planParticipantRepository.existsByPlanAndUser(plan, user)) {
-            userPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, user);
+        if(userPlanRepository.existsByPlanAndUser(plan, user)) {
+            userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
             if (userPlan.getUserStatus() == UserStatus.PENDING) {
                 throw new UserPlanExistException("이미 승인 대기 중입니다.");
             } else if (userPlan.getUserStatus() == UserStatus.APPROVED) {
@@ -52,7 +53,7 @@ public class PlanParticipantService {
         userPlan.setUserType(UserType.USER);
         userPlan.setUserStatus(UserStatus.PENDING);
 
-        planParticipantRepository.save(userPlan);
+        userPlanRepository.save(userPlan);
         return true;
     }
 
@@ -63,10 +64,10 @@ public class PlanParticipantService {
         User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
 
-        if(!planParticipantRepository.existsByPlanAndUser(plan, creator)) {
+        if(!userPlanRepository.existsByPlanAndUser(plan, creator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
-        UserPlan creatorPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, creator);
+        UserPlan creatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, creator);
 
         if(creatorPlan.getUserType() == UserType.USER) {
             // 대기자(PENDING)도 구분해서 넣어야 해? 그럴 필요까지 없다고 생각해서 안나눔
@@ -75,17 +76,17 @@ public class PlanParticipantService {
 
         User applicant = new User();
         applicant.setUserId(acceptOrDenyUserRequestDTO.getUserId());
-        if(!planParticipantRepository.existsByUser(applicant)){
+        if(!userPlanRepository.existsByUser(applicant)){
             throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
 
-        if(!planParticipantRepository.existsByPlanAndUser(plan, applicant)) {
+        if(!userPlanRepository.existsByPlanAndUser(plan, applicant)) {
             throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
         }
 
-        UserPlan applicantPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, applicant);
+        UserPlan applicantPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, applicant);
         applicantPlan.setUserStatus(UserStatus.APPROVED);
-        planParticipantRepository.save(applicantPlan);
+        userPlanRepository.save(applicantPlan);
 
         return true;
     }
@@ -97,10 +98,10 @@ public class PlanParticipantService {
         User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
 
-        if(!planParticipantRepository.existsByPlanAndUser(plan, creator)) {
+        if(!userPlanRepository.existsByPlanAndUser(plan, creator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
-        UserPlan creatorPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, creator);
+        UserPlan creatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, creator);
 
         if(creatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
@@ -108,15 +109,15 @@ public class PlanParticipantService {
 
         User applicant = new User();
         applicant.setUserId(acceptOrDenyUserRequestDTO.getUserId());
-        if(!planParticipantRepository.existsByUser(applicant)){
+        if(!userPlanRepository.existsByUser(applicant)){
             throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
 
-        if(!planParticipantRepository.existsByPlanAndUser(plan, applicant)) {
+        if(!userPlanRepository.existsByPlanAndUser(plan, applicant)) {
             throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
         }
 
-        planParticipantRepository.deleteUserPlanByPlanAndUser(plan, applicant);
+        userPlanRepository.deleteUserPlanByPlanAndUser(plan, applicant);
         return true;
     }
 
@@ -125,16 +126,16 @@ public class PlanParticipantService {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(jwtUserInfo.getUserId());
 
-        if(!planParticipantRepository.existsByPlanAndUser(plan, user)) {
+        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
-        UserPlan userPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
         if(userPlan.getUserStatus().equals(UserStatus.PENDING)) {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
 
-        List<UserPlan> userPlanList = planParticipantRepository.findAllUserPlanByPlan(plan);
+        List<UserPlan> userPlanList = userPlanRepository.findAllUserPlanByPlan(plan);
         List<ParticipantResponseDTO> participantListDTO = new ArrayList<>();
         CreatorResponseDTO creatorResponseDTO = new CreatorResponseDTO();
 
@@ -176,32 +177,44 @@ public class PlanParticipantService {
 
     @Transactional
     public boolean delegateRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
-
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
         User delegator = validateUserExistence(jwtUserInfo.getUserId());
 
-        if (!planParticipantRepository.existsByPlanAndUser(plan, delegator)) {
+        if (!userPlanRepository.existsByPlanAndUser(plan, delegator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
-        UserPlan delegatorPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, delegator);
+        UserPlan delegatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, delegator);
 
         if (delegatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
         } // else if 작성 안하고, 생성자라고 생각 함
 
-        if (!planParticipantRepository.existsByPlanAndUser(plan, user)) {
+        if (!userPlanRepository.existsByPlanAndUser(plan, user)) {
             throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
         }
 
-        UserPlan userPlan = planParticipantRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
         userPlan.setUserType(UserType.CREATOR);
-        planParticipantRepository.save(userPlan);
+        userPlanRepository.save(userPlan);
 
         delegatorPlan.setUserType(UserType.USER);
-        planParticipantRepository.save(delegatorPlan);
+        userPlanRepository.save(delegatorPlan);
 
         return true;
+    }
+
+    public UserStatusResponseDTO getUserStatus(Long planId, Long userId) {
+
+        Plan plan = validatePlanExistence(planId);
+        User user = validateUserExistence(userId);
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+
+        return UserStatusResponseDTO.builder()
+                .userStatus(userPlan.getUserStatus())
+                .build();
     }
 
     private User validateUserExistence(Long userId) {

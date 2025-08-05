@@ -4,6 +4,7 @@ import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.plan.dto.request.TitleRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
+import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
 import com.ssafy.backend.plan.service.DayScheduleService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
@@ -27,6 +28,11 @@ public class DayScheduleController {
     @GetMapping("")
     public CommonResponse<PlanScheduleResponseDTO> getPlanSchedule(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(dayScheduleService.getPlanSchedule(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
+    }
+
+    @GetMapping("/{dayScheduleId}")
+    public CommonResponse<DayScheduleResponseDTO> getDaySchedule(@PathVariable Long planId, @PathVariable Long dayScheduleId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(dayScheduleService.getDaySchedule(planId, dayScheduleId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
 
     @PutMapping("/{dayScheduleId}/updateTitle")

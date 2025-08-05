@@ -112,6 +112,52 @@ public class DayScheduleService {
         return new PlanScheduleResponseDTO(planSchedule);
     }
 
+    public DayScheduleResponseDTO getDaySchedule(Long planId, Long dayScheduleId, Long userId) {
+        User user = validateUserExistence(userId);
+        List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
+
+        if (dayPlaces.isEmpty()) {
+            throw new DayScheduleNotExistException("존재하지 않거나 해당 플랜에 속하지 않는 일정입니다.");
+        }
+
+        Plan plan = dayPlaces.get(0).getDaySchedule().getPlan();
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+
+        DaySchedule daySchedule = dayPlaces.get(0).getDaySchedule();
+
+        List<DayPlaceResponseDTO> dayPlaceResponseDTOS = dayPlaces.stream()
+                .map(dp -> DayPlaceResponseDTO.builder()
+                        .dayPlaceId(dp.getDayPlaceId())
+                        .indexOrder(dp.getIndexOrder())
+                        .memo(dp.getMemo())
+                        .whiteBoardObjectId(dp.getWhiteBoardObject().getWhiteBoardObjectId())
+                        .placeId(dp.getWhiteBoardObject().getPlace().getPlaceId())
+                        .googlePlaceId(dp.getWhiteBoardObject().getPlace().getGooglePlaceId())
+                        .placeName(dp.getWhiteBoardObject().getPlace().getPlaceName())
+                        .latitude(dp.getWhiteBoardObject().getPlace().getLatitude())
+                        .longitude(dp.getWhiteBoardObject().getPlace().getLongitude())
+                        .address(dp.getWhiteBoardObject().getPlace().getAddress())
+                        .rating(dp.getWhiteBoardObject().getPlace().getRating())
+                        .ratingCount(dp.getWhiteBoardObject().getPlace().getRatingCount())
+                        .imageUrl(dp.getWhiteBoardObject().getPlace().getImageUrl())
+                        .build()
+                )
+                .sorted(Comparator.comparing(DayPlaceResponseDTO::getIndexOrder))
+                .toList();
+
+        return DayScheduleResponseDTO.builder()
+                .dayScheduleId(daySchedule.getDayScheduleId())
+                .dayOrder(daySchedule.getDayOrder())
+                .title(daySchedule.getTitle())
+                .daySchedule(dayPlaceResponseDTOS)
+                .build();
+    }
+
     @Transactional
     public boolean modifyTitle(Long planId, Long dayScheduleId, TitleRequestDTO titleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);

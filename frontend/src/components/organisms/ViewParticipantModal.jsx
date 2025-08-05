@@ -1,94 +1,128 @@
-import { useState } from "react"
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar"
-import { Check, X } from "lucide-react"
+// 이 파일은 백엔드 측에서 참여자 목록 데이터 받아와서 적용시킬 수 있는 파일
 
-// 예시 참여자 데이터
-const participants = [
-  { id: 1, name: "김경진", avatar: "https://randomuser.me/api/portraits/men/32.jpg", status: "accepted" },
-  { id: 2, name: "리쿠", avatar: "https://randomuser.me/api/portraits/men/33.jpg", status: "accepted" },
-  { id: 3, name: "박예쁜", avatar: "https://randomuser.me/api/portraits/women/44.jpg", status: "pending" },
-  { id: 4, name: "최멋짐", avatar: "https://randomuser.me/api/portraits/men/45.jpg", status: "accepted" },
-  { id: 5, name: "최멋짐", avatar: "https://randomuser.me/api/portraits/men/45.jpg", status: "accepted" },
-  { id: 6, name: "최멋짐", avatar: "https://randomuser.me/api/portraits/men/45.jpg", status: "accepted" },
-];
+import { useRef, useEffect } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
+import { Check, X } from "lucide-react";
+import { Button } from "../ui/button";
+import { useParticipantStore } from "../../store/usePlanUserStore"; // Zustand 스토어 import
+import { useAuthStore } from "../../store/useAuthStore";
 
-// 공통 렌더 함수
-function ParticipantList({ myName, hostName }) {
-  const [list, setList] = useState(participants);
-  const isHost = myName === hostName;
+// planId: 계획 ID
+// myName: 현재 로그인한 사용자 이름
+// hostName: 방장 닉네임(카드 기준)
+const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
+  const modalRef = useRef(null);
+  const {
+    creator,
+    participants,
+    isLoading,
+    error,
+    approveRequest,
+    denyRequest,
+    clearParticipants,
+  } = useParticipantStore();
 
-  // 삭제/거절
-  const handleDelete = (id, name, status) => {
-    if (status === "pending") {
-      if (window.confirm(`${name}님의 초대를 거절하시겠습니까?`)) {
-        setList(prev => prev.filter(p => p.id !== id));
-        alert(`${name}님의 초대가 거절되었습니다.`);
+  const { userId: currentUserId } = useAuthStore();
+  const isCreator = creator?.userId === currentUserId;
+
+  // 모달이 닫힐 때 스토어 상태를 정리합니다.
+  useEffect(() => {
+    return () => {
+      if (!isOpen) {
+        clearParticipants();
       }
-    } else {
-      if (window.confirm(`${name}님을 정말로 내보내시겠습니까?`)) {
-        setList(prev => prev.filter(p => p.id !== id));
-        alert(`${name}님이 방에서 내보내졌습니다.`);
+    };
+  }, [isOpen, clearParticipants]);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose?.();
       }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  const handleApprove = (targetUserId, name) => {
+    if (window.confirm(`${name}님의 참여를 수락하시겠습니까?`)) {
+      approveRequest(planId, targetUserId);
     }
   };
-  // 초대 수락
-  const handleAccept = (id, name) => {
-    if (window.confirm(`${name}님의 초대를 수락하시겠습니까?`)) {
-      setList(prev => prev.map(p => p.id === id ? { ...p, status: "accepted" } : p));
-      alert(`${name}님이 참여자로 등록되었습니다.`);
+
+  const handleDeny = (targetUserId, name) => {
+    if (window.confirm(`${name}님의 참여 요청을 거절하시겠습니까?`)) {
+      denyRequest(planId, targetUserId);
     }
   };
+
+  const combinedParticipants = [
+    ...(creator ? [{ ...creator, status: 'CREATOR' }] : []),
+    ...participants,
+  ];
+
+  if (!isOpen) return null
 
   return (
-    <div className="w-72 max-h-80 bg-white rounded-xl shadow-xl p-4 flex flex-col border border-gray-200">
+    <div ref={modalRef} className="w-72 max-h-80 bg-white rounded-xl shadow-lg p-4 flex flex-col border border-gray-200">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-bold text-lg">
-          참여자 목록
-          <span className="ml-2 text-xs text-gray-400">({isHost ? "방장" : "참여자"})</span>
-        </h3>
-        <span className="text-xs text-gray-400">{list.length}명</span>
+        <div className="flex items-center">
+          <h3 className="font-bold text-lg">참여자 목록</h3>
+          <span className="ml-2 text-sm text-gray-500">
+            {isLoading ? "로딩 중..." : `${combinedParticipants.length}명`}
+          </span>
+        </div>
+        <Button 
+          onClick={onClose} 
+          className="text-lg leading-none bg-gray-100 hover:bg-gray-200 text-gray-600 w-6 h-6 p-0 flex items-center justify-center rounded-full text-sm"
+        >
+          ×
+        </Button>
       </div>
       <ul className="space-y-2 overflow-y-auto pr-1 flex-1 max-h-48">
-        {list.map((p) => (
-          <li key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition group">
+        {isLoading && <li className="text-center text-gray-500">로딩 중...</li>}
+        {error && <li className="text-center text-red-500">에러: {error.message}</li>}
+        {!isLoading && combinedParticipants.map((p) => (
+          <li key={p.userId} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition group">
             <Avatar className="w-8 h-8">
-              <AvatarImage src={p.avatar} />
-              <AvatarFallback className="text-xs">{p.name[0]}</AvatarFallback>
+              <AvatarImage src={p.profileImage} />
+              <AvatarFallback className="text-xs">{p.userName?.[0]}</AvatarFallback>
             </Avatar>
-            <span className={`font-medium text-gray-800 text-sm flex-1 ${p.name === hostName ? "text-blue-600" : ""}`}>
-              {p.name}
-              {p.name === hostName && <span className="ml-1 text-xs text-blue-400 font-bold">(방장)</span>}
+            <span className={`font-medium text-gray-800 text-sm flex-1 ${p.status === 'CREATOR' ? "text-blue-600" : ""}`}>
+              {p.userName}
+              {p.status === 'CREATOR' && <span className="ml-1 text-xs text-blue-400 font-bold">(방장)</span>}
+              {p.userStatus === 'PENDING' && <span className="ml-1 text-xs text-yellow-500 font-bold">(대기중)</span>}
             </span>
-            {/* 방장일 때만 수락/삭제 버튼 노출 */}
-            {isHost && p.status === "pending" && (
-              <button
-                className="ml-1 p-1 rounded-full bg-green-100 hover:bg-green-200 text-green-600 transition"
-                title="초대 수락"
-                onClick={() => handleAccept(p.id, p.name)}
-              >
-                <Check className="w-3 h-3" />
-              </button>
-            )}
-            {isHost && p.name !== hostName && (
-              <button
-                className="ml-1 p-1 rounded-full bg-red-100 hover:bg-red-200 text-red-500 transition"
-                title={p.status === "pending" ? "초대 거절" : "내보내기"}
-                onClick={() => handleDelete(p.id, p.name, p.status)}
-              >
-                <X className="w-3 h-3" />
-              </button>
+            {isCreator && p.userStatus === 'PENDING' && (
+              <>
+                <button
+                  className="ml-1 p-1 rounded-full bg-green-100 hover:bg-green-200 text-green-600 transition"
+                  title="참여 수락"
+                  onClick={() => handleApprove(p.userId, p.userName)}
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+                <button
+                  className="ml-1 p-1 rounded-full bg-red-100 hover:bg-red-200 text-red-500 transition"
+                  title="참여 거절"
+                  onClick={() => handleDeny(p.userId, p.userName)}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </>
             )}
           </li>
         ))}
       </ul>
     </div>
-  );
+  )
 }
 
-const ViewParticipantModal = ({ isOpen, onClose, myName = "김경진", hostName = "김경진" }) => {
-  if (!isOpen) return null;
-
-  return <ParticipantList myName={myName} hostName={hostName} />;
-};
-
-export default ViewParticipantModal;
+export default ViewParticipantModal

@@ -1,9 +1,8 @@
 "use client"
-
 import * as React from "react"
 import { Copy } from "lucide-react"
 import { Button } from "../ui/button"
-import { createInvitationLink } from "../../apis/participantApi"
+import { createInvitationLink } from "../../apis/participantApi.js"
 
 const ShareModal = ({ open, onOpenChange, trigger, planId }) => {
   const [internalOpen, setInternalOpen] = React.useState(false)

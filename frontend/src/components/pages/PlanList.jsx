@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../organisms/Card";
 import PlanAddCard from "../organisms/PlanAddCard";
@@ -66,7 +66,7 @@ const PlanList = () => {
   };
 
   // 여행 계획 목록 조회
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     setIsPageLoading(true);
     try {
       const planData = await getPlanList();
@@ -87,11 +87,11 @@ const PlanList = () => {
     } finally {
       setIsPageLoading(false);
     }
-  };
+  }, [sortType]);
 
   useEffect(() => {
     fetchPlans();
-  }, [sortType]); // sortType이 변경될 때마다 fetchPlans 실행
+  }, [fetchPlans]); // fetchPlans가 변경될 때마다 실행
 
   // 카드 클릭 핸들러
   const handleCardClick = (planData) => {
@@ -133,11 +133,21 @@ const PlanList = () => {
   };
 
   // 생성/수정 모달 제출 성공 시 공통 처리
-  const handleSubmissionSuccess = async () => {
+  const handleSubmissionSuccess = (response, mode) => {
+    const newPlanId = response?.body?.planId;
+
+    // 모달 닫기 및 상태 초기화
     setIsCreateModalOpen(false);
     setIsEditModalOpen(false);
     setEditingPlan(null);
-    await fetchPlans(); // 목록 새로고침
+
+    // 생성 모드이고 newPlanId가 유효하면 해당 페이지로 이동
+    if (mode !== 'edit' && newPlanId) {
+      navigate(`/plan/${newPlanId}`);
+    } else {
+      // 수정 모드이거나 planId가 없는 경우 목록 새로고침
+      fetchPlans();
+    }
   };
 
   if (isPageLoading) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { APIProvider, useMapsLibrary, Map, useMap } from '@vis.gl/react-google-maps';
 import CustomMarker from '../atoms/CustomMarker';
@@ -6,9 +6,11 @@ import SideBar from '../organisms/SideBar';
 import WhiteBoard from '../organisms/WhiteBoard';
 import MapContainer from '../organisms/Map';
 import PlaceBlock from '../organisms/PlaceBlock';
+import AccessControlModal from '../organisms/AccessControlModal';
 
 import useMapStore from '../../store/useMapStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useParticipantStore } from '../../store/usePlanUserStore';
 
 
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
@@ -90,15 +92,12 @@ const getMarkerTypeFromPlace = (place) => {
 const PlanPage = () => {
   const mapsLib = useMapsLibrary('maps');
   const { planId } = useParams();
-  
-  // 인증 상태 확인
-  const { accessToken, userId, userName } = useAuthStore();
+  const { userId } = useAuthStore(); // PlanAccessRoute가 로그인 여부를 보장하므로 userId를 가져옵니다.
+  const { participants, creator, fetchParticipants, joinPlan, error, isLoading } = useParticipantStore();
 
-  // accessToken이 없으면 PrivateRoute가 처리할 때까지 렌더링을 중단하여 오류를 방지합니다.
-  if (!accessToken) {
-    return null; // 또는 <LoadingSpinner /> 같은 로딩 컴포넌트를 보여줄 수 있습니다.
-  }
-  
+  const [accessStatus, setAccessStatus] = useState('loading');
+  const [modalState, setModalState] = useState({ isOpen: false, type: 'permission', message: '' });
+
   const {
     isMapVisible,
     placeBlocks,
@@ -109,17 +108,106 @@ const PlanPage = () => {
     markerType,
     fetchDetailsAndAddBlock,
     panToPlace,
+    lastMapPosition,
   } = useMapStore();
-
-  // 마우스 드래그 상태
-  const [draggedBlockId, setDraggedBlockId] = useState(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
-  // 드래그앤드롭 상태 (검색 결과에서)
+  const [isSideBarVisible, setIsSideBarVisible] = useState(true);
+  const [draggedBlock, setDraggedBlock] = useState(null);
+  const [mapCenter, setMapCenter] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(1);
   const [isDragOver, setIsDragOver] = useState(false);
-
-  // 일정 추가 모달 상태
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
+
+  // Refs
+  const mapRef = useRef(null);
+  const whiteBoardRef = useRef(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  // =================== Effects ===================
+  // 접근 권한 확인
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        await fetchParticipants(planId);
+      } catch (error) {
+        console.error('참여 정보를 가져오는 데 실패했습니다:', error);
+        setAccessStatus('denied');
+        setModalState({ isOpen: true, type: 'permission', message: '플랜 정보를 가져오는 데 실패했습니다.' });
+      }
+    };
+    checkAccess();
+  }, [planId, fetchParticipants]);
+
+  // 스토어의 에러 상태 감지
+  useEffect(() => {
+    if (error) {
+      console.error('참여자 정보 로딩 에러:', error);
+      setAccessStatus('denied');
+      setModalState({ 
+        isOpen: true, 
+        type: 'permission', 
+        message: '플랜 정보를 가져오는 데 실패했습니다. 참여 권한이 없을 수 있습니다.' 
+      });
+    }
+  }, [error]);
+
+  // 참여자 정보 기반으로 접근 상태 결정
+  useEffect(() => {
+    // 에러가 있으면 이미 처리됨
+    if (error) return;
+    
+    // 로딩 중이면 대기
+    if (isLoading || (!creator && participants.length === 0)) {
+      setAccessStatus('loading');
+      return;
+    }
+
+    const isCreator = creator?.userId === userId;
+    const currentUser = participants.find(p => p.userId === userId);
+    const isApprovedParticipant = currentUser?.status === 'APPROVED';
+    const isPendingParticipant = currentUser?.status === 'PENDING';
+
+    if (isCreator || isApprovedParticipant) {
+      setAccessStatus('approved');
+      setModalState({ isOpen: false, type: '', message: '' });
+    } else if (isPendingParticipant) {
+      setAccessStatus('pending');
+      setModalState({ isOpen: true, type: 'permission', message: '승인 대기중입니다. 방장의 수락을 기다려주세요.' });
+    } else {
+      setAccessStatus('denied');
+      setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 참여하려면 방장의 수락이 필요합니다.' });
+    }
+  }, [creator, participants, userId, error, isLoading]);
+
+  // 지도 중심 위치 설정
+  useEffect(() => {
+    if (lastMapPosition) {
+      setMapCenter(lastMapPosition);
+    }
+  }, [lastMapPosition]);
+
+  // =================== Handlers ===================
+  const handleRequestPermission = async () => {
+    console.log('🚀 참여 요청 시작:', { planId, userId }); // 디버깅용 로그
+    try {
+      console.log('📞 joinPlan API 호출 전...'); // 디버깅용 로그
+      await joinPlan(planId);
+      console.log('✅ joinPlan API 호출 성공!'); // 디버깅용 로그
+      setAccessStatus('pending');
+      setModalState({ isOpen: true, type: 'permission', message: '참여 요청을 보냈습니다. 수락을 기다려주세요.' });
+    } catch (error) {
+      console.error('❌ 참여 요청 실패:', error);
+      console.error('❌ 에러 상세 정보:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      setModalState({ ...modalState, message: '참여 요청에 실패했습니다. 다시 시도해주세요.' });
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalState({ ...modalState, isOpen: false });
+  };
 
   // PlaceBlock 삭제
   const handleRemove = (id) => {
@@ -130,30 +218,32 @@ const PlanPage = () => {
   const handleMouseDown = (e, block) => {
     if (isDailyPlanModalOpen) return;
 
-    setDraggedBlockId(block.id);
+    setDraggedBlock(block);
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
-    setDragOffset({ x: offsetX, y: offsetY });
+    
+    // 오프셋을 ref에 저장
+    dragOffsetRef.current = { x: offsetX, y: offsetY };
   };
 
   // 전역 마우스 이벤트 리스너 추가 (끌고 다니기)
   useEffect(() => {
     const handleGlobalMouseMove = (e) => {
-      if (draggedBlockId && !isDailyPlanModalOpen) {
-        const newX = e.clientX - dragOffset.x;
-        const newY = e.clientY - dragOffset.y;
-        updatePlaceBlockPosition(draggedBlockId, { x: newX, y: newY });
+      if (draggedBlock && !isDailyPlanModalOpen) {
+        const newX = e.clientX - dragOffsetRef.current.x;
+        const newY = e.clientY - dragOffsetRef.current.y;
+        updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY });
       }
     };
 
     const handleGlobalMouseUp = () => {
-      if (draggedBlockId) {
-        setDraggedBlockId(null);
+      if (draggedBlock) {
+        setDraggedBlock(null);
       }
     };
 
-    if (draggedBlockId && !isDailyPlanModalOpen) {
+    if (draggedBlock && !isDailyPlanModalOpen) {
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
     }
@@ -162,7 +252,7 @@ const PlanPage = () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [draggedBlockId, dragOffset, isDailyPlanModalOpen, updatePlaceBlockPosition]);
+  }, [draggedBlock, isDailyPlanModalOpen, updatePlaceBlockPosition]);
 
   // 검색 결과에서 드래그앤드롭 처리
   const handleDragOver = (e) => {
@@ -200,6 +290,22 @@ const PlanPage = () => {
     setIsDailyPlanModalOpen(isOpen);
   };
 
+  // 접근 제어 조건부 렌더링
+  if (accessStatus === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (accessStatus !== 'approved') {
+    return (
+      <AccessControlModal
+        isOpen={modalState.isOpen}
+        onClose={handleCloseModal}
+        type={modalState.type}
+        onRequestPermission={accessStatus === 'denied' ? handleRequestPermission : null}
+      />
+    );
+  }
+
   return (
     <div 
       onDragOver={handleDragOver}
@@ -215,7 +321,7 @@ const PlanPage = () => {
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         transition: 'background-color 0.2s ease',
-        cursor: draggedBlockId ? 'grabbing' : 'default'
+        cursor: draggedBlock ? 'grabbing' : 'default'
       }}
     >
         <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
@@ -272,7 +378,7 @@ const PlanPage = () => {
               position: 'absolute',
               left: block.position.x,
               top: block.position.y,
-              zIndex: draggedBlockId === block.id ? 2000 : 1000,
+              zIndex: draggedBlock?.id === block.id ? 2000 : 1000,
               cursor: 'grab'
             }}
             onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동

@@ -1,5 +1,6 @@
 package com.ssafy.backend.plan.service;
 
+import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -56,10 +57,10 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean approveRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
+    public boolean approveRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, JwtUserInfo jwtUserInfo) {
 
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(userId);
+        User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
 
         if(!planParticipantRepository.existsByPlanAndUser(plan, creator)) {
@@ -73,7 +74,7 @@ public class PlanParticipantService {
         } // else if 작성 안하고, 생성자라고 생각 함
 
         User applicant = new User();
-        applicant.setUserId(userId);
+        applicant.setUserId(acceptOrDenyUserRequestDTO.getUserId());
         if(!planParticipantRepository.existsByUser(applicant)){
             throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
@@ -90,10 +91,10 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean denyRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
+    public boolean denyRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, JwtUserInfo jwtUserInfo) {
 
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(userId);
+        User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
 
         if(!planParticipantRepository.existsByPlanAndUser(plan, creator)) {
@@ -106,7 +107,7 @@ public class PlanParticipantService {
         } // else if 작성 안하고, 생성자라고 생각 함
 
         User applicant = new User();
-        applicant.setUserId(userId);
+        applicant.setUserId(acceptOrDenyUserRequestDTO.getUserId());
         if(!planParticipantRepository.existsByUser(applicant)){
             throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }

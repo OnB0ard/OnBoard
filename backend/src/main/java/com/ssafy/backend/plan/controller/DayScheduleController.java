@@ -2,6 +2,7 @@ package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
+import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
 import com.ssafy.backend.plan.service.DayScheduleService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
@@ -20,4 +21,10 @@ public class DayScheduleController {
     public CommonResponse<CreateDayScheduleResponseDTO> createDaySchedule(@PathVariable Long planId, @RequestParam("title") String title, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(dayScheduleService.createDaySchedule(planId, title, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
+
+    @GetMapping("")
+    public CommonResponse<PlanScheduleResponseDTO> getPlanSchedule(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(dayScheduleService.getPlanSchedule(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
+    }
+
 }

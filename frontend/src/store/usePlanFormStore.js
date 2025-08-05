@@ -186,7 +186,7 @@ export const usePlanFormStore = create((set, get) => ({
         response = await createPlan(planData);
       }
       
-      onSubmitSuccess(response); 
+      onSubmitSuccess(response, mode); 
       onClose(); 
       get().reset(); 
 

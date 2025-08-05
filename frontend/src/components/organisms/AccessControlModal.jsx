@@ -15,7 +15,7 @@ const AccessControlModal = ({
   if (!isOpen) return null;
 
   const handleLogin = () => {
-    handleGoogleLogin();
+    handleGoogleLogin();  
     onClose(); // 모달 닫기
   };
 

@@ -40,43 +40,57 @@ public class PlanExceptionHandler {
     }
 
     @ExceptionHandler(PlanNotExistException.class)
-    public  CommonResponse<ErrorBody> PlanNotExistException(PlanNotExistException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> PlanNotExistException(PlanNotExistException e, HttpServletRequest request) {
         log.warn("PLAN-015> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-015", "여행 계획방이 존재하지 않습니다."),
                 HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(UserNotExistException.class)
-    public  CommonResponse<ErrorBody> UserNotExistException(UserNotExistException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> UserNotExistException(UserNotExistException e, HttpServletRequest request) {
         log.warn("PLAN-016> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-016", "사용자가 존재하지 않습니다."),
                 HttpStatus.NOT_FOUND);
     }
     @ExceptionHandler(CreatorCannotLeaveException.class)
-    public  CommonResponse<ErrorBody> CreatorCannotLeaveException(CreatorCannotLeaveException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> CreatorCannotLeaveException(CreatorCannotLeaveException e, HttpServletRequest request) {
         log.warn("PLAN-017> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-017", "방 생성자는 나갈 수 없습니다."),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(PendingUserException.class)
-    public  CommonResponse<ErrorBody> PendingUserException(PendingUserException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> PendingUserException(PendingUserException e, HttpServletRequest request) {
         log.warn("PLAN-017> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-017", "아직 초대되지 않은 방입니다."),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(BookmarkExistException.class)
-    public  CommonResponse<ErrorBody> BookmarkExistException(BookmarkExistException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> BookmarkExistException(BookmarkExistException e, HttpServletRequest request) {
         log.warn("PLAN-018> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-018", "이미 북마크 되어있습니다."),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(BookmarkNotExistException.class)
-    public  CommonResponse<ErrorBody> BookmarkNotExistException(BookmarkNotExistException e, HttpServletRequest request) {
+    public CommonResponse<ErrorBody> BookmarkNotExistException(BookmarkNotExistException e, HttpServletRequest request) {
         log.warn("PLAN-019> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-019", "북마크 되어 있지 않습니다."),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DayScheduleNotExistException.class)
+    public CommonResponse<ErrorBody> DayScheduleNotExistException(DayScheduleNotExistException e, HttpServletRequest request) {
+        log.warn("PLAN-020> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-020", "일정이 존재하지 않습니다."),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DayScheduleNotInThisPlanException.class)
+    public CommonResponse<ErrorBody> DayScheduleNotInThisPlanException(DayScheduleNotInThisPlanException e, HttpServletRequest request) {
+        log.warn("PLAN-021> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-021", "이 방의 일정이 아닙니다."),
                 HttpStatus.BAD_REQUEST);
     }
 }

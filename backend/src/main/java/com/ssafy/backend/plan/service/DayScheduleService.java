@@ -1,5 +1,6 @@
 package com.ssafy.backend.plan.service;
 
+import com.ssafy.backend.plan.dto.request.TitleRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayPlaceResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
@@ -7,9 +8,7 @@ import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
 import com.ssafy.backend.plan.entity.DayPlace;
 import com.ssafy.backend.plan.entity.DaySchedule;
 import com.ssafy.backend.plan.entity.Plan;
-import com.ssafy.backend.plan.exception.NotInThisRoomException;
-import com.ssafy.backend.plan.exception.PlanNotExistException;
-import com.ssafy.backend.plan.exception.UserNotExistException;
+import com.ssafy.backend.plan.exception.*;
 import com.ssafy.backend.plan.repository.DayPlaceRepository;
 import com.ssafy.backend.plan.repository.DayScheduleRepository;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -39,7 +38,7 @@ public class DayScheduleService {
     private final DayPlaceRepository dayPlaceRepository;
 
     @Transactional
-    public CreateDayScheduleResponseDTO createDaySchedule(Long planId, String title, Long userId) {
+    public CreateDayScheduleResponseDTO createDaySchedule(Long planId, TitleRequestDTO titleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -54,7 +53,7 @@ public class DayScheduleService {
         DaySchedule daySchedule = DaySchedule.builder()
                 .plan(plan)
                 .dayOrder(maxDayOrder+1)
-                .title(title)
+                .title(titleRequestDTO.getTitle())
                 .build();
 
         dayScheduleRepository.save(daySchedule);
@@ -69,12 +68,12 @@ public class DayScheduleService {
 
     public PlanScheduleResponseDTO getPlanSchedule(Long planId, Long userId) {
         User user = validateUserExistence(userId);
-        Plan plan = validatePlanExistence(planId);
+            Plan plan = validatePlanExistence(planId);
 
-        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
-        if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                    .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+            if (userPlan.getUserStatus() == UserStatus.PENDING) {
+                throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
         List<DayPlace> dayPlaces = dayPlaceRepository.getPlanScheduleByPlanId(planId);
@@ -113,6 +112,27 @@ public class DayScheduleService {
         return new PlanScheduleResponseDTO(planSchedule);
     }
 
+    @Transactional
+    public boolean modifyTitle(Long planId, Long dayScheduleId, TitleRequestDTO titleRequestDTO, Long userId) {
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+        DaySchedule daySchedule = validateDaySchedule(dayScheduleId);
+
+        if(daySchedule.getPlan().getPlanId() != planId)
+        {
+            throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
+        }
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+
+        daySchedule.setTitle(titleRequestDTO.getTitle());
+        return true;
+    }
+
     private User validateUserExistence(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotExistException("존재하지 않는 사용자입니다. userId=" + userId));
@@ -121,5 +141,10 @@ public class DayScheduleService {
     private Plan validatePlanExistence(Long planId) {
         return planRepository.findById(planId)
                 .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다. planId=" + planId));
+    }
+
+    private DaySchedule validateDaySchedule(Long dayScheduleId) {
+        return dayScheduleRepository.findById(dayScheduleId)
+                .orElseThrow(() -> new DayScheduleNotExistException("존재하지 않는 일정입니다. dayScheduleId=" + dayScheduleId));
     }
 }

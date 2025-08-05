@@ -5,9 +5,7 @@ import CustomMarker from '../atoms/CustomMarker';
 import SideBar from '../organisms/SideBar';
 import WhiteBoard from '../organisms/WhiteBoard';
 import MapContainer from '../organisms/Map';
-import EditToolBar from '../organisms/EditToolBar';
 import PlaceBlock from '../organisms/PlaceBlock';
-import DailyPlanCreate from '../organisms/DailyPlanCreate';
 
 import useMapStore from '../../store/useMapStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -94,7 +92,12 @@ const PlanPage = () => {
   const { planId } = useParams();
   
   // 인증 상태 확인
-  const { userId, userName } = useAuthStore();
+  const { accessToken, userId, userName } = useAuthStore();
+
+  // accessToken이 없으면 PrivateRoute가 처리할 때까지 렌더링을 중단하여 오류를 방지합니다.
+  if (!accessToken) {
+    return null; // 또는 <LoadingSpinner /> 같은 로딩 컴포넌트를 보여줄 수 있습니다.
+  }
   
   const {
     isMapVisible,

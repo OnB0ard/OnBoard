@@ -2,7 +2,6 @@
 import React from "react";
 import { APIProvider } from '@vis.gl/react-google-maps';
 import Map from "../organisms/Map";
-import StandaloneAutocomplete from "../mapTest/StandaloneAutocomplete";
 import useMapStore from "../../store/useMapStore";
 
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k'; // 본인의 API 키를 입력하세요
@@ -16,9 +15,6 @@ function Test() {
       <div style={containerStyle}>
         <h1>Zustand 지도 테스트</h1>
         
-        <div style={{ marginBottom: '20px' }}>
-          <StandaloneAutocomplete />
-        </div>
         
         {!isMapVisible && (
           <button onClick={() => setIsMapVisible(true)} style={showButtonStyle}>

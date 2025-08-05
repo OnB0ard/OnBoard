@@ -7,6 +7,7 @@ import PlanList from './components/pages/PlanList'
 import Test from './components/pages/Test'
 import PlanPage from './components/pages/PlanPage'
 import MyPage from "./components/pages/Mypage"
+import PrivateRoute from './router/PrivateRoute'
 
 
 function App() {
@@ -17,9 +18,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing/>} />
         <Route path="/Test" element={<Test/>} />
-        <Route path="/list" element={<PlanList/>} />
-        <Route path="/plan/:planId" element={<PlanPage/>} />
-        <Route path="/mypage" element={<MyPage />} />
+                <Route element={<PrivateRoute />}>
+          <Route path="/list" element={<PlanList/>} />
+          <Route path="/plan/:planId" element={<PlanPage/>} />
+          <Route path="/mypage" element={<MyPage />} />
+        </Route>
         {/* <Route path="/temp" element={<Temp/>} /> */}
       </Routes>
     </>

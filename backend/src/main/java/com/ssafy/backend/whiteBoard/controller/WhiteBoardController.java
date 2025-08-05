@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/plan/{planId}/whiteBoardObject")
 public class WhiteBoardController {
     private final WhiteBoardService whiteBoardService;
+    // 로그인을 해야지만 실행될 수 있게 바꿔야함
     @PostMapping("/diagram")
     public CommonResponse<SuccessResponseDTO> createDiagram(@PathVariable Long planId, @RequestBody CreateDiagramRequestDTO createDiagramRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) throws JsonProcessingException {
         whiteBoardService.createDiagram(planId,createDiagramRequestDTO);

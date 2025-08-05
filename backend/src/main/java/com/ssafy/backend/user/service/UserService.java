@@ -53,7 +53,7 @@ public class UserService {
 
         return ModifyProfileResponseDTO.builder()
                 .userName(user.getUserName())
-                .profileImage(user.getProfileImage())
+                .profileImage(imageKey != null ? s3Util.getUrl(imageKey) : null)
                 .build();
     }
 

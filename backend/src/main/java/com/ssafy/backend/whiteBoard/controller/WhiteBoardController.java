@@ -11,6 +11,7 @@ import com.ssafy.backend.whiteBoard.dto.response.RetrieveWhiteBoardObjectsRespon
 import com.ssafy.backend.whiteBoard.service.WhiteBoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -18,32 +19,35 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/plan/{planId}/whiteBoardObject")
+@PreAuthorize("isAuthenticated()")
 public class WhiteBoardController {
     private final WhiteBoardService whiteBoardService;
     // 로그인을 해야지만 실행될 수 있게 바꿔야함
     @PostMapping("/diagram")
     public CommonResponse<SuccessResponseDTO> createDiagram(@PathVariable Long planId, @RequestBody CreateDiagramRequestDTO createDiagramRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) throws JsonProcessingException {
-        whiteBoardService.createDiagram(planId,createDiagramRequestDTO);
+        whiteBoardService.createDiagram(planId,createDiagramRequestDTO,jwtUserInfo.getUserId());
         return new CommonResponse<>(new SuccessResponseDTO(true), HttpStatus.OK);
     }
     @PostMapping("/travel")
     public CommonResponse<SuccessResponseDTO> createTravel(@PathVariable Long planId, @RequestBody CreateTravelRequestDTO createTravelRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) throws JsonProcessingException {
-        whiteBoardService.createTravel(planId,createTravelRequestDTO);
+        whiteBoardService.createTravel(planId,createTravelRequestDTO,jwtUserInfo.getUserId());
         return new CommonResponse<>(new SuccessResponseDTO(true), HttpStatus.OK);
     }
     @GetMapping
-    public CommonResponse<RetrieveWhiteBoardObjectsResponseDTO> retrieveWhiteBoardObjects(@PathVariable Long planId){
-        return new CommonResponse<>(whiteBoardService.retrieveWhiteBoardObjects(planId), HttpStatus.OK);
+    public CommonResponse<RetrieveWhiteBoardObjectsResponseDTO> retrieveWhiteBoardObjects(@PathVariable Long planId,@AuthenticationPrincipal JwtUserInfo jwtUserInfo){
+        return new CommonResponse<>(whiteBoardService.retrieveWhiteBoardObjects(planId,jwtUserInfo.getUserId()), HttpStatus.OK);
     }
     @PutMapping("/{whiteObjectId}/modify")
     public CommonResponse<SuccessResponseDTO> modifyWhiteBoardObject(@PathVariable Long planId,@PathVariable Long whiteObjectId,
-                                                                     @RequestBody ModifyWhiteBoardObjectRequestDTO modifyWhiteBoardObjectRequestDTO) throws JsonProcessingException {
-        whiteBoardService.modifyWhiteBoardObject(planId,whiteObjectId,modifyWhiteBoardObjectRequestDTO);
+                                                                     @RequestBody ModifyWhiteBoardObjectRequestDTO modifyWhiteBoardObjectRequestDTO,
+                                                                     @AuthenticationPrincipal JwtUserInfo jwtUserInfo) throws JsonProcessingException {
+        whiteBoardService.modifyWhiteBoardObject(planId,whiteObjectId,modifyWhiteBoardObjectRequestDTO,jwtUserInfo.getUserId());
         return new CommonResponse<>(new SuccessResponseDTO(true), HttpStatus.OK);
     }
     @DeleteMapping("/{whiteObjectId}")
-    public CommonResponse<SuccessResponseDTO> deleteWhiteBoardObject(@PathVariable Long planId,@PathVariable Long whiteObjectId) throws JsonProcessingException {
-        whiteBoardService.deleteWhiteBoardObject(planId,whiteObjectId);
+    public CommonResponse<SuccessResponseDTO> deleteWhiteBoardObject(@PathVariable Long planId,@PathVariable Long whiteObjectId,@AuthenticationPrincipal JwtUserInfo jwtUserInfo) throws JsonProcessingException {
+        whiteBoardService.deleteWhiteBoardObject(planId,whiteObjectId,jwtUserInfo.getUserId());
         return new CommonResponse<>(new SuccessResponseDTO(true), HttpStatus.OK);
     }
+
 }

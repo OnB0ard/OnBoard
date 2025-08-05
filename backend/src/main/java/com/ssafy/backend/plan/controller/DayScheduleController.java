@@ -33,4 +33,9 @@ public class DayScheduleController {
     public CommonResponse<SuccessResponseDTO> modifyTitle(@PathVariable Long planId, @PathVariable Long dayScheduleId, @RequestBody TitleRequestDTO titleRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(dayScheduleService.modifyTitle(planId, dayScheduleId, titleRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
     }
+
+    @DeleteMapping("/{dayScheduleId}")
+    public CommonResponse<SuccessResponseDTO> removeDaySchedule(@PathVariable Long planId, @PathVariable Long dayScheduleId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(dayScheduleService.removeDaySchedule(planId, dayScheduleId, jwtUserInfo.getUserId())), HttpStatus.OK);
+    }
 }

@@ -118,10 +118,26 @@ public class DayScheduleService {
         Plan plan = validatePlanExistence(planId);
         DaySchedule daySchedule = validateDaySchedule(dayScheduleId);
 
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+
         if(daySchedule.getPlan().getPlanId() != planId)
         {
             throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
         }
+
+        daySchedule.setTitle(titleRequestDTO.getTitle());
+        return true;
+    }
+
+    @Transactional
+    public boolean removeDaySchedule(Long planId, Long dayScheduleId, Long userId) {
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+        DaySchedule daySchedule = validateDaySchedule(dayScheduleId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
@@ -129,7 +145,12 @@ public class DayScheduleService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        daySchedule.setTitle(titleRequestDTO.getTitle());
+        if(daySchedule.getPlan().getPlanId() != planId)
+        {
+            throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
+        }
+
+        dayScheduleRepository.delete(daySchedule);
         return true;
     }
 

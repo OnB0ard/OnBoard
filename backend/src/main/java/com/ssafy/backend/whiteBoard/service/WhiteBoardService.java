@@ -2,14 +2,17 @@ package com.ssafy.backend.whiteBoard.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.place.entity.Place;
 import com.ssafy.backend.place.repository.PlaceRepository;
 import com.ssafy.backend.plan.entity.Plan;
+import com.ssafy.backend.plan.exception.NotInThisRoomException;
 import com.ssafy.backend.plan.exception.PlanNotExistException;
 import com.ssafy.backend.plan.exception.UserNotExistException;
 import com.ssafy.backend.plan.repository.PlanRepository;
+import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.user.entity.User;
+import com.ssafy.backend.user.entity.UserPlan;
+import com.ssafy.backend.user.entity.UserStatus;
 import com.ssafy.backend.user.repository.UserRepository;
 import com.ssafy.backend.whiteBoard.dto.request.CreateDiagramRequestDTO;
 import com.ssafy.backend.whiteBoard.dto.request.CreateTravelRequestDTO;
@@ -35,14 +38,25 @@ public class WhiteBoardService {
     private final PlanRepository planRepository;
     private final WhiteBoardRepository whiteBoardRepository;
     private final PlaceRepository placeRepository;
+    private final UserPlanRepository userPlanRepository;
 
     @Transactional
-    public void createDiagram(Long planId, CreateDiagramRequestDTO createDiagramRequestDTO) throws JsonProcessingException {
+    public void createDiagram(Long planId, CreateDiagramRequestDTO createDiagramRequestDTO, Long userId) throws JsonProcessingException {
         Plan plan = validatePlanExistence(planId);
+        User user = validateUserExistence(userId);
+        validateUserIsApprovedParticipant(plan, user);
+
         ObjectType objectType = ObjectType.valueOf(createDiagramRequestDTO.getType().toUpperCase());
         String pointsJson = null;
         if (createDiagramRequestDTO.getPoints() != null) {
             pointsJson = new ObjectMapper().writeValueAsString(createDiagramRequestDTO.getPoints());
+        }
+        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
         //도형생성
         WhiteBoardObject whiteBoardObject = WhiteBoardObject.builder()
@@ -63,9 +77,13 @@ public class WhiteBoardService {
                 .build();
         whiteBoardRepository.save(whiteBoardObject);
     }
+
     @Transactional
-    public void createTravel(Long planId, CreateTravelRequestDTO createTravelRequestDTO) {
+    public void createTravel(Long planId, CreateTravelRequestDTO createTravelRequestDTO, Long userId) {
         Plan plan = validatePlanExistence(planId);
+        User user = validateUserExistence(userId);
+        validateUserIsApprovedParticipant(plan, user);
+
         CreateTravelRequestDTO.WhiteBoardPlaceInfo placeInfo = createTravelRequestDTO.getWhiteBoardPlace();
         // 중복 방지용 조회 (google_place_id 기반)
         Place place = placeRepository.findByGooglePlaceIdForUpdate(placeInfo.getGooglePlaceId())
@@ -100,10 +118,11 @@ public class WhiteBoardService {
         whiteBoardRepository.save(whiteBoardObject);
     }
 
-    public RetrieveWhiteBoardObjectsResponseDTO retrieveWhiteBoardObjects(Long planId) {
+    public RetrieveWhiteBoardObjectsResponseDTO retrieveWhiteBoardObjects(Long planId, Long userId) {
         // 1. 플랜 존재 유효성 검사
         Plan plan = validatePlanExistence(planId);
-
+        User user = validateUserExistence(userId);
+        validateUserIsApprovedParticipant(plan, user);
         // 2. WhiteBoardObject + 연관된 Place를 Fetch Join으로 조회 (N+1 방지)
         List<WhiteBoardObject> objects = whiteBoardRepository.findByPlanWithPlace(plan);
 
@@ -158,8 +177,11 @@ public class WhiteBoardService {
     }
 
     @Transactional
-    public void modifyWhiteBoardObject(Long planId, Long whiteObjectId, ModifyWhiteBoardObjectRequestDTO modifyWhiteBoardObjectRequestDTO) throws JsonProcessingException {
+    public void modifyWhiteBoardObject(Long planId, Long whiteObjectId, ModifyWhiteBoardObjectRequestDTO modifyWhiteBoardObjectRequestDTO, Long userId) throws JsonProcessingException {
         Plan plan = validatePlanExistence(planId);
+        User user = validateUserExistence(userId);
+        validateUserIsApprovedParticipant(plan, user);
+
         WhiteBoardObject whiteBoardObject = validateWhiteBoardObject(whiteObjectId);
 
         if (!whiteBoardObject.getPlan().equals(plan)) {
@@ -179,9 +201,13 @@ public class WhiteBoardService {
         }
 
     }
+
     @Transactional
-    public void deleteWhiteBoardObject(Long planId, Long whiteObjectId) {
+    public void deleteWhiteBoardObject(Long planId, Long whiteObjectId, Long userId) {
         Plan plan = validatePlanExistence(planId);
+        User user = validateUserExistence(userId);
+        validateUserIsApprovedParticipant(plan, user);
+
         WhiteBoardObject whiteBoardObject = validateWhiteBoardObject(whiteObjectId);
 
         if (!whiteBoardObject.getPlan().equals(plan)) {
@@ -191,6 +217,15 @@ public class WhiteBoardService {
 
         // 화이트보드객체를 지운다음 day_place에 남아있는건 어떻게 되는지
         // -> 화이트보드객체를 지우면 day_place에 있는 것도 지워짐
+    }
+    private void validateUserIsApprovedParticipant(Plan plan, User user) {
+        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        if (userPlan.getUserStatus() != UserStatus.APPROVED) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
     }
     private WhiteBoardObject validateWhiteBoardObject(Long whiteObjectId) {
         return whiteBoardRepository.findById(whiteObjectId)

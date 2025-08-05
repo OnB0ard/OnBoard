@@ -1,12 +1,21 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 import {Button} from "@/components/ui/button"
 import {useGoogleLogin} from "@/hooks/useGoogleLogin"
-import Test from "../pages/Test"
+import { useAuthStore } from '@/store/useAuthStore';
 
 const Navbar = () => {
 
-  const handleGoogleLogin = useGoogleLogin();
+    const handleGoogleLogin = useGoogleLogin();
+  const { accessToken, clearAuth } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearAuth();
+    alert('로그아웃 되었습니다.');
+    navigate('/');
+  };
+
   return (
     <div className="Header">
       <div className="left">
@@ -25,7 +34,11 @@ const Navbar = () => {
         <Link to="/mypage">
           <Button className="temp" variant="link">Mypage</Button>
         </Link>
-        <Button className="temp" variant="link" onClick={handleGoogleLogin}>Login</Button>
+                {accessToken ? (
+          <Button className="temp" variant="link" onClick={handleLogout}>Logout</Button>
+        ) : (
+          <Button className="temp" variant="link" onClick={handleGoogleLogin}>Login</Button>
+        )}
       </div>
     </div>
   );

@@ -60,19 +60,17 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-                           {/* 왼쪽: 작은 이미지 */}
-        <div className="place-block-image">
-          <img
-            src={place.photos && place.photos[0]
-              ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 })
-              : 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82'}
-            alt={place.placeName}
-            className="place-block-thumbnail"
-            onError={(e) => {
-              e.target.src = 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82';
-            }}
-          />
-        </div>
+      {/* 왼쪽: 작은 이미지 */}
+      <div className="place-block-image">
+        <img
+          src={place.googleImg && place.googleImg.length > 0 ? place.googleImg[0] : 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82'}
+          alt={place.placeName}
+          className="place-block-thumbnail"
+          onError={(e) => {
+            e.target.src = 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82';
+          }}
+        />
+      </div>
       
       {/* 오른쪽: 정보 */}
       <div className="place-block-content">

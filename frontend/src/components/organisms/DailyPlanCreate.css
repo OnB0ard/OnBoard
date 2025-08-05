@@ -143,6 +143,11 @@
 .place-item {
   cursor: grab;
   transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  margin: 2px 0;
 }
 
 .place-item:active {
@@ -152,6 +157,59 @@
 .place-item.dragging {
   opacity: 0.5;
   transform: rotate(2deg);
+  z-index: 1000;
+}
+
+.place-item.drag-over-place {
+  border: 2px dashed #3b82f6;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  margin: 4px 0;
+  transform: scale(1.02);
+  position: relative;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.place-item.drag-over-place::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #3b82f6;
+  border-radius: 1px;
+}
+
+/* 드래그 중인 요소의 스타일 */
+.place-item[data-dragging="true"] {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px solid #3b82f6;
+}
+
+/* 드롭 가능한 위치 표시 */
+.place-item[data-drop-target="true"] {
+  border: 2px dashed #3b82f6;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  margin: 4px 0;
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 드래그 중일 때 다른 요소들의 스타일 */
+.place-item:not([data-dragging="true"]) {
+  transition: all 0.2s ease;
+}
+
+/* 드래그 중인 요소가 아닌 다른 요소들에 호버 효과 */
+.place-item:not([data-dragging="true"]):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #e5e7eb;
 }
 
 .add-place-button {

@@ -93,4 +93,11 @@ public class PlanExceptionHandler {
         return new CommonResponse<>(new ErrorBody("PLAN-021", "이 방의 일정이 아닙니다."),
                 HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(DayPlaceNotExistException.class)
+    public CommonResponse<ErrorBody> DayPlaceNotExistException(DayPlaceNotExistException e, HttpServletRequest request) {
+        log.warn("PLAN-022> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-022", "해당 계획의 여행지가 아닙니다."),
+                HttpStatus.BAD_REQUEST);
+    }
 }

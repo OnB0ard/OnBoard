@@ -200,7 +200,7 @@ const PlanPage = () => {
       setModalState({ isOpen: false, type: '', message: '' });
     } else if (isPendingParticipant) {
       setAccessStatus('pending');
-      setModalState({ isOpen: true, type: 'permission', message: '승인 대기중입니다. 방장의 수락을 기다려주세요.' });
+      setModalState({ isOpen: true, type: 'pending', message: '승인 대기중입니다. 방장의 수락을 기다려주세요.' });
     } else {
       setAccessStatus('denied');
       setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 참여하려면 방장의 수락이 필요합니다.' });
@@ -216,21 +216,32 @@ const PlanPage = () => {
 
   // =================== Handlers ===================
   const handleRequestPermission = async () => {
-    console.log('🚀 참여 요청 시작:', { planId, userId }); // 디버깅용 로그
+    console.log('🚀 참여 요청 시작:', { planId, userId, typeof_planId: typeof planId }); // 디버깅용 로그
     try {
       console.log('📞 joinPlan API 호출 전...'); // 디버깅용 로그
       await joinPlan(planId);
       console.log('✅ joinPlan API 호출 성공!'); // 디버깅용 로그
       setAccessStatus('pending');
-      setModalState({ isOpen: true, type: 'permission', message: '참여 요청을 보냈습니다. 수락을 기다려주세요.' });
+      setModalState({ isOpen: true, type: 'pending', message: '참여 요청을 보냈습니다. 수락을 기다려주세요.' });
     } catch (error) {
       console.error('❌ 참여 요청 실패:', error);
+      const errorCode = error.response?.data?.body?.code;
+      const errorMessage = error.response?.data?.body?.message;
+      
       console.error('❌ 에러 상세 정보:', {
         message: error.message,
         status: error.response?.status,
-        data: error.response?.data
+        errorCode,
+        errorMessage
       });
-      setModalState({ ...modalState, message: '참여 요청에 실패했습니다. 다시 시도해주세요.' });
+      
+      // PLAN-011: 이미 참여 중인 경우
+      if (errorCode === 'PLAN-011') {
+        setAccessStatus('pending');
+        setModalState({ isOpen: true, type: 'pending', message: '이미 참여 요청을 보냈습니다. 방장의 승인을 기다려주세요.' });
+      } else {
+        setModalState({ ...modalState, message: errorMessage || '참여 요청에 실패했습니다. 다시 시도해주세요.' });
+      }
     }
   };
 
@@ -425,4 +436,4 @@ const PlanPage = () => {
   );
 };
 
-export default PlanPage;
+export default PlanPage; 

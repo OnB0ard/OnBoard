@@ -25,6 +25,9 @@ export const useGoogleLogin = () => {
         const { access_token } = event.data.params;
 
         try {
+          console.log("받은 access_token:", access_token);
+          console.log("access_token 길이:", access_token?.length);
+          
           const response = await loginWithGoogle(access_token);
 
           if (response.code === 200) {

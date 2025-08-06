@@ -1,13 +1,16 @@
 import React from 'react';
-import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '../../hooks/useGoogleLogin';
+import Icon from '../atoms/Icon';
+import './AccessControlModal.css';
 
 const AccessControlModal = ({ 
   isOpen, 
-  type, // 'login' | 'permission'
+  type, // 'login' | 'permission' | 'pending'
+  message,
   onRequestPermission,
-  onClose 
+  onClose,
+  planId
 }) => {
   const navigate = useNavigate();
   const handleGoogleLogin = useGoogleLogin();
@@ -19,49 +22,120 @@ const AccessControlModal = ({
     onClose(); // 모달 닫기
   };
 
+  const handleCancel = () => {
+    if (type === 'login') {
+      navigate('/'); // 랜딩페이지로 이동
+    } else {
+      navigate('/list'); // 플랜 리스트 페이지로 이동
+    }
+    onClose();
+  };
+
   const handleRequestPermission = () => {
     if (onRequestPermission) {
       onRequestPermission();
     }
   };
 
-  if (type === 'login') {
+  // 권한 요청 후 대기 중 모달
+  if (type === 'pending') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-        <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              로그인이 필요합니다
-            </h2>
-            <Button 
-              onClick={handleLogin}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+      <div className="access-control-modal__backdrop">
+        <div className="access-control-modal">
+          <div className="access-control-modal__header">
+            <div className="access-control-modal__icon">
+              <Icon type="magnifying-glass" />
+            </div>
+            <h2 className="access-control-modal__title">승인 대기 중</h2>
+          </div>
+          
+          <div className="access-control-modal__content">
+            <p className="access-control-modal__message">
+              {message || '권한 요청중.. 방장의 승인을 기다리고 있습니다.'}
+            </p>
+          </div>
+
+          <div className="access-control-modal__footer">
+            <button 
+              className="access-control-modal__button access-control-modal__button--secondary"
+              onClick={handleCancel}
             >
-              로그인하러 가기
-            </Button>
+              확인
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  if (type === 'permission') {
+  if (type === 'login') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-        <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              접근 권한이 없습니다.
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              호스트에게 접근 권한을 요청해야 합니다.
+      <div className="access-control-modal__backdrop">
+        <div className="access-control-modal">
+          <div className="access-control-modal__header">
+            <div className="access-control-modal__icon">
+              <Icon type="magnifying-glass" />
+            </div>
+            <h2 className="access-control-modal__title">로그인이 필요합니다</h2>
+          </div>
+          
+          <div className="access-control-modal__content">
+            <p className="access-control-modal__message">
+              로그인 후 더 많은 기능을 이용할 수 있습니다.
             </p>
-            <Button 
-              onClick={handleRequestPermission}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+          </div>
+
+                     <div className="access-control-modal__footer">
+             <button 
+               className="access-control-modal__button access-control-modal__button--secondary"
+               onClick={handleCancel}
+             >
+               취소
+             </button>
+             <button 
+               className="access-control-modal__button access-control-modal__button--primary"
+               onClick={handleLogin}
+             >
+               로그인하기
+             </button>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
+    if (type === 'permission') {
+    return (
+      <div className="access-control-modal__backdrop">
+        <div className="access-control-modal">
+          <div className="access-control-modal__header">
+            <div className="access-control-modal__icon">
+              <Icon type="magnifying-glass" />
+            </div>
+            <h2 className="access-control-modal__title">접근 권한이 필요합니다</h2>
+          </div>
+          
+          <div className="access-control-modal__content">
+            <p className="access-control-modal__message">
+              {message || '호스트에게 접근 권한을 요청해야 합니다.'}
+            </p>
+          </div>
+
+          <div className="access-control-modal__footer">
+            <button 
+              className="access-control-modal__button access-control-modal__button--secondary"
+              onClick={handleCancel}
             >
-              권한 요청하기
-            </Button>
+              확인
+            </button>
+            {onRequestPermission && (
+              <button 
+                className="access-control-modal__button access-control-modal__button--primary"
+                onClick={handleRequestPermission}
+              >
+                권한 요청하기
+              </button>
+            )}
           </div>
         </div>
       </div>

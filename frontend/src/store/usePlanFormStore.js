@@ -142,8 +142,15 @@ export const usePlanFormStore = create((set, get) => ({
     set({ isLoading: true });
 
     try {
-      const startDate = range.from.toISOString().split('T')[0];
-      const endDate = range.to.toISOString().split('T')[0];
+      const toYYYYMMDD = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const startDate = toYYYYMMDD(range.from);
+      const endDate = toYYYYMMDD(range.to);
       
       // 현재 사용자 ID 가져오기
       const userId = useAuthStore.getState().userId;

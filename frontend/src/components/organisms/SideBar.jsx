@@ -3,7 +3,7 @@ import { APIProvider } from "@vis.gl/react-google-maps";
 import Icon from "../atoms/Icon";
 import AutocompleteSearchModal from "./AutocompleteSearchModal";
 import Bookmark from "./Bookmark";
-import DailyPlanCreate from "./DailyPlanCreate";
+import DailyPlanCreate1 from "./DailyPlanCreate1";
 import useMapStore from "../../store/useMapStore";
 import "./SideBar.css";
 
@@ -105,7 +105,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
       </APIProvider>
 
       {/* 일정 추가 모달 */}
-      <DailyPlanCreate 
+      <DailyPlanCreate1 
         isOpen={isDailyPlanModalOpen} 
         position={modalPosition}
         onClose={() => {

@@ -1,7 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
-import com.ssafy.backend.plan.dto.response.UserStatusResponseDTO;
+import com.ssafy.backend.plan.dto.response.UserInformationResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -204,7 +204,7 @@ public class PlanParticipantService {
         return true;
     }
 
-    public UserStatusResponseDTO getUserStatus(Long planId, Long userId) {
+    public UserInformationResponseDTO getUserInformation(Long planId, Long userId) {
 
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
@@ -212,8 +212,9 @@ public class PlanParticipantService {
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
 
-        return UserStatusResponseDTO.builder()
+        return UserInformationResponseDTO.builder()
                 .userStatus(userPlan.getUserStatus())
+                .userType(userPlan.getUserType())
                 .build();
     }
 

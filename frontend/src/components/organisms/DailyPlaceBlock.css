@@ -11,11 +11,47 @@
   cursor: grab;
   min-height: 80px;
   overflow: visible; /* 드롭다운이 잘리지 않도록 설정 */
+  position: relative;
+  user-select: none;
 }
 
 .daily-place-block:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
+}
+
+.daily-place-block:active {
+  cursor: grabbing;
+}
+
+/* 장소 드래그 중일 때의 스타일 */
+.daily-place-block.dragging {
+  opacity: 0.6;
+  transform: rotate(2deg) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border: 2px solid #3b82f6;
+  z-index: 1000;
+  cursor: grabbing;
+}
+
+/* 장소 드래그 오버 시의 스타일 */
+.daily-place-block.drag-over-place {
+  border: 2px solid #3b82f6;
+  background-color: #eff6ff;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* 드래그 오버 시 상단에 파란색 라인 표시 */
+.daily-place-block.drag-over-place::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #3b82f6;
+  border-radius: 2px;
 }
 
 /* 드롭다운이 열렸을 때는 호버 시 transform 효과를 비활성화 */
@@ -27,6 +63,16 @@
 .daily-place-block.dropdown-open {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: none;
+}
+
+/* 드롭다운이 열려있을 때는 드래그 비활성화 */
+.daily-place-block.dropdown-open {
+  cursor: default;
+  pointer-events: auto;
+}
+
+.daily-place-block.dropdown-open * {
+  pointer-events: auto;
 }
 
 .daily-place-block.dropdown-open:hover {

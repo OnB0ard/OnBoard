@@ -4,9 +4,36 @@ import CardDropDown from '../atoms/CardDropDown';
 import Icon from '../atoms/Icon';
 import './DailyPlaceBlock.css';
 
-const DailyPlaceBlock = ({ place, onRemove, onEdit, onMemoUpdate, dayTitle = '', onOpenMemoModal }) => {
+const DailyPlaceBlock = ({
+  place,
+  dayIndex,
+  placeIndex,
+  onRemove,
+  onUpdateMemo,
+  onOpenMemoModal,
+  isDragging,
+  dragOverIndex,
+  isSwapTarget,
+  dayTitle = '',
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd
+}) => {
   const [memo, setMemo] = useState(place.memo || '');
   const dropdownRef = useRef(null);
+
+  const isBeingDragged = isDragging;
+  const isDragOverTarget = dragOverIndex === placeIndex;
+
+  const blockClassName = `daily-place-block ${
+    isBeingDragged ? 'dragging' : ''
+  } ${
+    isDragOverTarget ? 'drag-over-place' : ''
+  } ${
+    isSwapTarget ? 'swap-target' : ''
+  }`;
 
   // 메모가 업데이트될 때마다 로컬 상태도 업데이트
   React.useEffect(() => {
@@ -74,7 +101,15 @@ const DailyPlaceBlock = ({ place, onRemove, onEdit, onMemoUpdate, dayTitle = '',
   ];
 
   return (
-    <div className="daily-place-block">
+    <div 
+      className={blockClassName}
+      draggable="true"
+      onDragStart={(e) => onDragStart(e, place, dayIndex, placeIndex)}
+      onDragOver={(e) => onDragOver(e, dayIndex, placeIndex)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, dayIndex, placeIndex)}
+      onDragEnd={onDragEnd}
+    >
       {/* 왼쪽: 작은 이미지 */}
       <div className="daily-place-block-image">
         <img

@@ -78,7 +78,7 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
         <div className="place-block-header">
           <h3 className="place-block-title">{place.placeName}</h3>
           <div className="place-block-rating">
-            <StarRating rating={place.rating} reviewCount={place.ratingCount} />
+            <StarRating rating={place.rating} reviewCount='' />
           </div>
         </div>
         

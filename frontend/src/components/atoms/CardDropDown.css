@@ -1,6 +1,7 @@
 .card-dropdown {
   position: relative;
   display: inline-block;
+  overflow: visible;
 }
 
 .card-dropdown-trigger {
@@ -28,16 +29,30 @@
 }
 
 .card-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 120px;
+  min-width: 100px;
+  max-width: 120px;
   max-height: 80vh;
   overflow-y: auto;
-  transform-origin: top right;
-  animation: fadeIn 0.1s ease-out;
-  will-change: transform, opacity;
+  animation: fadeIn 0.12s ease-out;
+  z-index: 99999;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+/* 화면이 작을 때 왼쪽으로 이동 */
+@media (max-width: 640px) {
+  .card-dropdown-menu {
+    right: auto;
+    left: 0;
+  }
 }
 
 @keyframes fadeIn {
@@ -54,12 +69,13 @@
 .card-dropdown-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: 100%;
   padding: 8px 12px;
   background: none;
   border: none;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
   color: #374151;
   cursor: pointer;
@@ -93,4 +109,4 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-} 
+}

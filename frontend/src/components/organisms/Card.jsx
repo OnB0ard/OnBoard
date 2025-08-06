@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
 import PlanImage from "../atoms/PlanImage";
-import CardDropdown from "../atoms/CardDropDown";
+import CardDropDown from "../atoms/CardDropDown";
 import { Button } from "../ui/button";
 import ShareModal from "./ShareModal";
 import ViewParticipantModal from "./ViewParticipantModal";
@@ -105,27 +105,22 @@ const Card = ({
   // }, [isAnyPopoverOpen]);
 
   return (
-    <div className="relative">
-      {/* 카드 우상단 드롭다운 */}
+    <div
+      ref={cardRef}
+      className={`bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 w-full max-w-[280px] h-[390px] cursor-pointer relative transition-all duration-200 ${
+        !isAnyPopoverOpen ? 'hover:shadow-lg hover:-translate-y-1' : ''
+      }`}
+      style={{ overflow: 'visible' }}
+      onClick={handleCardClick}
+    >
+      {/* 카드 우상단 드롭다운 - 레이아웃 영향 없음 */}
       <div className="absolute top-4 right-5 z-20">
-        <CardDropdown
+        <CardDropDown
           items={isCreator ? [
-            {
-              label: '수정',
-              onClick: () => onEdit && onEdit(planData),
-              className: 'edit-item'
-            },
-            {
-              label: '삭제',
-              onClick: () => onDelete && onDelete(planData),
-              className: 'delete'
-            }
+            { label: '수정', onClick: () => onEdit && onEdit(planData), className: 'edit-item' },
+            { label: '삭제', onClick: () => onDelete && onDelete(planData), className: 'delete' }
           ] : [
-            {
-              label: '나가기',
-              onClick: handleLeavePlan,
-              className: 'leave'
-            }
+            { label: '나가기', onClick: handleLeavePlan, className: 'leave' }
           ]}
         >
           <div className="w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full">
@@ -133,38 +128,28 @@ const Card = ({
               <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
             </svg>
           </div>
-        </CardDropdown>
+        </CardDropDown>
       </div>
 
-             {/* 카드 본체 */}
-               <div
-          ref={cardRef}
-          className={`bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 w-full max-w-[280px] h-[390px] cursor-pointer relative transition-all duration-200 ${
-            !isAnyPopoverOpen ? 'hover:shadow-lg hover:-translate-y-1' : ''
-          }`}
-          onClick={handleCardClick}
-        >
-                 <div className="flex justify-between items-start">
-                       <div className="flex items-center gap-2">
-              <Avatar>
-                <AvatarImage src={displayProfileImage} alt={displayUserName} />
-                <AvatarFallback>{displayUserName?.[0] || "?"}</AvatarFallback>
-              </Avatar>
-             <div className="flex flex-col justify-center">
-               <div className="text-xs text-gray">{displayUserName}</div>
-               <div className="text-xs text-gray-500">{hashTag}</div>
-             </div>
-           </div>
-           <div className="w-8 h-8"></div>
-         </div>
+      {/* 카드 컨텐츠 */}
+      <div className="flex items-center gap-2">
+        <Avatar>
+          <AvatarImage src={displayProfileImage} alt={displayUserName} />
+          <AvatarFallback>{displayUserName?.[0] || "?"}</AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col justify-center">
+          <div className="text-xs text-gray">{displayUserName}</div>
+          <div className="text-xs text-gray-500">{hashTag}</div>
+        </div>
+      </div>
 
-        <PlanImage src={imageUrl} alt={`${name} 대표 이미지`} />
+      <PlanImage src={imageUrl} alt={`${name} 대표 이미지`} />
 
-                 <div className="px-1">
-           <div className="font-semibold text-sm mb-0.5">{name}</div>
-           <div className="text-gray-400 text-sm mb-1.5">{startDate} ~ {endDate}</div>
-           <div className="text-gray-600 mt-1 line-clamp-2 text-xs">{description}</div>
-         </div>
+      <div className="px-1">
+        <div className="font-semibold text-sm mb-0.5">{name}</div>
+        <div className="text-gray-400 text-sm mb-1.5">{startDate} ~ {endDate}</div>
+        <div className="text-gray-600 mt-1 line-clamp-2 text-xs">{description}</div>
+      </div>
 
         {/* 버튼 영역 */}
         <div className="flex justify-end gap-2 pt-2 mt-auto">
@@ -257,7 +242,7 @@ const Card = ({
        </div>
        
        
-     </div>
+     
    );
  };
 

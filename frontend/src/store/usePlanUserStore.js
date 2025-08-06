@@ -95,7 +95,7 @@ export const useParticipantStore = create((set, get) => ({
   },
 
   /**
-   * (관리) 생성자가 참여 요청을 수락합니다. (Optimistic Update 적용)
+   * (관리) 생성자가 참여 요청을 수락합니다.
    * @param {number|string} planId - 현재 여행 계획 ID
    * @param {number} targetUserId - 승인할 사용자의 ID
    */
@@ -103,32 +103,27 @@ export const useParticipantStore = create((set, get) => ({
     try {
       // API를 먼저 호출합니다.
       await approveJoinRequest(planId, targetUserId);
-      // 성공하면, 서버에서 다시 데이터를 가져오는 대신 로컬 상태를 바로 수정합니다.
-      // 사용자 경험이 더 빠르고 부드러워집니다.
-      set(state => ({
-        participants: state.participants.map(p => 
-          p.userId === targetUserId ? { ...p, status: 'APPROVED' } : p
-        )
-      }));
+      // 성공하면 서버에서 최신 데이터를 다시 가져와서 정확한 상태로 업데이트합니다.
+      await get().fetchParticipants(planId);
     } catch (error) {
       console.error("참여 요청 수락 실패:", error);
+      set({ error });
     }
   },
   
   /**
-   * (관리) 생성자가 참여 요청을 거절합니다. (Optimistic Update 적용)
+   * (관리) 생성자가 참여 요청을 거절합니다.
    * @param {number|string} planId - 현재 여행 계획 ID
    * @param {number} targetUserId - 거절할 사용자의 ID
    */
   denyRequest: async (planId, targetUserId) => {
     try {
       await denyJoinRequest(planId, targetUserId);
-      // 성공하면, 목록에서 해당 유저를 즉시 제거합니다.
-      set(state => ({
-        participants: state.participants.filter(p => p.userId !== targetUserId)
-      }));
+      // 성공하면 서버에서 최신 데이터를 다시 가져와서 정확한 상태로 업데이트합니다.
+      await get().fetchParticipants(planId);
     } catch (error) {
       console.error("참여 요청 거절 실패:", error);
+      set({ error });
     }
   },
 

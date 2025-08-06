@@ -128,6 +128,35 @@ const PlanPage = () => {
     const checkAccess = async () => {
       try {
         await fetchParticipants(planId);
+        
+        // fetchParticipants 완료 후 스토어에서 최신 데이터 가져오기
+        const { creator, participants } = useParticipantStore.getState();
+        
+        // 현재 사용자가 생성자인지 확인
+        const isCreator = creator && creator.userId === userId;
+        
+        // 현재 사용자가 승인된 참여자인지 확인
+        const isApprovedParticipant = participants.some(
+          participant => participant.userId === userId && participant.userStatus === 'APPROVED'
+        );
+        
+        if (isCreator || isApprovedParticipant) {
+          setAccessStatus('approved');
+          setModalState({ isOpen: false, type: 'permission', message: '' });
+        } else {
+          // 참여자 목록에 있지만 승인되지 않은 경우
+          const isPendingParticipant = participants.some(
+            participant => participant.userId === userId && participant.userStatus === 'PENDING'
+          );
+          
+          if (isPendingParticipant) {
+            setAccessStatus('pending');
+            setModalState({ isOpen: true, type: 'pending', message: '참여 요청이 승인 대기 중입니다.' });
+          } else {
+            setAccessStatus('denied');
+            setModalState({ isOpen: true, type: 'permission', message: '이 여행 계획에 참여할 권한이 없습니다.' });
+          }
+        }
       } catch (error) {
         console.error('참여 정보를 가져오는 데 실패했습니다:', error);
         setAccessStatus('denied');

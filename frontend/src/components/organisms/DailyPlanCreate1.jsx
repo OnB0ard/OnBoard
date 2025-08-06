@@ -495,8 +495,8 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     if (selectedDay && selectedDay.places && selectedDay.places.length > 0) {
       console.log('📍 표시할 장소들:', selectedDay.places.map(place => ({
         name: place.name,
-        lat: place.lat,
-        lng: place.lng,
+        latitude: place.latitude,
+        longitude: place.longitude,
         primaryCategory: place.primaryCategory
       })));
       

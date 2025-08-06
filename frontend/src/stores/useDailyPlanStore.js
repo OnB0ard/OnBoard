@@ -334,6 +334,7 @@ const useDailyPlanStore = create(
           imageUrl: photoUrl,
           latitude: latitude,
           longitude: longitude,
+          primaryCategory: place.primaryCategory, // primaryCategory 추가
           originalData: place,
         };
       },

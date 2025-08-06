@@ -408,23 +408,23 @@ const useMapStore = create((set, get) => ({
     // 좌표 정보가 있는 장소들만 필터링
     const validPlaces = places.filter(place => 
       place && 
-      typeof place.lat === 'number' && 
-      typeof place.lng === 'number' &&
-      !isNaN(place.lat) && 
-      !isNaN(place.lng)
+      typeof place.latitude === 'number' && 
+      typeof place.longitude === 'number' &&
+      !isNaN(place.latitude) && 
+      !isNaN(place.longitude)
     );
     
     console.log('📍 유효한 장소 마커:', validPlaces.map(place => ({
       name: place.name,
-      lat: place.lat,
-      lng: place.lng,
+      latitude: place.latitude,
+      longitude: place.longitude,
       primaryCategory: place.primaryCategory || '기타'
     })));
     
     set({ 
       dayMarkers: validPlaces.map(place => ({
         id: place.id || `day-${dayIndex}-${place.name}`,
-        position: { lat: place.lat, lng: place.lng },
+        position: { lat: place.latitude, lng: place.longitude },
         type: place.primaryCategory || '기타',
         name: place.name,
         dayIndex: dayIndex

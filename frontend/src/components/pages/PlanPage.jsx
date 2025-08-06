@@ -250,7 +250,7 @@ const PlanPage = () => {
     setDraggedBlock(block);
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+    const offsetY = e.clientY - rect.top + 50;
     
     // 오프셋을 ref에 저장
     dragOffsetRef.current = { x: offsetX, y: offsetY };
@@ -399,28 +399,28 @@ const PlanPage = () => {
           </MapContainer>
         )}
         
-        {/* 화이트보드의 PlaceBlock들 */}
-        {placeBlocks.map((block) => (
-          <div
-            key={block.id}
-            style={{
-              position: 'absolute',
-              left: block.position.x,
-              top: block.position.y,
-              zIndex: draggedBlock?.id === block.id ? 2000 : 1000,
-              cursor: 'grab'
-            }}
-            onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
-          >
-            <PlaceBlock
-              place={block}
-              onRemove={handleRemove}
-              onEdit={() => {}}
-              onMouseDown={handleMouseDown}
-              isDailyPlanModalOpen={isDailyPlanModalOpen}
-            />
-          </div>
-        ))}
+                 {/* 화이트보드의 PlaceBlock들 */}
+         {placeBlocks.map((block) => (
+           <div
+             key={block.id}
+             style={{
+               position: 'absolute',
+               left: block.position.x,
+               top: block.position.y,
+               zIndex: draggedBlock?.id === block.id ? 2000 : 2000,
+               cursor: 'grab'
+             }}
+             onMouseDown={(e) => handleMouseDown(e, block)}
+           >
+             <PlaceBlock
+               place={block}
+               onRemove={handleRemove}
+               onEdit={() => {}}
+               onMouseDown={handleMouseDown}
+               isDailyPlanModalOpen={isDailyPlanModalOpen}
+             />
+           </div>
+         ))}
       </div>
   );
 };

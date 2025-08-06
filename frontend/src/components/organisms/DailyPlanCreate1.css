@@ -406,13 +406,96 @@
 /* 화살표 바운스 애니메이션 */
 @keyframes dropArrowBounce {
   0%, 100% {
-    transform: translateX(-50%) translateY(0);
-    opacity: 0.8;
+    transform: translateY(0) translateX(-50%);
   }
   50% {
-    transform: translateX(-50%) translateY(-3px);
-    opacity: 1;
+    transform: translateY(-3px) translateX(-50%);
   }
+}
+
+/* === 드롭 존 스타일 ===*/
+.place-drop-zone {
+  height: 8px;
+  margin: 6px 0;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  background: linear-gradient(90deg, #e5e7eb, #d1d5db, #e5e7eb);
+  opacity: 0.4;
+  border: 1px dashed #d1d5db;
+}
+
+/* 드래그 오버 시 드롭 존 활성화 */
+.place-drop-zone.drop-zone-active {
+  opacity: 1;
+  height: 18px;
+  background: linear-gradient(90deg, #10b981, #059669, #10b981);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+  border: 2px solid #10b981;
+  margin: 8px 0;
+}
+
+/* 드래그 중일 때 모든 드롭 존 표시 */
+.daily-plan-modal.bookmark-dragging .place-drop-zone {
+  opacity: 0.7;
+  height: 12px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  border: 1px dashed #3b82f6;
+}
+
+/* 드래그 중일 때 빈 드롭 존 표시 */
+.daily-plan-modal.bookmark-dragging .place-drop-zone-empty {
+  opacity: 0.8;
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+/* 드롭 존 활성화 시 화살표 */
+.place-drop-zone.drop-zone-active::after {
+  content: '▼';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #10b981;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 빈 드롭 존 (장소가 없을 때) */
+.place-drop-zone-empty {
+  height: 40px;
+  margin: 8px 0;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9fafb;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.place-drop-zone-empty .drop-zone-hint {
+  color: #6b7280;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* 빈 드롭 존 활성화 */
+.place-drop-zone-empty.drop-zone-active {
+  opacity: 1;
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.2);
+}
+
+.place-drop-zone-empty.drop-zone-active .drop-zone-hint {
+  color: #10b981;
+  font-weight: 500;
 }
 
 /* 드래그 중인 블록의 개선된 스타일 */

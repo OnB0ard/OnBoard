@@ -72,20 +72,35 @@ const useDailyPlanStore = create(
         if (fromIndex === toIndex) return state;
         
         const newPlans = [...state.dailyPlans];
+        
         // 두 요소의 위치를 교환
         [newPlans[fromIndex], newPlans[toIndex]] = [newPlans[toIndex], newPlans[fromIndex]];
         return { dailyPlans: newPlans };
       }),
 
       // === 장소 관련 액션 ===
-      addPlaceToDay: (dayIndex, place) => set((state) => {
+      addPlaceToDay: (dayIndex, place, insertIndex = -1) => set((state) => {
+        console.log('📝 addPlaceToDay 호출:', { dayIndex, placeName: place.name, insertIndex });
         const normalizedPlace = get().normalizePlaceData(place);
         const newPlace = { ...normalizedPlace, id: `${normalizedPlace.id}-${Date.now()}` };
         
         return {
-          dailyPlans: state.dailyPlans.map((day, index) =>
-            index === dayIndex ? { ...day, places: [...day.places, newPlace] } : day
-          )
+          dailyPlans: state.dailyPlans.map((day, index) => {
+            if (index === dayIndex) {
+              const newPlaces = [...day.places];
+              
+              // insertIndex가 -1이거나 배열 길이보다 크면 끝에 추가
+              if (insertIndex === -1 || insertIndex >= newPlaces.length) {
+                newPlaces.push(newPlace);
+              } else {
+                // 지정된 인덱스에 삽입
+                newPlaces.splice(insertIndex, 0, newPlace);
+              }
+              
+              return { ...day, places: newPlaces };
+            }
+            return day;
+          })
         };
       }),
 
@@ -274,9 +289,33 @@ const useDailyPlanStore = create(
 
       // === 유틸리티 함수 ===
       normalizePlaceData: (place) => {
-        const photoUrl = place.imageUrl || 
-          (place.photos && place.photos[0]?.getUrl({ maxWidth: 100, maxHeight: 100 })) || 
-          (place.googleImg && place.googleImg[0]);
+        // 사진 URL 처리 - Google Places API Photo 객체와 일반 URL 문자열 모두 지원
+        let photoUrl = place.imageUrl;
+        
+        if (!photoUrl && place.photos && place.photos[0]) {
+          const photo = place.photos[0];
+          // Google Places API Photo 객체인 경우 (getUrl 함수가 있음)
+          if (typeof photo.getUrl === 'function') {
+            try {
+              photoUrl = photo.getUrl({ maxWidth: 100, maxHeight: 100 });
+            } catch (error) {
+              console.warn('Photo getUrl 오류:', error);
+            }
+          }
+          // 일반 문자열 URL인 경우
+          else if (typeof photo === 'string') {
+            photoUrl = photo;
+          }
+          // 객체 형태로 URL이 들어있는 경우
+          else if (photo.url || photo.src || photo.imageUrl) {
+            photoUrl = photo.url || photo.src || photo.imageUrl;
+          }
+        }
+        
+        // googleImg 배열도 확인
+        if (!photoUrl && place.googleImg && place.googleImg[0]) {
+          photoUrl = place.googleImg[0];
+        }
         
         // 위도/경도 데이터 추출 (실제 데이터 구조에 맞게 수정)
         let latitude = null;

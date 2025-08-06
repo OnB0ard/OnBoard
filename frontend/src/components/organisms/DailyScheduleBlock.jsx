@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import DailyPlaceBlock from './DailyPlaceBlock';
 import { Button } from '../atoms/Button';
 
@@ -26,7 +26,11 @@ const DailyScheduleBlock = ({
   onPlaceDragOver,
   onPlaceDragLeave,
   onPlaceDrop,
-  onPlaceDragEnd
+  onPlaceDragEnd,
+  // 드롭 존 핸들러들
+  onDropZoneDragOver,
+  onDropZoneDragLeave,
+  onDropZoneDrop
 }) => {
   const { isDragging: isPlaceDragging, draggedPlaceId, dragOverIndex, draggedFromDay } = dragState;
 
@@ -75,26 +79,57 @@ const DailyScheduleBlock = ({
       </div>
 
       <div className="places-container">
-        {places.map((place, placeIndex) => (
-          <DailyPlaceBlock
-            key={place.id}
-            place={place}
-            dayIndex={dayIndex}
-            placeIndex={placeIndex}
-            isDragging={isPlaceDragging && draggedPlaceId === place.id}
-            dragOverIndex={dragOverIndex}
-            isSwapTarget={dragState.swapTargetPlaceIndex === placeIndex}
-            onDragStart={onPlaceDragStart}
-            onDragOver={onPlaceDragOver}
-            onDragLeave={onPlaceDragLeave}
-            onDrop={onPlaceDrop}
-            onDragEnd={onPlaceDragEnd}
-            onRemove={() => onRemovePlace(dayIndex, placeIndex)}
-            onUpdateMemo={(memo) => onUpdatePlaceMemo(dayIndex, placeIndex, memo)}
-            dayTitle={day.title}
-            onOpenMemoModal={onOpenMemoModal}
+        {/* 첫 번째 장소 위 드롭 존 */}
+        {places.length > 0 && (
+          <div 
+            className="place-drop-zone place-drop-zone-top"
+            onDragOver={(e) => onDropZoneDragOver(e, dayIndex, 0)}
+            onDragLeave={onDropZoneDragLeave}
+            onDrop={(e) => onDropZoneDrop(e, dayIndex, 0)}
           />
+        )}
+        
+        {places.map((place, placeIndex) => (
+          <Fragment key={place.id}>
+            <DailyPlaceBlock
+              place={place}
+              dayIndex={dayIndex}
+              placeIndex={placeIndex}
+              isDragging={isPlaceDragging && draggedPlaceId === place.id}
+              dragOverIndex={dragOverIndex}
+              isSwapTarget={dragState.swapTargetPlaceIndex === placeIndex}
+              onDragStart={onPlaceDragStart}
+              onDragOver={onPlaceDragOver}
+              onDragLeave={onPlaceDragLeave}
+              onDrop={onPlaceDrop}
+              onDragEnd={onPlaceDragEnd}
+              onRemove={() => onRemovePlace(dayIndex, placeIndex)}
+              onUpdateMemo={(memo) => onUpdatePlaceMemo(dayIndex, placeIndex, memo)}
+              dayTitle={day.title}
+              onOpenMemoModal={onOpenMemoModal}
+            />
+            
+            {/* 각 장소 아래 드롭 존 */}
+            <div 
+              className="place-drop-zone place-drop-zone-between"
+              onDragOver={(e) => onDropZoneDragOver(e, dayIndex, placeIndex + 1)}
+              onDragLeave={onDropZoneDragLeave}
+              onDrop={(e) => onDropZoneDrop(e, dayIndex, placeIndex + 1)}
+            />
+          </Fragment>
         ))}
+        
+        {/* 장소가 없을 때의 드롭 존 */}
+        {places.length === 0 && (
+          <div 
+            className="place-drop-zone place-drop-zone-empty"
+            onDragOver={(e) => onDropZoneDragOver(e, dayIndex, 0)}
+            onDragLeave={onDropZoneDragLeave}
+            onDrop={(e) => onDropZoneDrop(e, dayIndex, 0)}
+          >
+            <span className="drop-zone-hint">여기에 장소를 드래그하세요</span>
+          </div>
+        )}
 
         <Button
           className="add-place-button"

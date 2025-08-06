@@ -269,11 +269,24 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const placeDataString = e.dataTransfer.getData('text/plain');
     if (placeDataString) {
       try {
-        const place = JSON.parse(placeDataString);
-        console.log('화이트보드에서 장소 드롭:', place);
-        console.log('일차에 장소 추가:', { dayIndex, place });
-        addPlaceToDay(dayIndex, place);
-        return;
+        const dragData = JSON.parse(placeDataString);
+        console.log('텍스트 드래그 데이터:', dragData);
+        
+        // 페이지 PlaceBlock 타입인 경우 처리 거부 (드롭 존에서만 처리해야 함)
+        if (dragData.type === 'page-place') {
+          console.log('⚠️ 페이지 PlaceBlock은 드롭 존에서만 처리 가능 - 일차 드롭 무시');
+          return;
+        }
+        
+        // 기존 화이트보드 장소 처리 (타입이 없는 경우)
+        if (!dragData.type && (dragData.placeName || dragData.name)) {
+          console.log('화이트보드에서 장소 드롭:', dragData);
+          console.log('일차에 장소 추가:', { dayIndex, place: dragData });
+          addPlaceToDay(dayIndex, dragData);
+          return;
+        }
+        
+        console.log('⚠️ 지원되지 않는 텍스트 드래그 데이터:', dragData);
       } catch (error) {
         console.error('장소 데이터 파싱 오류:', error);
       }
@@ -454,8 +467,80 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const dragData = JSON.parse(dragDataString);
     console.log('파싱된 드래그 데이터:', dragData);
 
+    // 1. 북마크에서 드래그한 장소 처리
+    if (dragData.type === 'bookmark-place') {
+      console.log('📌 북마크 장소 드롭 처리');
+      
+      // 드롭 위치에 따른 인덱스 조정
+      const target = e.currentTarget;
+      const dropPosition = target.getAttribute('data-drop-position');
+      let insertIndex = targetPlaceIndex;
+      
+      // 하단에 드롭하는 경우 인덱스를 1 증가
+      if (dropPosition === 'bottom') {
+        insertIndex = targetPlaceIndex + 1;
+      }
+      
+      console.log('🎯 북마크 장소 삽입:', {
+        place: dragData.place.name,
+        dayIndex: targetDayIndex,
+        insertIndex,
+        position: dropPosition
+      });
+      
+      // 지정된 위치에 장소 추가
+      addPlaceToDay(targetDayIndex, dragData.place, insertIndex);
+      
+      // 북마크 모달은 열어둠 (연속 추가를 위해)
+      
+      return;
+    }
+    
+    // 2. 페이지 PlaceBlock 처리
+    if (dragData.type === 'page-place' && dragData.place) {
+      console.log('🏢 페이지 PlaceBlock 드롭 처리');
+      
+      // 드롭 위치에 따른 인덱스 조정
+      const target = e.currentTarget;
+      const dropPosition = target.getAttribute('data-drop-position');
+      let insertIndex = targetPlaceIndex;
+      
+      // 하단에 드롭하는 경우 인덱스를 1 증가
+      if (dropPosition === 'bottom') {
+        insertIndex = targetPlaceIndex + 1;
+      }
+      
+      console.log('🎯 페이지 PlaceBlock 삽입:', {
+        place: dragData.place.placeName || dragData.place.name,
+        dayIndex: targetDayIndex,
+        insertIndex,
+        position: dropPosition
+      });
+      
+      // PlaceBlock 데이터를 DailyPlaceBlock 형식으로 변환
+      const placeData = dragData.place;
+      const normalizedPlace = {
+        id: placeData.id,
+        name: placeData.placeName || placeData.name,
+        address: placeData.address,
+        rating: placeData.rating,
+        ratingCount: placeData.ratingCount,
+        imageUrl: placeData.googleImg && placeData.googleImg[0],
+        latitude: placeData.latitude || placeData.lat,
+        longitude: placeData.longitude || placeData.lng,
+        primaryCategory: placeData.primaryCategory,
+        originalData: placeData
+      };
+      
+      // 지정된 위치에 장소 추가
+      addPlaceToDay(targetDayIndex, normalizedPlace, insertIndex);
+      
+      return;
+    }
+
+    // 기존 장소 드래그 처리
     if (dragData.type !== 'place') {
-      console.log('❌ 장소 드래그가 아님 - 종료');
+      console.log('❌ 지원되지 않는 드래그 타입 - 종료');
       return;
     }
 
@@ -540,10 +625,114 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     openBookmarkModal(dayIndex, { x: rect.right + 10, y: rect.top });
   };
 
-  const addPlaceFromBookmark = (place) => {
+  const addPlaceFromBookmark = (place, insertIndex = -1) => {
+    console.log('📝 addPlaceFromBookmark 호출:', { selectedDayIndex, placeName: place.name, insertIndex });
     if (selectedDayIndex === null) return;
-    addPlaceToDay(selectedDayIndex, place);
+    addPlaceToDay(selectedDayIndex, place, insertIndex);
     closeBookmarkModal();
+  };
+
+  // === 드롭 존 핸들러들 ===
+  const handleDropZoneDragOver = (e, dayIndex, insertIndex) => {
+    console.log('🔄 handleDropZoneDragOver 호출:', { dayIndex, insertIndex, target: e.currentTarget.className });
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 북마크 장소(application/json) 또는 페이지 PlaceBlock(text/plain) 허용
+    const hasJsonData = e.dataTransfer.types.includes('application/json');
+    const hasTextData = e.dataTransfer.types.includes('text/plain');
+    
+    if (!hasJsonData && !hasTextData) {
+      console.log('❌ 지원되는 드래그 데이터 없음');
+      return;
+    }
+    
+    e.dataTransfer.dropEffect = 'copy';
+    
+    // 드롭 존 시각적 피드백
+    e.currentTarget.classList.add('drop-zone-active');
+    
+    console.log('✅ 드롭 존 활성화:', { dayIndex, insertIndex });
+  };
+
+  const handleDropZoneDragLeave = (e) => {
+    console.log('🚫 handleDropZoneDragLeave 호출');
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 드롭 존 시각적 피드백 제거
+    e.currentTarget.classList.remove('drop-zone-active');
+  };
+
+  const handleDropZoneDrop = (e, dayIndex, insertIndex) => {
+    console.log('🎯 handleDropZoneDrop 호출:', { dayIndex, insertIndex, target: e.currentTarget.className });
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 드롭 존 시각적 피드백 제거
+    e.currentTarget.classList.remove('drop-zone-active');
+    
+    try {
+      // 1. 북마크 장소 (application/json) 처리
+      let dragDataStr = e.dataTransfer.getData('application/json');
+      
+      if (dragDataStr) {
+        const dragData = JSON.parse(dragDataStr);
+        
+        if (dragData.type === 'bookmark-place' && dragData.place) {
+          console.log('📌 북마크 장소 드롭:', {
+            place: dragData.place.name,
+            dayIndex,
+            insertIndex
+          });
+          
+          // 지정된 위치에 장소 추가
+          addPlaceToDay(dayIndex, dragData.place, insertIndex);
+          
+          // 북마크 모달은 열어둠 (연속 추가를 위해)
+          return;
+        }
+      }
+      
+      // 2. 페이지 PlaceBlock (text/plain) 처리
+      dragDataStr = e.dataTransfer.getData('text/plain');
+      
+      if (dragDataStr) {
+        const dragData = JSON.parse(dragDataStr);
+        
+        // 페이지 PlaceBlock 타입 확인
+        if (dragData.type === 'page-place' && dragData.place) {
+          console.log('🏢 페이지 PlaceBlock 드롭:', {
+            place: dragData.place.placeName || dragData.place.name,
+            dayIndex,
+            insertIndex
+          });
+          
+          // PlaceBlock 데이터를 DailyPlaceBlock 형식으로 변환
+          const placeData = dragData.place;
+          const normalizedPlace = {
+            id: placeData.id,
+            name: placeData.placeName || placeData.name,
+            address: placeData.address,
+            rating: placeData.rating,
+            ratingCount: placeData.ratingCount,
+            imageUrl: placeData.googleImg && placeData.googleImg[0],
+            latitude: placeData.latitude || placeData.lat,
+            longitude: placeData.longitude || placeData.lng,
+            primaryCategory: placeData.primaryCategory,
+            originalData: placeData
+          };
+          
+          // 지정된 위치에 장소 추가
+          addPlaceToDay(dayIndex, normalizedPlace, insertIndex);
+          return;
+        }
+      }
+      
+      console.log('❌ 지원되는 드래그 데이터가 없음');
+    } catch (error) {
+      console.error('❌ 드롭 존 드롭 오류:', error);
+    }
   };
 
   const handleOpenMemoModal = (place, dayTitle, position) => {
@@ -642,6 +831,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             onPlaceDragLeave={handlePlaceDragLeave}
             onPlaceDrop={handlePlaceDrop}
             onPlaceDragEnd={handlePlaceDragEnd}
+            // 드롭 존 핸들러들
+            onDropZoneDragOver={handleDropZoneDragOver}
+            onDropZoneDragLeave={handleDropZoneDragLeave}
+            onDropZoneDrop={handleDropZoneDrop}
           />
         ))}
           

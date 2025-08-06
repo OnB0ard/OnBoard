@@ -18,8 +18,20 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
       e.preventDefault();
       return;
     }
-    e.dataTransfer.setData('text/plain', JSON.stringify(place));
+    
+    // 페이지 PlaceBlock 데이터 전송
+    const dragData = {
+      type: 'page-place',
+      place: place
+    };
+    
+    e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
+    
+    console.log('📝 페이지 PlaceBlock 드래그 시작:', {
+      placeName: place.placeName,
+      type: 'page-place'
+    });
   };
 
   // 화이트보드 내 이동 및 클릭/드래그 구분 로직

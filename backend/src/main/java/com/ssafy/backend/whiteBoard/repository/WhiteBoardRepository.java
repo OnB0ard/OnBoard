@@ -16,4 +16,6 @@ import java.util.Optional;
 public interface WhiteBoardRepository extends JpaRepository<WhiteBoardObject, Long> {
     @Query("SELECT w FROM WhiteBoardObject w LEFT JOIN FETCH w.place WHERE w.plan = :plan")
     List<WhiteBoardObject> findByPlanWithPlace(@Param("plan") Plan plan);
+
+    WhiteBoardObject findByWhiteBoardObjectId(Long whiteBoardObjectId);
 }

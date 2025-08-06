@@ -5,15 +5,12 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
-  min-width: 300px;
-  max-width: 330px;
+  min-width: 400px;
+  max-width: 400px;
   max-height: calc(100vh - 150px); /* 화면 높이에서 여백 제외 */
   display: flex;
   flex-direction: column;
-  /* 사이드바와 연결되는 화살표 효과 */
-  /* 부드러운 애니메이션 */
 }
-
 
 .daily-plan-content {
   display: flex;
@@ -70,12 +67,85 @@
   padding: 16px;
   margin-bottom: 16px;
   transition: all 0.2s ease;
+  cursor: grab; /* '일차' 블록도 드래그 가능함을 시각적으로 표시 */
+}
+
+.daily-plan-block:active {
+  cursor: grabbing;
 }
 
 .daily-plan-block:hover {
   border-color: #d1d5db;
 }
 
+/* --- 여기에 새로운 스타일 추가 --- */
+/* 일차(Day) 블록을 드래그할 때의 스타일 */
+.daily-plan-block.dragging {
+  opacity: 0.6;
+  background-color: #f9fafb;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* 그림자 효과 강화 */
+  transform: scale(1.02) rotate(1deg); /* 살짝 들어올려지고 기울어진 효과 */
+  border-color: #3b82f6; /* 강조 색상 테두리 */
+  z-index: 2000; /* 다른 요소들 위로 올라오도록 */
+  cursor: grabbing;
+}
+
+/* 일차(Day) 블록 위에 다른 일차를 드래그할 때의 스타일 */
+.daily-plan-block.drag-over {
+  background-color: #e3f2fd;
+  border: 2px dashed #2196f3;
+  transform: scale(1.02);
+}
+
+/* 교환 대상 포커스 효과 - 일차/장소 교환 시 동일한 파란색 효과 */
+.daily-plan-block.swap-target {
+  background-color: #f0f8ff;
+  border: 2px solid #4a90e2;
+  box-shadow: 0 0 15px rgba(74, 144, 226, 0.25);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.daily-place-block {
+  transition: all 0.2s ease;
+}
+
+.daily-place-block.swap-target {
+  background-color: #f0f8ff;
+  border: 2px solid #4a90e2;
+  box-shadow: 0 0 12px rgba(74, 144, 226, 0.25);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.daily-place-block.dragging {
+  opacity: 0.6;
+  transform: rotate(2deg) scale(0.98);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.daily-place-block.drag-over-place {
+  background-color: #f8f9fa;
+  border: 1px dashed #6c757d;
+  transition: all 0.2s ease;
+}
+
+/* 일차(Day) 블록 위에 다른 일차를 드래그할 때의 스타일 */
+.daily-plan-block.drag-over-day {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+  transition: all 0.2s ease;
+}
+
+/* 드래그 오버 시 내부 places-container도 강조 */
+.daily-plan-block.drag-over-day .places-container {
+  transform: scale(1.01);
+}
+
+/* 장소 드래그 오버 시 스타일 (기존 유지) */
 .daily-plan-block.drag-over {
   border-color: #d1d5db;
   background-color: #f9fafb;
@@ -154,34 +224,7 @@
   cursor: grabbing;
 }
 
-.place-item.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-  z-index: 1000;
-}
-
-.place-item.drag-over-place {
-  border: 2px dashed #3b82f6;
-  background-color: #eff6ff;
-  border-radius: 8px;
-  margin: 4px 0;
-  transform: scale(1.02);
-  position: relative;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-.place-item.drag-over-place::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #3b82f6;
-  border-radius: 1px;
-}
-
-/* 드래그 중인 요소의 스타일 */
+/* 드래그 중인 장소(place) 요소의 스타일 */
 .place-item[data-dragging="true"] {
   opacity: 0.5;
   transform: rotate(2deg);
@@ -190,26 +233,9 @@
   border: 2px solid #3b82f6;
 }
 
-/* 드롭 가능한 위치 표시 */
+/* 장소(place) 드롭 가능한 위치 표시 */
 .place-item[data-drop-target="true"] {
-  border: 2px dashed #3b82f6;
-  background-color: #eff6ff;
-  border-radius: 8px;
-  margin: 4px 0;
-  transform: scale(1.02);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-/* 드래그 중일 때 다른 요소들의 스타일 */
-.place-item:not([data-dragging="true"]) {
-  transition: all 0.2s ease;
-}
-
-/* 드래그 중인 요소가 아닌 다른 요소들에 호버 효과 */
-.place-item:not([data-dragging="true"]):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-color: #e5e7eb;
+  border-top: 2px solid #3b82f6;
 }
 
 .add-place-button {
@@ -246,18 +272,12 @@
   transition: all 0.2s ease;
   width: 100%;
   margin-top: 8px;
-  flex-shrink: 0; /* 버튼은 고정 크기 */
+  flex-shrink: 0;
 }
 
 .add-day-button:hover {
   background-color: #88acf9;
   transform: translateY(-1px);
-}
-
-/* 드롭 영역 스타일 */
-.places-container.drag-over {
-  border-color: #d1d5db;
-  background-color: white;
 }
 
 /* 스크롤바 스타일 */
@@ -277,4 +297,4 @@
 
 .daily-plan-body::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
-} 
+}

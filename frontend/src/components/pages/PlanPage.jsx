@@ -109,6 +109,8 @@ const PlanPage = () => {
     fetchDetailsAndAddBlock,
     panToPlace,
     lastMapPosition,
+    dayMarkers,
+    showDayMarkers,
   } = useMapStore();
   const [isSideBarVisible, setIsSideBarVisible] = useState(true);
   const [draggedBlock, setDraggedBlock] = useState(null);
@@ -385,43 +387,54 @@ const PlanPage = () => {
                   );
                 })}
 
-                {/* 현재 선택된 장소의 임시 마커 */}
-                {markerPosition && (
-                  <CustomMarker
-                    key={`temp-${markerPosition.lat}-${markerPosition.lng}`}
-                    position={markerPosition}
-                    type={markerType}
-                    isTemporary={true}
-                  />
-                )}
-              </Map>
-            </APIProvider>
-          </MapContainer>
-        )}
-        
-        {/* 화이트보드의 PlaceBlock들 */}
-        {placeBlocks.map((block) => (
-          <div
-            key={block.id}
-            style={{
-              position: 'absolute',
-              left: block.position.x,
-              top: block.position.y,
-              zIndex: draggedBlock?.id === block.id ? 2000 : 1000,
-              cursor: 'grab'
-            }}
-            onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
-          >
-            <PlaceBlock
-              place={block}
-              onRemove={handleRemove}
-              onEdit={() => {}}
-              onMouseDown={handleMouseDown}
-              isDailyPlanModalOpen={isDailyPlanModalOpen}
-            />
-          </div>
-        ))}
-      </div>
+              {/* 현재 선택된 장소의 임시 마커 */}
+              {markerPosition && (
+                <CustomMarker
+                  key={`temp-${markerPosition.lat}-${markerPosition.lng}`}
+                  position={markerPosition}
+                  type={markerType}
+                  isTemporary={true}
+                />
+              )}
+
+              {/* 일차별 장소 마커들 (DailyPlanCreate1에서 선택된 일차) */}
+              {showDayMarkers && dayMarkers.map((marker) => (
+                <CustomMarker
+                  key={`day-marker-${marker.id}`}
+                  position={marker.position}
+                  type={marker.type}
+                  isTemporary={true}
+                  title={`${marker.name} (${marker.dayIndex + 1}일차)`}
+                />
+              ))}
+            </Map>
+          </APIProvider>
+        </MapContainer>
+      )}
+      
+      {/* 화이트보드의 PlaceBlock들 */}
+      {placeBlocks.map((block) => (
+        <div
+          key={block.id}
+          style={{
+            position: 'absolute',
+            left: block.position.x,
+            top: block.position.y,
+            zIndex: draggedBlock?.id === block.id ? 2000 : 1000,
+            cursor: 'grab'
+          }}
+          onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
+        >
+          <PlaceBlock
+            place={block}
+            onRemove={handleRemove}
+            onEdit={() => {}}
+            onMouseDown={handleMouseDown}
+            isDailyPlanModalOpen={isDailyPlanModalOpen}
+          />
+        </div>
+      ))}
+    </div>
   );
 };
 

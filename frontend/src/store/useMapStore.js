@@ -23,6 +23,10 @@ const useMapStore = create((set, get) => ({
   markerType: null,
   lastMapPosition: null,
   bookmarkedPlaces: [],
+  
+  // === 일차별 마커 상태 ===
+  dayMarkers: [], // 일차별 장소 마커 데이터
+  showDayMarkers: false, // 일차 마커 표시 여부
 
   // --- 헬퍼 함수 (Helper Function) ---
   // Google Maps API의 types를 사용자 친화적인 카테고리로 분류하는 함수
@@ -394,6 +398,46 @@ const useMapStore = create((set, get) => ({
     set({
       markerPosition: location,
       markerType: place.primaryCategory || '기타',
+    });
+  },
+
+  // === 일차별 마커 액션 ===
+  setDayMarkers: (places, dayIndex) => {
+    console.log('🗺️ 지도 스토어에 일차 마커 설정:', { dayIndex, placesCount: places.length });
+    
+    // 좌표 정보가 있는 장소들만 필터링
+    const validPlaces = places.filter(place => 
+      place && 
+      typeof place.lat === 'number' && 
+      typeof place.lng === 'number' &&
+      !isNaN(place.lat) && 
+      !isNaN(place.lng)
+    );
+    
+    console.log('📍 유효한 장소 마커:', validPlaces.map(place => ({
+      name: place.name,
+      lat: place.lat,
+      lng: place.lng,
+      primaryCategory: place.primaryCategory || '기타'
+    })));
+    
+    set({ 
+      dayMarkers: validPlaces.map(place => ({
+        id: place.id || `day-${dayIndex}-${place.name}`,
+        position: { lat: place.lat, lng: place.lng },
+        type: place.primaryCategory || '기타',
+        name: place.name,
+        dayIndex: dayIndex
+      })),
+      showDayMarkers: validPlaces.length > 0
+    });
+  },
+  
+  clearDayMarkers: () => {
+    console.log('🗺️ 지도에서 일차 마커 제거');
+    set({ 
+      dayMarkers: [], 
+      showDayMarkers: false 
     });
   },
 }));

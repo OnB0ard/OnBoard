@@ -2,40 +2,64 @@ import React from 'react';
 import DailyPlaceBlock from './DailyPlaceBlock';
 import { Button } from '../atoms/Button';
 
-// 이 컴포넌트는 단일 '일차'의 UI와 인터랙션을 담당합니다.
-// 부모로부터 필요한 모든 데이터와 이벤트 핸들러를 props로 전달받습니다.
 const DailyScheduleBlock = ({
   day,
   dayIndex,
+  isDragging,
+  isSwapTarget,
+  draggable,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onDragLeave,
   onUpdateTitle,
   onRemoveDay,
   onAddPlaceClick,
-  onDayDrop,
-  onDayDragOver,
-  onDayDragLeave,
-  // Place 관련 props
+  onDayClick, // 일차 클릭 핸들러 (지도 마커 표시용)
   places,
   onRemovePlace,
   onUpdatePlaceMemo,
   onOpenMemoModal,
-  // Place Drag & Drop 관련 props
-  dragState,
+  dragState, // 장소 드래그 상태
   onPlaceDragStart,
   onPlaceDragOver,
   onPlaceDragLeave,
   onPlaceDrop,
   onPlaceDragEnd
 }) => {
-  const { isDragging, draggedPlaceId, dragOverIndex, draggedFromDay } = dragState;
+  const { isDragging: isPlaceDragging, draggedPlaceId, dragOverIndex, draggedFromDay } = dragState;
+
+  // 일차 클릭 핸들러 (드래그와 구분)
+  const handleDayClick = (e) => {
+    // 드래그 중이거나 input 요소 클릭시 무시
+    if (isDragging || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+      return;
+    }
+    
+    // 이벤트 버블링 방지
+    e.stopPropagation();
+    
+    if (onDayClick) {
+      onDayClick(dayIndex);
+    }
+  };
 
   return (
     <div
-      className="daily-plan-block"
-      onDragOver={(e) => onDayDragOver(e, dayIndex)}
-      onDragLeave={onDayDragLeave}
-      onDrop={(e) => onDayDrop(e, dayIndex)}
+      className={`daily-plan-block ${
+        isDragging ? 'dragging' : ''
+      } ${
+        isSwapTarget ? 'swap-target' : ''
+      }`}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={(e) => onDragOver(e, dayIndex)}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      onDragLeave={onDragLeave}
     >
-      <div className="day-header">
+      <div className="day-header" onClick={handleDayClick} style={{ cursor: 'pointer' }}>
         <input
           type="text"
           value={day.title}
@@ -52,27 +76,24 @@ const DailyScheduleBlock = ({
 
       <div className="places-container">
         {places.map((place, placeIndex) => (
-          <div
+          <DailyPlaceBlock
             key={place.id}
-            className="place-item"
-            draggable="true"
-            data-dragging={isDragging && draggedPlaceId === place.id}
-            data-drop-target={isDragging && dragOverIndex === placeIndex && draggedFromDay === dayIndex}
-            onDragStart={(e) => onPlaceDragStart(e, place, dayIndex, placeIndex)}
-            onDragOver={(e) => onPlaceDragOver(e, dayIndex, placeIndex)}
+            place={place}
+            dayIndex={dayIndex}
+            placeIndex={placeIndex}
+            isDragging={isPlaceDragging && draggedPlaceId === place.id}
+            dragOverIndex={dragOverIndex}
+            isSwapTarget={dragState.swapTargetPlaceIndex === placeIndex}
+            onDragStart={onPlaceDragStart}
+            onDragOver={onPlaceDragOver}
             onDragLeave={onPlaceDragLeave}
+            onDrop={onPlaceDrop}
             onDragEnd={onPlaceDragEnd}
-            onDrop={(e) => onPlaceDrop(e, dayIndex, placeIndex)}
-          >
-            <DailyPlaceBlock
-              place={place}
-              onRemove={() => onRemovePlace(dayIndex, placeIndex)}
-              onEdit={() => {}}
-              onMemoUpdate={(memo) => onUpdatePlaceMemo(dayIndex, placeIndex, memo)}
-              dayTitle={day.title}
-              onOpenMemoModal={onOpenMemoModal}
-            />
-          </div>
+            onRemove={() => onRemovePlace(dayIndex, placeIndex)}
+            onUpdateMemo={(memo) => onUpdatePlaceMemo(dayIndex, placeIndex, memo)}
+            dayTitle={day.title}
+            onOpenMemoModal={onOpenMemoModal}
+          />
         ))}
 
         <Button

@@ -26,12 +26,13 @@
 
 /* 장소 드래그 중일 때의 스타일 */
 .daily-place-block.dragging {
-  opacity: 0.6;
-  transform: rotate(2deg) scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  opacity: 0.7;
+  transform: rotate(3deg) scale(1.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   border: 2px solid #3b82f6;
   z-index: 1000;
   cursor: grabbing;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 장소 드래그 오버 시의 스타일 */
@@ -40,18 +41,65 @@
   background-color: #eff6ff;
   transform: scale(1.02);
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  position: relative;
 }
 
-/* 드래그 오버 시 상단에 파란색 라인 표시 */
-.daily-place-block.drag-over-place::before {
+/* 상단 드롭 인디케이터 - 장소 상단에 삽입 */
+.daily-place-block.drag-over-place[data-drop-position="top"]::before {
   content: '';
   position: absolute;
-  top: -2px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background-color: #3b82f6;
+  top: -4px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
   border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 상단 드롭 인디케이터 화살표 */
+.daily-place-block.drag-over-place[data-drop-position="top"]::after {
+  content: '▼';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #3b82f6;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
+}
+
+/* 하단 드롭 인디케이터 - 장소 하단에 삽입 */
+.daily-place-block.drag-over-place[data-drop-position="bottom"]::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #059669, #10b981);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 하단 드롭 인디케이터 화살표 */
+.daily-place-block.drag-over-place[data-drop-position="bottom"]::after {
+  content: '▲';
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #10b981;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
 }
 
 /* 드롭다운이 열렸을 때는 호버 시 transform 효과를 비활성화 */

@@ -144,9 +144,23 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     e.preventDefault();
     e.stopPropagation();
     
-    // 교환 대상 포커스 효과
+    // 마우스 위치에 따른 상단/하단 구분
     if (draggedDayIndex !== null && draggedDayIndex !== dayIndex) {
+      const target = e.currentTarget;
+      const rect = target.getBoundingClientRect();
+      const mouseY = e.clientY;
+      const blockCenter = rect.top + rect.height / 2;
+      
+      // 마우스가 블록 상반부에 있으면 상단 삽입, 하반부에 있으면 하단 삽입
+      const isTopHalf = mouseY < blockCenter;
+      
+      // 드롭 위치 정보를 스토어에 저장
       setSwapTargetDayIndex(dayIndex);
+      
+      // 상단/하단 정보를 DOM에 데이터 속성으로 추가
+      target.setAttribute('data-drop-position', isTopHalf ? 'top' : 'bottom');
+      
+      console.log(`드래그 오버: 일차 ${dayIndex}, 위치: ${isTopHalf ? '상단' : '하단'}`);
     }
     
     // 자동 스크롤 처리
@@ -199,6 +213,21 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       autoScrollIntervalRef.current = null;
     }
     
+    const handleDayDragLeave = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // 드롭 위치 데이터 속성 정리
+      const target = e.currentTarget;
+      target.removeAttribute('data-drop-position');
+      
+      // 자동 스크롤 중지
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+    };
+    
     // 먼저 JSON 데이터 확인 (일차 드래그)
     const dragDataString = e.dataTransfer.getData('application/json');
     if (dragDataString) {
@@ -213,8 +242,24 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           return;
         }
         
-        console.log('일차 위치 교환 실행:', { from: draggedDayIndex, to: dayIndex });
-        swapDailyPlans(draggedDayIndex, dayIndex);
+        // 드롭 위치에 따른 인덱스 조정
+        const target = e.currentTarget;
+        const dropPosition = target.getAttribute('data-drop-position');
+        let targetIndex = dayIndex;
+        
+        // 하단에 드롭하는 경우 인덱스를 1 증가
+        if (dropPosition === 'bottom') {
+          targetIndex = dayIndex + 1;
+        }
+        
+        console.log('일차 위치 이동 실행:', { 
+          from: draggedDayIndex, 
+          to: dayIndex, 
+          position: dropPosition,
+          finalIndex: targetIndex 
+        });
+        
+        reorderDailyPlans(draggedDayIndex, targetIndex);
         clearDragState();
         return;
       }
@@ -263,11 +308,15 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     e.preventDefault();
     e.stopPropagation();
     
+    // 드롭 위치 데이터 속성 정리
+    const target = e.currentTarget;
+    target.removeAttribute('data-drop-position');
+    
     // 교환 대상 포커스 해제
     setSwapTargetDayIndex(null);
     
     // 드래그 오버 시각적 피드백 제거
-    e.currentTarget.classList.remove('drag-over-day');
+    target.classList.remove('drag-over-day');
   };
 
   // --- Place Drag & Drop 핸들러 ---
@@ -336,10 +385,23 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       
       // 다른 장소 위에 드래그할 때만 포커스 효과 적용
       if (draggedFromDay !== dayIndex || draggedFromIndex !== placeIndex) {
-        console.log('포커스 효과 적용:', placeIndex);
+        // 마우스 위치에 따른 상단/하단 구분
+        const target = e.currentTarget;
+        const rect = target.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const blockCenter = rect.top + rect.height / 2;
+        
+        // 마우스가 블록 상반부에 있으면 상단 삽입, 하반부에 있으면 하단 삽입
+        const isTopHalf = mouseY < blockCenter;
+        
+        console.log('포커스 효과 적용:', { placeIndex, position: isTopHalf ? '상단' : '하단' });
+        
         setSwapTargetPlaceIndex(placeIndex);
         setDragOverIndex(placeIndex);
-        e.currentTarget.classList.add('drag-over-place');
+        
+        // 상단/하단 정보를 DOM에 데이터 속성으로 추가
+        target.setAttribute('data-drop-position', isTopHalf ? 'top' : 'bottom');
+        target.classList.add('drag-over-place');
       } else {
         console.log('같은 장소로 드래그 - 포커스 효과 없음');
       }
@@ -351,6 +413,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   const handlePlaceDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // 드롭 위치 데이터 속성 정리
+    const target = e.currentTarget;
+    target.removeAttribute('data-drop-position');
     
     // 교환 대상 포커스 해제
     setSwapTargetPlaceIndex(null);
@@ -394,25 +460,38 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     }
 
     const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
-    console.log('✅ 장소 교환 준비:', { 
-      from: { day: sourceDayIndex, place: sourcePlaceIndex }, 
-      to: { day: targetDayIndex, place: targetPlaceIndex } 
-    });
-    
-    if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === targetPlaceIndex) {
-      console.log('❌ 같은 위치로 드롭 - 취소');
-      handlePlaceDragEnd(e);
-      return;
-    }
+  
+  // 드롭 위치에 따른 인덱스 조정
+  const target = e.currentTarget;
+  const dropPosition = target.getAttribute('data-drop-position');
+  let finalTargetPlaceIndex = targetPlaceIndex;
+  
+  // 하단에 드롭하는 경우 인덱스를 1 증가
+  if (dropPosition === 'bottom') {
+    finalTargetPlaceIndex = targetPlaceIndex + 1;
+  }
+  
+  console.log('✅ 장소 이동 준비:', { 
+    from: { day: sourceDayIndex, place: sourcePlaceIndex }, 
+    to: { day: targetDayIndex, place: targetPlaceIndex },
+    position: dropPosition,
+    finalIndex: finalTargetPlaceIndex
+  });
+  
+  if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
+    console.log('❌ 같은 위치로 드롭 - 취소');
+    handlePlaceDragEnd(e);
+    return;
+  }
 
-    console.log('🔄 장소 위치 교환 실행 시작!');
-    
-    try {
-      swapPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, targetPlaceIndex);
-      console.log('✅ 장소 교환 성공!');
-    } catch (error) {
-      console.error('❌ 장소 교환 오류:', error);
-    }
+  console.log('🔄 장소 위치 이동 실행 시작!');
+  
+  try {
+    reorderPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, finalTargetPlaceIndex);
+    console.log('✅ 장소 이동 성공!');
+  } catch (error) {
+    console.error('❌ 장소 이동 오류:', error);
+  }
 
     handlePlaceDragEnd(e);
   };

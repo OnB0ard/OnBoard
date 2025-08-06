@@ -50,7 +50,7 @@ const DailyScheduleBlock = ({
       className={`daily-plan-block ${
         isDragging ? 'dragging' : ''
       } ${
-        isSwapTarget ? 'swap-target' : ''
+        isSwapTarget ? 'drag-over-day' : ''
       }`}
       draggable={draggable}
       onDragStart={onDragStart}

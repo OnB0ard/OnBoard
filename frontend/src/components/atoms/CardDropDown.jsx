@@ -3,9 +3,7 @@ import './CardDropDown.css';
 
 const CardDropDown = ({ children, items }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState('bottom-right');
   const dropdownRef = useRef(null);
-  const [menuStyle, setMenuStyle] = useState({});
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -46,23 +44,6 @@ const CardDropDown = ({ children, items }) => {
 
   const handleToggle = (e) => {
     e.stopPropagation();
-    
-    if (!isOpen) {
-      // 드롭다운을 열 때 위치 계산
-      const rect = dropdownRef.current?.getBoundingClientRect();
-      if (rect) {
-        const viewportHeight = window.innerHeight;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        
-        if (spaceBelow < 100 && spaceAbove > 100) {
-          setDropdownPosition('top-right');
-        } else {
-          setDropdownPosition('bottom-right');
-        }
-      }
-    }
-    
     setIsOpen(!isOpen);
   };
 
@@ -76,7 +57,7 @@ const CardDropDown = ({ children, items }) => {
       </button>
       
       {isOpen && (
-        <div className={`card-dropdown-menu ${dropdownPosition}`}>
+        <div className="card-dropdown-menu">
           {items.map((item, index) => (
             <button
               key={index}

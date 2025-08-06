@@ -23,7 +23,7 @@ const Card = ({
     toggleSharePopover,
     closeAllPopovers,
   } = useCardStore();
-  const { fetchParticipants } = useParticipantStore(); // 추가: fetchParticipants 액션 import
+  const { fetchParticipants, leaveCurrentPlan } = useParticipantStore(); // 추가: fetchParticipants, leaveCurrentPlan 액션 import
 
   const { userId: currentUserId } = useAuthStore();
 
@@ -42,7 +42,8 @@ const Card = ({
     imageUrl,
     hostImageUrl, // API에서 받은 호스트 프로필 이미지 URL
     hostName,     // API에서 받은 호스트 이름
-    creatorId,    // 방장 ID
+    creatorId,    // 방장 ID (직접 필드)
+    creator,      // 방장 객체 (creator.userId로 접근)
   } = planData || {};
 
   const id = planId;
@@ -53,13 +54,9 @@ const Card = ({
   const displayProfileImage = hostImageUrl || "/default-profile.png";
   const displayUserName = hostName || "사용자";
   
-  // 방장 여부 확인 (타입 변환하여 비교)
-  // creatorId가 undefined인 경우 임시로 true로 설정 (백엔드에서 creatorId 필드가 전달되지 않는 경우)
-  const isCreator = creatorId !== undefined ? String(currentUserId) === String(creatorId) : true;
-  
-
-  
-
+  // 방장 여부 확인 - 백엔드에서 creatorId/hostId 필드 추가 필요
+  const actualCreatorId = creatorId || creator?.userId;
+  const isCreator = actualCreatorId !== undefined ? String(currentUserId) === String(actualCreatorId) : false;
 
   const handleCardClick = () => {
     if (onView && !isPopoverOpen) {
@@ -67,9 +64,16 @@ const Card = ({
     }
   };
 
-  const handleLeavePlan = () => {
+  const handleLeavePlan = async () => {
     if (window.confirm('방을 나가시겠습니까?')) {
-      onDelete && onDelete(planData);
+      try {
+        await leaveCurrentPlan(Number(planId));
+        // 성공 시 부모 컴포넌트에 알림 (리스트에서 제거하기 위해)
+        onDelete && onDelete(planData);
+      } catch (error) {
+        console.error('방 나가기 실패:', error);
+        alert('방 나가기에 실패했습니다. 다시 시도해주세요.');
+      }
     }
   };
 
@@ -107,7 +111,7 @@ const Card = ({
   return (
     <div
       ref={cardRef}
-      className={`bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 w-full max-w-[280px] h-[390px] cursor-pointer relative transition-all duration-200 ${
+      className={`bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 w-full max-w-[280px] h-[390px] cursor-pointer relative transition-all duration-200 font-['Poppins'] ${
         !isAnyPopoverOpen ? 'hover:shadow-lg hover:-translate-y-1' : ''
       }`}
       style={{ overflow: 'visible' }}
@@ -133,13 +137,22 @@ const Card = ({
 
       {/* 카드 컨텐츠 */}
       <div className="flex items-center gap-2">
-        <Avatar>
-          <AvatarImage src={displayProfileImage} alt={displayUserName} />
+        <Avatar className="overflow-hidden rounded-full">
+          <AvatarImage 
+            src={displayProfileImage} 
+            alt={displayUserName}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center'
+            }}
+          />
           <AvatarFallback>{displayUserName?.[0] || "?"}</AvatarFallback>
         </Avatar>
         <div className="flex flex-col justify-center">
-          <div className="text-xs text-gray">{displayUserName}</div>
-          <div className="text-xs text-gray-500">{hashTag}</div>
+          <div className="font-semibold text-xs text-gray-700">{displayUserName}</div>
+          <div className="text-[11px] text-gray-500">{hashTag}</div>
         </div>
       </div>
 

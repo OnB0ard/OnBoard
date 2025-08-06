@@ -10,7 +10,6 @@ export const getPlanList = async () => {
     const response = await apiClient.get('plan/list');
 
     // 서버 응답의 body에 실제 데이터가 담겨 있으므로 response.data.body를 반환합니다.
-    console.log("여행 목록 조회 성공:", response.data.body);
     return response.data.body;
   } catch (error) {
     // 에러 발생 시 콘솔에 로그를 남기고, 에러를 다시 throw하여

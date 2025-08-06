@@ -86,11 +86,11 @@ export const useParticipantStore = create((set, get) => ({
     try {
       await leavePlan(planId);
       // 성공 시, 스토어의 상태를 깨끗하게 초기화합니다.
-      // 컴포넌트에서는 이 액션 호출 후 페이지 이동 등을 처리할 수 있습니다.
       set({ creator: null, participants: [], isLoading: false, error: null });
     } catch (error) {
       console.error("계획 나가기 실패:", error);
       set({ error });
+      throw error;
     }
   },
 

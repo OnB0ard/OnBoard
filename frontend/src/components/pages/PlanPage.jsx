@@ -252,7 +252,7 @@ const PlanPage = () => {
     setDraggedBlock(block);
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+    const offsetY = e.clientY - rect.top + 50;
     
     // 오프셋을 ref에 저장
     dragOffsetRef.current = { x: offsetX, y: offsetY };

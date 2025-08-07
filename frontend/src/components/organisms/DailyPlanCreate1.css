@@ -131,18 +131,66 @@
   transition: all 0.2s ease;
 }
 
-/* 일차(Day) 블록 위에 다른 일차를 드래그할 때의 스타일 */
+/* 일차(Day) 블록 위에 다른 일차를 드래그할 때의 스타일 - 최소한의 시각적 피드백 */
 .daily-plan-block.drag-over-day {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-  transform: scale(1.02);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+  position: relative;
   transition: all 0.2s ease;
 }
 
-/* 드래그 오버 시 내부 places-container도 강조 */
-.daily-plan-block.drag-over-day .places-container {
-  transform: scale(1.01);
+/* 상단 드롭 인디케이터 - 블록 상단에 삽입 */
+.daily-plan-block.drag-over-day[data-drop-position="top"]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  border-radius: 2px;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.6);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 상단 드롭 인디케이터 화살표 */
+.daily-plan-block.drag-over-day[data-drop-position="top"]::after {
+  content: '▼';
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #3b82f6;
+  font-size: 12px;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
+}
+
+/* 하단 드롭 인디케이터 - 블록 하단에 삽입 */
+.daily-plan-block.drag-over-day[data-drop-position="bottom"]::before {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #059669, #10b981);
+  border-radius: 2px;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.6);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 하단 드롭 인디케이터 화살표 */
+.daily-plan-block.drag-over-day[data-drop-position="bottom"]::after {
+  content: '▲';
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #10b981;
+  font-size: 12px;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
 }
 
 /* 장소 드래그 오버 시 스타일 (기존 유지) */
@@ -208,6 +256,16 @@
   background-color: white;
   border-radius: 8px;
   border: 1px dashed #d1d5db;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* places-container 드래그 오버 시 효과 */
+.places-container.drag-over {
+  border: 2px dashed #3b82f6;
+  background-color: #f8fafc;
+  transform: scale(1.01);
+  box-shadow: inset 0 2px 8px rgba(59, 130, 246, 0.1);
 }
 
 .place-item {
@@ -224,18 +282,48 @@
   cursor: grabbing;
 }
 
-/* 드래그 중인 장소(place) 요소의 스타일 */
+/* 드래그 중인 장소(place) 요소의 개선된 스타일 */
 .place-item[data-dragging="true"] {
-  opacity: 0.5;
-  transform: rotate(2deg);
+  opacity: 0.7;
+  transform: rotate(3deg) scale(1.05);
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   border: 2px solid #3b82f6;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 장소(place) 드롭 가능한 위치 표시 */
+/* 장소(place) 드롭 가능한 위치의 정밀한 표시 */
 .place-item[data-drop-target="true"] {
-  border-top: 2px solid #3b82f6;
+  position: relative;
+}
+
+/* 장소 드롭 인디케이터 - 상단 라인 */
+.place-item[data-drop-target="true"]::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 장소 드롭 인디케이터 - 중앙 화살표 */
+.place-item[data-drop-target="true"]::after {
+  content: '▼';
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #3b82f6;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
 }
 
 .add-place-button {
@@ -297,4 +385,127 @@
 
 .daily-plan-body::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* 드롭 인디케이터 애니메이션 */
+@keyframes dropIndicatorPulse {
+  0% {
+    opacity: 0.8;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.2);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scaleY(1);
+  }
+}
+
+/* 화살표 바운스 애니메이션 */
+@keyframes dropArrowBounce {
+  0%, 100% {
+    transform: translateY(0) translateX(-50%);
+  }
+  50% {
+    transform: translateY(-3px) translateX(-50%);
+  }
+}
+
+/* === 드롭 존 스타일 ===*/
+.place-drop-zone {
+  height: 8px;
+  margin: 6px 0;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  background: linear-gradient(90deg, #e5e7eb, #d1d5db, #e5e7eb);
+  opacity: 0.4;
+  border: 1px dashed #d1d5db;
+}
+
+/* 드래그 오버 시 드롭 존 활성화 */
+.place-drop-zone.drop-zone-active {
+  opacity: 1;
+  height: 18px;
+  background: linear-gradient(90deg, #10b981, #059669, #10b981);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+  border: 2px solid #10b981;
+  margin: 8px 0;
+}
+
+/* 드래그 중일 때 모든 드롭 존 표시 */
+.daily-plan-modal.bookmark-dragging .place-drop-zone {
+  opacity: 0.7;
+  height: 12px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  border: 1px dashed #3b82f6;
+}
+
+/* 드래그 중일 때 빈 드롭 존 표시 */
+.daily-plan-modal.bookmark-dragging .place-drop-zone-empty {
+  opacity: 0.8;
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+/* 드롭 존 활성화 시 화살표 */
+.place-drop-zone.drop-zone-active::after {
+  content: '▼';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #10b981;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 빈 드롭 존 (장소가 없을 때) */
+.place-drop-zone-empty {
+  height: 40px;
+  margin: 8px 0;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9fafb;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.place-drop-zone-empty .drop-zone-hint {
+  color: #6b7280;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* 빈 드롭 존 활성화 */
+.place-drop-zone-empty.drop-zone-active {
+  opacity: 1;
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.2);
+}
+
+.place-drop-zone-empty.drop-zone-active .drop-zone-hint {
+  color: #10b981;
+  font-weight: 500;
+}
+
+/* 드래그 중인 블록의 개선된 스타일 */
+.daily-plan-block.dragging {
+  opacity: 0.7;
+  background-color: #f9fafb;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05) rotate(2deg);
+  border: 2px solid #3b82f6;
+  z-index: 2000;
+  cursor: grabbing;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

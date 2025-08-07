@@ -7,6 +7,7 @@ import './BookmarkModal.css';
 const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 } }) => {
   const modalRef = useRef(null);
   const { bookmarkedPlaces } = useMapStore();
+  const [isDragging, setIsDragging] = React.useState(false);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -34,6 +35,37 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
     if (onPlaceSelect) {
       onPlaceSelect(place);
     }
+  };
+
+  // 드래그 시작 핸들러
+  const handleDragStart = (e, place) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      type: 'bookmark-place',
+      place: place
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+    setIsDragging(true);
+    
+    // daily-plan-modal에 bookmark-dragging 클래스 추가
+    const dailyPlanModal = document.querySelector('.daily-plan-modal');
+    if (dailyPlanModal) {
+      dailyPlanModal.classList.add('bookmark-dragging');
+    }
+    
+    console.log('북마크에서 장소 드래그 시작:', place.name);
+  };
+
+  // 드래그 끝 핸들러
+  const handleDragEnd = (e) => {
+    setIsDragging(false);
+    
+    // daily-plan-modal에서 bookmark-dragging 클래스 제거
+    const dailyPlanModal = document.querySelector('.daily-plan-modal');
+    if (dailyPlanModal) {
+      dailyPlanModal.classList.remove('bookmark-dragging');
+    }
+    
+    console.log('북마크 드래그 종료');
   };
 
   // 안전한 위치 계산
@@ -117,6 +149,9 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
                 <div 
                   key={place.place_id} 
                   className="bookmark-item"
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, place)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => handlePlaceClick(place)}
                 >
                   {/* 왼쪽: 텍스트 정보 */}

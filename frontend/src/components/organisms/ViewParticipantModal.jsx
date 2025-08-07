@@ -6,6 +6,7 @@ import { Check, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { useParticipantStore } from "../../store/usePlanUserStore"; // Zustand 스토어 import
 import { useAuthStore } from "../../store/useAuthStore";
+import Icon from "../atoms/Icon";
 
 // planId: 계획 ID
 // myName: 현재 로그인한 사용자 이름
@@ -20,6 +21,7 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
     approveRequest,
     denyRequest,
     clearParticipants,
+    delegateCreatorRole,
   } = useParticipantStore();
 
   const { userId: currentUserId } = useAuthStore();
@@ -62,6 +64,13 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
       denyRequest(planId, targetUserId);
     }
   };
+
+  const handlePromote = (targetUserId, name) => {
+    console.log('Promoting:', { planId, targetUserId }); // 디버깅용 로그
+    if (window.confirm(`${name}님을 방장으로 위임하시겠습니까?`)) {
+      delegateCreatorRole(planId, targetUserId);
+    }
+  };  
 
   const combinedParticipants = [
     ...(creator ? [{ ...creator, status: 'CREATOR' }] : []),
@@ -119,6 +128,23 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
                   <X className="w-3 h-3" />
                 </button>
               </>
+            )} 
+            {isCreator && p.status !== 'CREATOR' && p.userStatus === 'APPROVED' && (
+              <>
+              <button
+                className="ml-1 p-1 rounded-full hover:bg-red-200 text-red-500 transition"
+                title="강퇴"
+              >
+                <Icon type="minus" />
+              </button>
+              <button
+              className="p-1 rounded-full hover:bg-green-100 text-green-500 transition"
+              title="방장위임"
+              onClick={() => handlePromote(p.userId, p.userName)}
+              >
+                👑
+              </button>
+            </>
             )}
           </li>
         ))}

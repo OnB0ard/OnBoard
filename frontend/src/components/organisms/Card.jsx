@@ -210,11 +210,14 @@ const Card = ({
                   toggleParticipantPopover(id);
                 }}
               >
-                <Popover.Trigger asChild>
-                  <Button variant="solid" onClick={(e) => e.stopPropagation()}>
-                    참여자 보기
-                  </Button>
-                </Popover.Trigger>
+                                 <Popover.Trigger asChild>
+                   <button 
+                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] border border-gray-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100/60"
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                     참여자 보기
+                   </button>
+                 </Popover.Trigger>
                 <Popover.Portal>
                   <Popover.Content 
                     side="top" 
@@ -251,11 +254,14 @@ const Card = ({
 
               {/* 공유하기 팝오버 */}
               <Popover.Root open={isShareOpen} onOpenChange={() => toggleSharePopover(id)}>
-                <Popover.Trigger asChild>
-                  <Button variant="outline" onClick={(e) => e.stopPropagation()}>
-                    공유하기
-                  </Button>
-                </Popover.Trigger>
+                                 <Popover.Trigger asChild>
+                   <button 
+                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] bg-slate-700 text-white shadow-sm hover:bg-slate-600"
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                     공유하기
+                   </button>
+                 </Popover.Trigger>
                 <Popover.Portal>
                   <Popover.Content 
                     side="top" 

@@ -1,6 +1,7 @@
 /* AutocompleteSearchModal.css */
 
 .autocomplete-search-modal {
+  font-family: 'Poppins', sans-serif;
   box-sizing: border-box;
   position: fixed;
   background-color: white;

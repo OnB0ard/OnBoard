@@ -25,33 +25,6 @@
   }
 }
 
-/* 사이드바에서 나오는 화살표 효과 */
-.bookmark-popup::before {
-  content: '';
-  position: absolute;
-  top: 71px; /* 북마크 아이콘 위치에 맞춤 */
-  left: -8px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid white;
-  z-index: 1501;
-}
-
-/* 화살표 그림자 효과 */
-.bookmark-popup::after {
-  content: '';
-  position: absolute;
-  top: 71px; /* 북마크 아이콘 위치에 맞춤 */
-  left: -9px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid #e5e7eb;
-  z-index: 1500;
-}
 
 .bookmark-popup-container {
   display: flex;

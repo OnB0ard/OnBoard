@@ -73,10 +73,10 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
     try {
       // 일정짜기 모달의 위치와 크기를 기준으로 북마크 모달 위치 계산
       // 일정짜기 모달은 left: 70px, width: 330px, top: 90px
-      const dailyPlanLeft = 70;
+      const dailyPlanLeft = 120;
       const dailyPlanWidth = 330;
       const dailyPlanRight = dailyPlanLeft + dailyPlanWidth;
-      const dailyPlanTop = 90; // 일정짜기 모달과 같은 top 위치
+      const dailyPlanTop = 76; // 일정짜기 모달과 같은 top 위치
       
       // 북마크 모달을 일정짜기 모달 오른쪽에 배치
       const x = dailyPlanRight + 20; // 일정짜기 모달 오른쪽에서 20px 떨어진 위치

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { APIProvider, useMapsLibrary, Map, useMap } from '@vis.gl/react-google-maps';
 import CustomMarker from '../atoms/CustomMarker';
@@ -8,7 +8,7 @@ import MapContainer from '../organisms/Map';
 import PlaceBlock from '../organisms/PlaceBlock';
 import AccessControlModal from '../organisms/AccessControlModal';
 
-import useMapStore from '../../store/useMapStore';
+import { useMapCoreStore, usePlaceBlocksStore, usePlaceDetailsStore, useDayMarkersStore } from '../../store/mapStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useParticipantStore } from '../../store/usePlanUserStore';
 
@@ -27,7 +27,10 @@ function MapInitializer() {
     setPlaceConstructor,
     lastMapPosition,
     setLastMapPosition,
-  } = useMapStore();
+  } = useMapCoreStore();
+
+  // 프로그래밍적 맵 변경을 추적하는 ref (무한 루프 방지)
+  const isProgrammaticChange = useRef(false);
 
   // 역할 1: 맵 관련 인스턴스를 스토어에 설정 (map, placesLib가 준비되면 한 번만 실행)
   useEffect(() => {
@@ -42,6 +45,9 @@ function MapInitializer() {
   useEffect(() => {
     if (!map) return;
 
+    // 프로그래밍적 변경 시작
+    isProgrammaticChange.current = true;
+    
     if (lastMapPosition) {
       map.setCenter(lastMapPosition.center);
       map.setZoom(lastMapPosition.zoom);
@@ -52,18 +58,30 @@ function MapInitializer() {
       map.setCenter(koreaCenter);
       map.setZoom(koreaZoom);
     }
+    
+    // 프로그래밍적 변경 완료 (약간의 지연 후 플래그 해제)
+    setTimeout(() => {
+      isProgrammaticChange.current = false;
+    }, 100);
   }, [map, lastMapPosition]);
 
   // 역할 3: 맵 이벤트 리스너 등록 (map이 준비되면 한 번만 등록)
+  const handlePositionChange = useCallback(() => {
+    if (!map) return;
+    
+    // 프로그래밍적 변경 중이면 상태 업데이트 방지
+    if (isProgrammaticChange.current) {
+      return;
+    }
+    
+    setLastMapPosition({
+      center: map.getCenter().toJSON(),
+      zoom: map.getZoom(),
+    });
+  }, [map]); // setLastMapPosition 제거하여 무한 루프 방지
+
   useEffect(() => {
     if (!map) return;
-
-    const handlePositionChange = () => {
-      setLastMapPosition({
-        center: map.getCenter().toJSON(),
-        zoom: map.getZoom(),
-      });
-    };
 
     const dragListener = map.addListener('dragend', handlePositionChange);
     const zoomListener = map.addListener('zoom_changed', handlePositionChange);
@@ -73,7 +91,7 @@ function MapInitializer() {
       window.google.maps.event.removeListener(dragListener);
       window.google.maps.event.removeListener(zoomListener);
     };
-  }, [map, setLastMapPosition]); 
+  }, [map, handlePositionChange]); 
 }
 
 // Google Place API의 카테고리를 CustomMarker의 type으로 변환
@@ -100,18 +118,26 @@ const PlanPage = () => {
 
   const {
     isMapVisible,
+    markerPosition,
+    markerType,
+    panToPlace,
+    lastMapPosition,
+  } = useMapCoreStore();
+  
+  const {
     placeBlocks,
     addPlaceBlock,
     removePlaceBlock,
     updatePlaceBlockPosition,
-    markerPosition,
-    markerType,
     fetchDetailsAndAddBlock,
-    panToPlace,
-    lastMapPosition,
+    hidePlaceBlockMarkers,
+  } = usePlaceBlocksStore();
+  
+  const {
     dayMarkers,
     showDayMarkers,
-  } = useMapStore();
+    clearDayMarkers,
+  } = useDayMarkersStore();
   const [isSideBarVisible, setIsSideBarVisible] = useState(true);
   const [draggedBlock, setDraggedBlock] = useState(null);
   const [mapCenter, setMapCenter] = useState(null);
@@ -119,7 +145,6 @@ const PlanPage = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
 
-  // Refs
   const mapRef = useRef(null);
   const whiteBoardRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
@@ -322,6 +347,11 @@ const PlanPage = () => {
   // 일정 추가 모달 상태 변경 핸들러
   const handleDailyPlanModalToggle = (isOpen) => {
     setIsDailyPlanModalOpen(isOpen);
+    
+    // 모달이 닫힐 때 일차 마커를 제거하고 PlaceBlock 마커를 복원
+    if (!isOpen) {
+      clearDayMarkers();
+    }
   };
 
   // 접근 제어 조건부 렌더링
@@ -373,7 +403,7 @@ const PlanPage = () => {
               >
                 <MapInitializer />
                 {/* 계획에 추가된 장소들의 마커 */}
-                {placeBlocks.map((block) => {
+                {!hidePlaceBlockMarkers && placeBlocks.map((block) => {
                   // block에 위치 정보가 없으면 마커를 렌더링하지 않음
                   if (!block.latitude || !block.longitude) return null;
 

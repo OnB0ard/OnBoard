@@ -4,7 +4,7 @@ import Icon from "../atoms/Icon";
 import AutocompleteSearchModal from "./AutocompleteSearchModal";
 import Bookmark from "./Bookmark";
 import DailyPlanCreate1 from "./DailyPlanCreate1";
-import useMapStore from "../../store/useMapStore";
+import { useMapCoreStore, useBookmarkStore } from "../../store/mapStore";
 import "./SideBar.css";
 
 const SideBar = ({ onDailyPlanModalToggle }) => {
@@ -12,9 +12,10 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-  const isMapVisible = useMapStore((state) => state.isMapVisible);
-  const setIsMapVisible = useMapStore((state) => state.setIsMapVisible);
-  const bookmarkedPlaces = useMapStore((state) => state.bookmarkedPlaces);
+  const isMapVisible = useMapCoreStore((state) => state.isMapVisible);
+  const setIsMapVisible = useMapCoreStore((state) => state.setIsMapVisible);
+
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
 
   const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
 
@@ -22,6 +23,9 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setModalPosition({ x: rect.right + 15, y: 75 });
     setIsSearchModalOpen(!isSearchModalOpen);
+    if (isDailyPlanModalOpen && onDailyPlanModalToggle) {
+      onDailyPlanModalToggle(false);
+    }
     setIsDailyPlanModalOpen(false);
   };
 
@@ -29,6 +33,9 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setModalPosition({ x: rect.right + 15, y: 75 });
     setIsBookmarkModalOpen(true);
+    if (isDailyPlanModalOpen && onDailyPlanModalToggle) {
+      onDailyPlanModalToggle(false);
+    }
     setIsDailyPlanModalOpen(false);
   };
 
@@ -44,7 +51,6 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
 
   const handleMapClick = () => {
     setIsMapVisible(!isMapVisible);
-    setIsDailyPlanModalOpen(false);
   };
 
   return (

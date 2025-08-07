@@ -1,6 +1,6 @@
 // 북마크 모음집 
 import React, { useEffect, useRef } from 'react';
-import useMapStore from '../../store/useMapStore';
+import { useBookmarkStore } from '../../store/mapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import './Bookmark.css';
@@ -8,8 +8,8 @@ import {createPortal} from 'react-dom';
 
 const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
   const popupRef = useRef(null);
-  const bookmarkedPlaces = useMapStore((state) => state.bookmarkedPlaces);
-  const toggleBookmark = useMapStore((state) => state.toggleBookmark);
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
+  const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
 
   // 외부 클릭 감지
   useEffect(() => {

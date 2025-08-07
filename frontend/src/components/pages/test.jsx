@@ -2,12 +2,12 @@
 import React from "react";
 import { APIProvider } from '@vis.gl/react-google-maps';
 import Map from "../organisms/Map";
-import useMapStore from "../../store/useMapStore";
+import { useMapCoreStore } from "../../store/mapStore";
 
 const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k'; // 본인의 API 키를 입력하세요
 
 function Test() {
-  const { isMapVisible, setIsMapVisible } = useMapStore();
+  const { isMapVisible, setIsMapVisible } = useMapCoreStore();
 
   return (
     // ✅ APIProvider를 페이지 레벨에서 감싸 모든 자식들이 라이브러리를 사용하게 합니다.

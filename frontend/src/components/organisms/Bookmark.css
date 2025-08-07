@@ -12,11 +12,6 @@
   max-height: 70vh;
   display: flex;
   flex-direction: column;
-  /* 사이드바와 연결되는 화살표 효과 */
-  position: relative;
-  /* 부드러운 애니메이션 */
-  animation: slideInFromSidebar 0.3s ease-out;
-  transform-origin: top left;
 }
 
 @keyframes slideInFromSidebar {

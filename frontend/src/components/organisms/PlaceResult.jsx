@@ -1,17 +1,17 @@
 // 장소 검색 후 나올 결과 리스트 
 
 import React, { useRef, useEffect, useCallback } from 'react';
-import useMapStore from '../../store/useMapStore';
+import { useSearchStore } from '../../store/mapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
 const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
-  const searchResults = useMapStore((state) => state.searchResults);
-  const isSearching = useMapStore((state) => state.isSearching);
-  const fetchNextPage = useMapStore((state) => state.fetchNextPage);
-  const pagination = useMapStore((state) => state.pagination);
-  const isLoadingMore = useMapStore((state) => state.isLoadingMore);
+  const searchResults = useSearchStore((state) => state.searchResults);
+  const isSearching = useSearchStore((state) => state.isSearching);
+  const fetchNextPage = useSearchStore((state) => state.fetchNextPage);
+  const pagination = useSearchStore((state) => state.pagination);
+  const isLoadingMore = useSearchStore((state) => state.isLoadingMore);
 
   const loader = useRef(null);
 

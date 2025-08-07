@@ -4,7 +4,7 @@ import Icon from '../atoms/Icon';
 import SearchBar from './SearchBar';
 import PlaceResult from './PlaceResult';
 import PlaceDetailModal from './PlaceDetailModal';
-import useMapStore from '../../store/useMapStore';
+import { useMapCoreStore, useSearchStore, usePlaceDetailsStore, useBookmarkStore } from '../../store/mapStore';
 import './AutocompleteSearchModal.css';
 import {createPortal} from 'react-dom';
 
@@ -15,23 +15,29 @@ import {createPortal} from 'react-dom';
  * @param {function} props.onClose - 모달을 닫는 함수
  */
 const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
-  const panToPlace = useMapStore((state) => state.panToPlace);
-  // Zustand 스토어에서 필요한 상태와 액션을 개별적으로 구독합니다.
-  const mapInstance = useMapStore((state) => state.mapInstance);
-  const placesService = useMapStore((state) => state.placesService);
-  const setPlacesService = useMapStore((state) => state.setPlacesService);
-  const inputValue = useMapStore((state) => state.inputValue);
-  const searchResults = useMapStore((state) => state.searchResults);
-  const isSearching = useMapStore((state) => state.isSearching);
-  const hasSearched = useMapStore((state) => state.hasSearched);
-  const autocompletePredictions = useMapStore((state) => state.autocompletePredictions);
-  const setInputValue = useMapStore((state) => state.setInputValue);
-  const performTextSearch = useMapStore((state) => state.performTextSearch);
-  const handlePlaceSelection = useMapStore((state) => state.handlePlaceSelection);
-  const fetchAutocompletePredictions = useMapStore((state) => state.fetchAutocompletePredictions);
-  const clearSearch = useMapStore((state) => state.clearSearch);
-  const toggleBookmark = useMapStore((state) => state.toggleBookmark);
-  const isBookmarked = useMapStore((state) => state.isBookmarked);
+  // Map Core functionality
+  const panToPlace = useMapCoreStore((state) => state.panToPlace);
+  const mapInstance = useMapCoreStore((state) => state.mapInstance);
+  const placesService = useMapCoreStore((state) => state.placesService);
+  const setPlacesService = useMapCoreStore((state) => state.setPlacesService);
+  
+  // Search functionality
+  const inputValue = useSearchStore((state) => state.inputValue);
+  const searchResults = useSearchStore((state) => state.searchResults);
+  const isSearching = useSearchStore((state) => state.isSearching);
+  const hasSearched = useSearchStore((state) => state.hasSearched);
+  const autocompletePredictions = useSearchStore((state) => state.autocompletePredictions);
+  const setInputValue = useSearchStore((state) => state.setInputValue);
+  const performTextSearch = useSearchStore((state) => state.performTextSearch);
+  const fetchAutocompletePredictions = useSearchStore((state) => state.fetchAutocompletePredictions);
+  const clearSearch = useSearchStore((state) => state.clearSearch);
+  
+  // Place details functionality
+  const handlePlaceSelection = usePlaceDetailsStore((state) => state.handlePlaceSelection);
+  
+  // Bookmark functionality
+  const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
+  const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
 
   // PlaceDetailModal 상태 관리
   const [showPlaceDetail, setShowPlaceDetail] = useState(false);
@@ -121,7 +127,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
     // 설정된 값으로 즉시 텍스트 검색을 실행합니다.
     // performTextSearch는 내부적으로 inputValue를 사용하므로, setInputValue 이후에 호출해야 합니다.
     // 비동기 상태 업데이트 문제를 피하기 위해, performTextSearch가 최신 값을 사용하도록 합니다.
-    useMapStore.setState({ inputValue: prediction.description });
+    useSearchStore.setState({ inputValue: prediction.description });
     performTextSearch();
   };
 

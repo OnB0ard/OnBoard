@@ -9,7 +9,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
+        registry.addMapping("/**")
 //                .allowedOrigins("http://localhost:5173") // 프론트 주소.
                 .allowedOrigins("https://2a3e46f54cc9.ngrok-free.app") // 프론트 주소
                 .allowedMethods("*")

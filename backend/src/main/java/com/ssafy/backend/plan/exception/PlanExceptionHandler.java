@@ -101,6 +101,13 @@ public class PlanExceptionHandler {
                 HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidIndexOrderException.class)
+    public CommonResponse<ErrorBody> InvalidIndexOrderException(InvalidIndexOrderException e, HttpServletRequest request) {
+        log.warn("PLAN-023> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-023", "잘못된 위치 입력값입니다."),
+                HttpStatus.BAD_REQUEST);
+    }
+
 
 
     @ExceptionHandler(ConflictException.class)

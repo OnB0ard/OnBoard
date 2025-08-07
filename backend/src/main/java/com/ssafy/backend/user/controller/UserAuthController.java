@@ -31,9 +31,10 @@ public class UserAuthController {
     @PostMapping("/login")
     @PreAuthorize("permitAll()")
     public CommonResponse<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
+        System.out.println("Zz");
         LoginResponseDTO userInfo = userAuthService.login(loginRequestDTO);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", userInfo.getRefreshToken())
-//                .domain(frontendDomain)
+//                .domain("70.12.247.38")
                 .httpOnly(true) 
                 .secure(false)
                 .path("/")
@@ -52,7 +53,7 @@ public class UserAuthController {
     public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
         // 쿠키 삭제를 위한 ResponseCookie 생성
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-//                .domain(frontendDomain)
+                .domain("2a3e46f54cc9.ngrok-free.app")
                 .httpOnly(true)
                 .secure(false)
                 .path("/")

@@ -4,7 +4,7 @@ import DailyScheduleBlock from './DailyScheduleBlock';
 import BookmarkModal from './BookmarkModal';
 import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
-import useDailyPlanStore from '../../stores/useDailyPlanStore';
+import useDailyPlanStore from '../../store/useDailyPlanStore';
 import useMapStore from '../../store/useMapStore';
 import './DailyPlanCreate1.css';
 

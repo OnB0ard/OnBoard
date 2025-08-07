@@ -15,7 +15,7 @@ public class MouseController {
     @MessageMapping("/mouse/move/{planId}") // 클라이언트 → 서버: /app/mouse.move
 //    @SendTo("/topic/mouse/{planId}")        // 서버 → 모든 클라이언트: /topic/mouse
     public void  broadcastMouse(@DestinationVariable String planId, MousePositionDTO dto, SimpMessageHeaderAccessor accessor) {
-        dto.setUserId((Long) accessor.getSessionAttributes().get("userId"));
+        dto.setEmail((String) accessor.getSessionAttributes().get("email"));
         messagingTemplate.convertAndSend("/topic/mouse/" + planId, dto);
     }
 }

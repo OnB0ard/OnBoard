@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MousePositionDTO {
-    private Long userId; // 세션 ID나 유저 이름
+    private String email;
     private double x;
     private double y;
 }

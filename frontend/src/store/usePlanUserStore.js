@@ -6,6 +6,7 @@ import {
   approveJoinRequest,
   denyJoinRequest,
   delegatePermissions,
+  getMyRole,
 } from '@/apis/planUser'; // API 모듈에서 모든 함수를 가져옵니다.
 
 /**
@@ -17,6 +18,7 @@ export const useParticipantStore = create((set, get) => ({
   // =============================================
   creator: null,      // 여행 계획 생성자 정보
   participants: [],   // 참여자 목록 (승인/대기 포함)
+  myRole: null,       // 현재 사용자의 역할 (e.g., 'CREATOR', 'PARTICIPANT', 'AWAITING')
   isLoading: true,    // 초기 로딩 및 refetch 로딩 상태
   error: null,        // API 호출 에러 정보
 
@@ -86,10 +88,29 @@ export const useParticipantStore = create((set, get) => ({
     try {
       await leavePlan(planId);
       // 성공 시, 스토어의 상태를 깨끗하게 초기화합니다.
-      set({ creator: null, participants: [], isLoading: false, error: null });
+      set({ creator: null, participants: [], myRole: null, isLoading: false, error: null });
     } catch (error) {
       console.error("계획 나가기 실패:", error);
       set({ error });
+      throw error;
+    }
+  },
+
+  /**
+   * (조회) 현재 사용자의 역할을 조회합니다.
+   * @param {number|string} planId - 조회할 여행 계획 ID
+   */
+  fetchMyRole: async (planId, userId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await getMyRole(planId, userId);
+      const myRole = response || null;
+      console.log('👤 내 역할 조회 성공:', myRole);
+      set({ myRole, isLoading: false });
+      return myRole;
+    } catch (error) {
+      console.error('내 역할 조회 실패:', error);
+      set({ myRole: null, error, isLoading: false });
       throw error;
     }
   },
@@ -149,6 +170,6 @@ export const useParticipantStore = create((set, get) => ({
    * (컴포넌트 unmount 시 또는 다른 계획 페이지로 이동 시 사용)
    */
   clearParticipants: () => {
-    set({ creator: null, participants: [], isLoading: true, error: null });
+    set({ creator: null, participants: [], myRole: null, isLoading: true, error: null });
   },
 }));

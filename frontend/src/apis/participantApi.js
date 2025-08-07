@@ -122,18 +122,3 @@ export const leavePlan = async (planId) => {
     throw error;
   }
 }; 
-
-/**
- * 내 권한 조회하기
- * @param {number} userId - 사용자 ID
- * @returns {Promise<Object>} API 응답 데이터
- */
-export const getMyRole = async (planId) => {
-  try {
-    const response = await apiClient.get(`/plan/${planId}/userStatus`);
-    return response.data;
-  } catch (error) {
-    console.error('내 권한 조회 실패:', error);
-    throw error;
-  }
-}; 

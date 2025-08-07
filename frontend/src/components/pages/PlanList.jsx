@@ -9,6 +9,53 @@ import { deletePlan } from "../../apis/planDelete";
 import { createPlan } from "../../apis/planCreate";
 import { updatePlan } from "../../apis/planUpdate";
 
+// 정렬 함수
+const sortPlans = (plans, type) => {
+  const sortedPlans = [...plans];
+  
+  if (type === 'created') {
+    // 생성순: planId 기준으로 내림차순 (늦게 생성된 것부터)
+    return sortedPlans.sort((a, b) => b.planId - a.planId);
+  } else if (type === 'date') {
+    // 날짜순: startDate 기준으로 오름차순 (빠른 날짜부터)
+    return sortedPlans.sort((a, b) => {
+      const dateA = new Date(a.startDate || '9999-12-31');
+      const dateB = new Date(b.startDate || '9999-12-31');
+      return dateA - dateB;
+    });
+  }
+  
+  return sortedPlans;
+};
+
+// 완료된 여행을 날짜순으로 정렬하는 함수
+const sortCompletedPlans = (plans) => {
+  const sortedPlans = [...plans];
+  return sortedPlans.sort((a, b) => {
+    const dateA = new Date(a.startDate || '9999-12-31');
+    const dateB = new Date(b.startDate || '9999-12-31');
+    return dateA - dateB;
+  });
+};
+
+// 여행 계획을 진행 중/완료로 분류하는 함수
+const classifyPlans = (plans) => {
+  const today = new Date(new Date().toISOString().split('T')[0]);
+  
+  const ongoing = [];
+  const completed = [];
+  
+  plans.forEach(plan => {
+    if (plan.endDate && new Date(plan.endDate) < today) {
+      completed.push(plan);
+    } else {
+      ongoing.push(plan);
+    }
+  });
+  
+  return { ongoing, completed };
+};
+
 const PlanList = () => {
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -28,70 +75,16 @@ const PlanList = () => {
   const [sortType, setSortType] = useState('created'); // 'created' | 'date'
   const [isSorting, setIsSorting] = useState(false); // 정렬 중 로딩 상태
 
-  // 정렬 함수
-  const sortPlans = (plans, type) => {
-    const sortedPlans = [...plans];
-    
-    if (type === 'created') {
-      // 생성순: planId 기준으로 내림차순 (늦게 생성된 것부터)
-      return sortedPlans.sort((a, b) => b.planId - a.planId);
-    } else if (type === 'date') {
-      // 날짜순: startDate 기준으로 오름차순 (빠른 날짜부터)
-      return sortedPlans.sort((a, b) => {
-        const dateA = new Date(a.startDate || '9999-12-31');
-        const dateB = new Date(b.startDate || '9999-12-31');
-        return dateA - dateB;
-      });
-    }
-    
-    return sortedPlans;
-  };
-
-  // 완료된 여행을 날짜순으로 정렬하는 함수
-  const sortCompletedPlans = (plans) => {
-    const sortedPlans = [...plans];
-    return sortedPlans.sort((a, b) => {
-      const dateA = new Date(a.startDate || '9999-12-31');
-      const dateB = new Date(b.startDate || '9999-12-31');
-      return dateA - dateB;
-    });
-  };
-
-  // 여행 계획을 진행 중/완료로 분류하는 함수
-  const classifyPlans = (plans) => {
-    const today = new Date(new Date().toISOString().split('T')[0]);
-    
-    const ongoing = [];
-    const completed = [];
-    
-    plans.forEach(plan => {
-      if (plan.endDate && new Date(plan.endDate) < today) {
-        completed.push(plan);
-      } else {
-        ongoing.push(plan);
-      }
-    });
-    
-    return { ongoing, completed };
-  };
-
   // 여행 계획 목록 조회
   const fetchPlans = useCallback(async () => {
     setIsPageLoading(true);
     try {
       const planData = await getPlanList();
-      
-      // 진행 중/완료로 분류
       const { ongoing, completed } = classifyPlans(planData || []);
       
-      // 계획중인 여행만 현재 정렬 타입에 따라 정렬
-      const sortedOngoing = sortPlans(ongoing, sortType);
-      
-      // 완료된 여행은 항상 날짜순으로 정렬
-      const sortedCompleted = sortCompletedPlans(completed);
-      
-      setOngoingPlans(sortedOngoing);
-      setCompletedPlans(sortedCompleted);
+      // 데이터를 가져온 후 정렬하여 상태에 저장
+      setOngoingPlans(sortPlans(ongoing, sortType));
+      setCompletedPlans(sortCompletedPlans(completed));
 
     } catch (error) {
       console.error('여행 계획 목록 조회 실패:', error);
@@ -100,15 +93,18 @@ const PlanList = () => {
     } finally {
       setIsPageLoading(false);
     }
-  }, [sortType]);
+  // sortType을 의존성에 추가하여 초기 정렬을 보장하되, fetchPlans 자체는 마운트 시 한 번만 호출되도록 관리합니다.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 정렬만 변경하는 함수 (API 호출 없이)
-  const applySorting = () => {
+  const applySorting = useCallback(() => {
     setOngoingPlans(prevOngoing => sortPlans(prevOngoing, sortType));
-  };
+  }, [sortType]);
 
   useEffect(() => {
     fetchPlans();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 컴포넌트 마운트 시에만 실행
 
   // sortType이 변경될 때는 정렬만 적용
@@ -116,7 +112,8 @@ const PlanList = () => {
     if (ongoingPlans.length > 0) {
       applySorting();
     }
-  }, [sortType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortType, applySorting]);
 
   // 카드 클릭 핸들러
   const handleCardClick = (planData) => {
@@ -127,6 +124,12 @@ const PlanList = () => {
   const handleEditClick = (planData) => {
     setEditingPlan(planData);
     setIsEditModalOpen(true);
+  };
+
+  // 나가기 성공 핸들러
+  const handleLeave = () => {
+    // 목록을 다시 불러와 나간 계획을 반영
+    fetchPlans();
   };
 
   // 삭제 버튼 클릭 핸들러
@@ -247,6 +250,7 @@ const PlanList = () => {
                     onView={() => handleCardClick(plan)}
                     onEdit={() => handleEditClick(plan)}
                     onDelete={() => handleDeleteClick(plan)}
+                    onLeave={handleLeave}
                     isAnyPopoverOpen={isAnyPopoverOpen}
                     onPopoverOpenChange={setIsAnyPopoverOpen}
                   />
@@ -286,6 +290,7 @@ const PlanList = () => {
                   onView={() => handleCardClick(plan)}
                   onEdit={() => handleEditClick(plan)}
                   onDelete={() => handleDeleteClick(plan)}
+                  onLeave={handleLeave}
                   isAnyPopoverOpen={isAnyPopoverOpen}
                   onPopoverOpenChange={setIsAnyPopoverOpen}
                 />

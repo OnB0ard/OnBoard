@@ -114,3 +114,19 @@ export const delegatePermissions = async (planId, targetUserId) => {
     throw error;
   }
 };
+
+/**
+ * 내 권한 조회하기
+ * @param {number} userId - 사용자 ID
+ * @returns {Promise<Object>} API 응답 데이터
+ */
+export const getMyRole = async (planId, userId) => {
+  try {
+    // GET 요청에 body를 포함시키기 위해 data 속성을 사용합니다.
+    const response = await apiClient.get(`/plan/${planId}/userStatus`, { data: { userId } });
+    return response.data;
+  } catch (error) {
+    console.error('내 권한 조회 실패:', error);
+    throw error;
+  }
+}; 

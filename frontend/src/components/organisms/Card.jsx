@@ -9,12 +9,14 @@ import * as Popover from "@radix-ui/react-popover";
 import { useCardStore } from "../../store/useCardStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useParticipantStore } from "../../store/usePlanUserStore"; // 추가: useParticipantStore import
+import { getMyRole, leavePlan } from "../../apis/planUser";
 
 const Card = ({
   planData,
   onView,
   onEdit,
   onDelete,
+  onLeave,
 }) => {
   const {
     participantOpenId,
@@ -26,6 +28,9 @@ const Card = ({
   const { fetchParticipants, leaveCurrentPlan } = useParticipantStore(); // 추가: fetchParticipants, leaveCurrentPlan 액션 import
 
   const { userId: currentUserId } = useAuthStore();
+  const [userType, setUserType] = useState(null);
+  const [userStatus, setUserStatus] = useState(null);
+  const [isLoadingRole, setIsLoadingRole] = useState(true);
 
   const isAnyPopoverOpen = participantOpenId !== null || shareOpenId !== null;
   
@@ -54,9 +59,27 @@ const Card = ({
   const displayProfileImage = hostImageUrl || "/default-profile.png";
   const displayUserName = hostName || "사용자";
   
-  // 방장 여부 확인 - 백엔드에서 creatorId/hostId 필드 추가 필요
-  const actualCreatorId = creatorId || creator?.userId;
-  const isCreator = actualCreatorId !== undefined ? String(currentUserId) === String(actualCreatorId) : false;
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (planId && currentUserId) {
+        setIsLoadingRole(true);
+        try {
+          const response = await getMyRole(planId, currentUserId);
+          // API 응답 구조에 따라 userType 사용
+          setUserType(response.body.userType);
+          setUserStatus(response.body.userStatus);
+        } catch (error) {
+          console.error(`[Card ${planId}] Failed to fetch user role:`, error);
+          setUserType(null); // 에러 발생 시 기본값 설정
+          setUserStatus(null);
+        } finally {
+          setIsLoadingRole(false);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [planId, currentUserId]);
 
   const handleCardClick = () => {
     if (onView && !isPopoverOpen) {
@@ -65,14 +88,17 @@ const Card = ({
   };
 
   const handleLeavePlan = async () => {
-    if (window.confirm('방을 나가시겠습니까?')) {
+    if (window.confirm('정말 이 여행 계획을 나가시겠습니까?')) {
       try {
-        await leaveCurrentPlan(Number(planId));
-        // 성공 시 부모 컴포넌트에 알림 (리스트에서 제거하기 위해)
-        onDelete && onDelete(planData);
+        await leavePlan(Number(planId));
+        alert('여행 계획에서 나갔습니다.');
+        // 성공적으로 나간 후, 부모 컴포넌트에 알려 리스트를 새로고침합니다.
+        if (onLeave) {
+          onLeave(planData);
+        }
       } catch (error) {
-        console.error('방 나가기 실패:', error);
-        alert('방 나가기에 실패했습니다. 다시 시도해주세요.');
+        console.error('여행 계획 나가기 실패:', error);
+        alert('계획 나가기에 실패했습니다. 다시 시도해주세요.');
       }
     }
   };
@@ -120,12 +146,18 @@ const Card = ({
       {/* 카드 우상단 드롭다운 - 레이아웃 영향 없음 */}
       <div className="absolute top-4 right-5 z-20">
         <CardDropDown
-          items={isCreator ? [
-            { label: '수정', onClick: () => onEdit && onEdit(planData), className: 'edit-item' },
-            { label: '삭제', onClick: () => onDelete && onDelete(planData), className: 'delete' }
-          ] : [
-            { label: '나가기', onClick: handleLeavePlan, className: 'leave' }
-          ]}
+          items={
+            isLoadingRole
+              ? []
+              : userType === 'CREATOR'
+              ? [
+                  { label: '수정', onClick: () => onEdit && onEdit(planData), className: 'edit-item' },
+                  { label: '삭제', onClick: () => onDelete && onDelete(planData), className: 'delete' },
+                ]
+              : userType === 'USER'
+              ? [{ label: '나가기', onClick: handleLeavePlan, className: 'leave' }]
+              : []
+          }
         >
           <div className="w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -166,92 +198,100 @@ const Card = ({
 
         {/* 버튼 영역 */}
         <div className="flex justify-end gap-2 pt-2 mt-auto">
-                     {/* 참여자 보기 팝오버 */}
-            <Popover.Root 
-              open={isParticipantOpen} 
-              onOpenChange={(open) => {
-                if (open) {
-                  fetchParticipants(id); // 서버에서 최신 참여자 정보 가져오기
-                }
-                toggleParticipantPopover(id);
-              }}
-            >
-              <Popover.Trigger asChild>
-                <Button variant="solid" onClick={(e) => e.stopPropagation()}>
-                  참여자 보기
-                </Button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content 
-                  side="top" 
-                  align="center" 
-                  sideOffset={8} 
-                  className="z-[9999]"
-                  style={{ 
-                    position: 'fixed !important',
-                    transform: 'none !important',
-                    transition: 'none !important',
-                    top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
-                    left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
-                    width: '288px !important',
-                    height: 'auto !important',
-                    pointerEvents: 'auto !important',
-                    inset: 'auto !important',
-                    margin: '0 !important',
-                    padding: '0 !important',
-                    zIndex: '9999 !important'
-                  }}
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                  onCloseAutoFocus={(e) => e.preventDefault()}
-                  onEscapeKeyDown={(e) => e.preventDefault()}
-                  onPointerDownCapture={(e) => e.stopPropagation()}
-                >
-                  <ViewParticipantModal 
-                    planId={id}
-                    isOpen={isParticipantOpen}
-                    onClose={() => toggleParticipantPopover(id)}
-                  />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
+          {userStatus !== 'APPROVED' ? (
+            <div className="text-gray-500 font-semibold py-2 px-4">
+              승인 대기 중
+            </div>
+          ) : (
+            <>
+              {/* 참여자 보기 팝오버 */}
+              <Popover.Root 
+                open={isParticipantOpen} 
+                onOpenChange={(open) => {
+                  if (open) {
+                    fetchParticipants(id); // 서버에서 최신 참여자 정보 가져오기
+                  }
+                  toggleParticipantPopover(id);
+                }}
+              >
+                <Popover.Trigger asChild>
+                  <Button variant="solid" onClick={(e) => e.stopPropagation()}>
+                    참여자 보기
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content 
+                    side="top" 
+                    align="center" 
+                    sideOffset={8} 
+                    className="z-[9999]"
+                    style={{ 
+                      position: 'fixed !important',
+                      transform: 'none !important',
+                      transition: 'none !important',
+                      top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
+                      left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
+                      width: '288px !important',
+                      height: 'auto !important',
+                      pointerEvents: 'auto !important',
+                      inset: 'auto !important',
+                      margin: '0 !important',
+                      padding: '0 !important',
+                      zIndex: '9999 !important'
+                    }}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                    onEscapeKeyDown={(e) => e.preventDefault()}
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                  >
+                    <ViewParticipantModal 
+                      planId={id}
+                      isOpen={isParticipantOpen}
+                      onClose={() => toggleParticipantPopover(id)}
+                    />
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
 
-                     {/* 공유하기 팝오버 */}
-                       <Popover.Root open={isShareOpen} onOpenChange={() => toggleSharePopover(id)}>
-              <Popover.Trigger asChild>
-                <Button variant="outline" onClick={(e) => e.stopPropagation()}>
-                  공유하기
-                </Button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content 
-                  side="top" 
-                  align="center" 
-                  sideOffset={8} 
-                  className="z-[99999]"
-                  style={{ 
-                    position: 'fixed !important',
-                    transform: 'none !important',
-                    transition: 'none !important',
-                    top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
-                    left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
-                    width: '288px !important',
-                    height: 'auto !important',
-                    pointerEvents: 'auto !important',
-                    inset: 'auto !important',
-                    margin: '0 !important',
-                    padding: '0 !important',
-                    zIndex: '99999 !important'
-                  }}
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                  onCloseAutoFocus={(e) => e.preventDefault()}
-                  onEscapeKeyDown={(e) => e.preventDefault()}
-                  onPointerDownCapture={(e) => e.stopPropagation()}
-                >
-                  <ShareModal open={isShareOpen} onOpenChange={() => toggleSharePopover(id)} planId={id} />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-                 </div>
+              {/* 공유하기 팝오버 */}
+              <Popover.Root open={isShareOpen} onOpenChange={() => toggleSharePopover(id)}>
+                <Popover.Trigger asChild>
+                  <Button variant="outline" onClick={(e) => e.stopPropagation()}>
+                    공유하기
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content 
+                    side="top" 
+                    align="center" 
+                    sideOffset={8} 
+                    className="z-[99999]"
+                    style={{ 
+                      position: 'fixed !important',
+                      transform: 'none !important',
+                      transition: 'none !important',
+                      top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
+                      left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
+                      width: '288px !important',
+                      height: 'auto !important',
+                      pointerEvents: 'auto !important',
+                      inset: 'auto !important',
+                      margin: '0 !important',
+                      padding: '0 !important',
+                      zIndex: '99999 !important'
+                    }}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                    onEscapeKeyDown={(e) => e.preventDefault()}
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                  >
+                    <ShareModal open={isShareOpen} onOpenChange={() => toggleSharePopover(id)} planId={id} />
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
+            </>
+          )}
+        </div>
        </div>
        
        

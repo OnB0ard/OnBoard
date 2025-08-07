@@ -14,4 +14,8 @@ public interface DayScheduleRepository extends JpaRepository<DaySchedule,Long>, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT COALESCE(MAX(d.dayOrder), 0) FROM DaySchedule d WHERE d.plan = :plan")
     Integer findMaxDayOrderByPlan(Plan plan);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ds FROM DaySchedule ds WHERE ds.dayScheduleId = :dayScheduleId")
+    DaySchedule findByIdForUpdate(Long dayScheduleId);
 }

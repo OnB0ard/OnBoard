@@ -100,4 +100,13 @@ public class PlanExceptionHandler {
         return new CommonResponse<>(new ErrorBody("PLAN-022", "해당 계획의 여행지가 아닙니다."),
                 HttpStatus.BAD_REQUEST);
     }
+
+
+
+    @ExceptionHandler(ConflictException.class)
+    public CommonResponse<ErrorBody> ConflictException(ConflictException e, HttpServletRequest request) {
+        log.warn("PLAN-111> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("PLAN-111", "다른 유저가 사용중입니다."),
+                HttpStatus.BAD_REQUEST);
+    }
 }

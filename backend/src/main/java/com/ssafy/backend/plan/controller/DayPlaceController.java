@@ -5,6 +5,7 @@ import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
 import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
 import com.ssafy.backend.plan.dto.request.PutMemoRequestDTO;
+import com.ssafy.backend.plan.dto.request.UpdateInnerPositionRequestDTO;
 import com.ssafy.backend.plan.service.DayPlaceService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
@@ -20,15 +21,24 @@ public class DayPlaceController {
 
     private final DayPlaceService dayPlaceService;
 
+    @PreAuthorize("permitAll()")
     @PostMapping("/{dayScheduleId}")
     public CommonResponse<SuccessResponseDTO> addDayPlace(@PathVariable Long planId, @PathVariable Long dayScheduleId, @RequestBody CreateDayPlaceRequestDTO createDayPlaceRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(dayPlaceService.addDayPlace(planId, dayScheduleId, createDayPlaceRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
     }
 
+    @PreAuthorize("permitAll()")
     @PutMapping("/{dayScheduleId}/{dayPlaceId}/updateMemo")
     public CommonResponse<SuccessResponseDTO> updateMemo(@PathVariable Long planId, @PathVariable Long dayScheduleId, @PathVariable Long dayPlaceId, @RequestBody PutMemoRequestDTO putMemoRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(dayPlaceService.updateMemo(planId, dayScheduleId, dayPlaceId, putMemoRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
     }
+
+    @PreAuthorize("permitAll()")
+    @PutMapping("/{dayScheduleId}/updateInnerPosition")
+    public CommonResponse<SuccessResponseDTO> updateInnerPosition(@PathVariable Long planId, @PathVariable Long dayScheduleId, @RequestBody UpdateInnerPositionRequestDTO updateInnerPositionRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(dayPlaceService.updateInnerPosition(planId, dayScheduleId, updateInnerPositionRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
+    }
+
 
     @PreAuthorize("permitAll()")
     @DeleteMapping("/{dayScheduleId}/{dayPlaceId}")

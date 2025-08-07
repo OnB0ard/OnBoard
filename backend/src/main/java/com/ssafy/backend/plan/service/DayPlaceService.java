@@ -2,6 +2,7 @@ package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
 import com.ssafy.backend.plan.dto.request.PutMemoRequestDTO;
+import com.ssafy.backend.plan.dto.request.UpdateInnerPositionRequestDTO;
 import com.ssafy.backend.plan.entity.DayPlace;
 import com.ssafy.backend.plan.entity.DaySchedule;
 import com.ssafy.backend.plan.entity.Plan;
@@ -22,6 +23,9 @@ import com.ssafy.backend.whiteBoard.repository.WhiteBoardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +91,55 @@ public class DayPlaceService {
         }
 
         dayPlace.setMemo(putMemoRequestDTO.getMemo());
+        return true;
+    }
+
+    @Transactional
+    public boolean updateInnerPosition(Long planId, Long dayScheduleId, UpdateInnerPositionRequestDTO updateInnerPositionRequestDTO, Long userId) {
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+
+        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+
+        DayPlace dayPlace = dayPlaceRepository
+                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateInnerPositionRequestDTO.getDayPlaceId());
+        if(dayPlace == null) {
+            throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
+        }
+        if (dayPlace.getIndexOrder() != updateInnerPositionRequestDTO.getIndexOrder()) {
+            throw new ConflictException("기존 위치가 잘못되었거나, 다른 사용자가 작업중입니다.");
+        }
+
+        List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
+
+        dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));
+
+        int oldIndex = updateInnerPositionRequestDTO.getIndexOrder();
+        int newIndex = updateInnerPositionRequestDTO.getModifiedIndexOrder();
+
+        if (newIndex < oldIndex) {
+            for (DayPlace dp : dayPlaces) {
+                int idx = dp.getIndexOrder();
+                if (idx >= newIndex && idx < oldIndex) {
+                    dp.setIndexOrder(idx + 1);
+                }
+            }
+        } else if (newIndex > oldIndex) {
+            for (DayPlace dp : dayPlaces) {
+                int idx = dp.getIndexOrder();
+                if (idx > oldIndex && idx <= newIndex) {
+                    dp.setIndexOrder(idx - 1);
+                }
+            }
+        }
+
+        dayPlace.setIndexOrder(updateInnerPositionRequestDTO.getModifiedIndexOrder());
         return true;
     }
 

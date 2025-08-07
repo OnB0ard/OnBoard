@@ -46,12 +46,11 @@ const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 font-['Poppins']">
       {searchResults.filter(Boolean).map((place) => {
         const imageUrl = place.photos && place.photos[0]
           ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 })
-          : 'https://item.kakaocdn.net/do/f54d975d70c2916c5705a0919f193a547154249a3890514a43687a85e6b6cc82';
-
+          : '/images/placeImage_default.png'
         return (
           <div
             key={place.googlePlaceId || place.place_id}
@@ -61,14 +60,14 @@ const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
             onDragStart={(e) => handleDragStart(e, place)}
           >
             <div className="flex-1 space-y-1">
-              <h3 className="text-base font-bold text-gray-900">{place.name}</h3>
+              <h3 className="text-[15px] font-bold text-gray-900">{place.name}</h3>
               {place.rating && (
                 <div className="flex items-center gap-3">
                   <StarRating rating={place.rating} reviewCount={place.user_ratings_total} />
                 </div>
               )}
               {place.primaryCategory && <p className="text-xs text-gray-600">{place.primaryCategory}</p>}
-              <p className="text-sm text-gray-500">{place.formatted_address}</p>
+              <p className="text-xs text-gray-500">{place.formatted_address}</p>
             </div>
             <div className="flex-shrink-0">
               <PlaceImage

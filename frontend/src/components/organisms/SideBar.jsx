@@ -23,6 +23,8 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setModalPosition({ x: rect.right + 15, y: 75 });
     setIsSearchModalOpen(!isSearchModalOpen);
+    // 다른 모달들 닫기
+    setIsBookmarkModalOpen(false);
     if (isDailyPlanModalOpen && onDailyPlanModalToggle) {
       onDailyPlanModalToggle(false);
     }
@@ -32,7 +34,9 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
   const handleBookmarkClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setModalPosition({ x: rect.right + 15, y: 75 });
-    setIsBookmarkModalOpen(true);
+    setIsBookmarkModalOpen(!isBookmarkModalOpen);
+    // 다른 모달들 닫기
+    setIsSearchModalOpen(false);
     if (isDailyPlanModalOpen && onDailyPlanModalToggle) {
       onDailyPlanModalToggle(false);
     }
@@ -42,10 +46,13 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
   const handleDailyPlanClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setModalPosition({ x: rect.right + 15, y: 75 }); // y좌표를 75px로 고정
-    setIsDailyPlanModalOpen(true);
+    setIsDailyPlanModalOpen(!isDailyPlanModalOpen);
+    // 다른 모달들 닫기
+    setIsSearchModalOpen(false);
+    setIsBookmarkModalOpen(false);
     // 부모 컴포넌트에 모달 상태 전달
     if (onDailyPlanModalToggle) {
-      onDailyPlanModalToggle(true);
+      onDailyPlanModalToggle(!isDailyPlanModalOpen);
     }
   };
 
@@ -60,7 +67,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
         {/* 검색 아이콘 */}
         <button
           onClick={(e) => handleSearchClick(e)}
-          className="sidebar-icon"
+          className={`sidebar-icon ${isSearchModalOpen ? 'active' : ''}`}
           title="장소 검색"
         >
           <Icon type="search" />
@@ -69,7 +76,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
         {/* 북마크 아이콘 */}
         <button
           onClick={(e) => handleBookmarkClick(e)}
-          className="sidebar-icon"
+          className={`sidebar-icon ${isBookmarkModalOpen ? 'active' : ''}`}
           title="북마크"
         >
           <Icon type="bookmark" />
@@ -78,7 +85,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
         {/* 추가 아이콘 */}
         <button
           onClick={(e) => handleDailyPlanClick(e)}
-          className="sidebar-icon"
+          className={`sidebar-icon ${isDailyPlanModalOpen ? 'active' : ''}`}
           title="일정 추가"
         >
           <Icon type="plus" />

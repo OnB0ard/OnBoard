@@ -78,7 +78,7 @@ function MapInitializer() {
       center: map.getCenter().toJSON(),
       zoom: map.getZoom(),
     });
-  }, [map]); // setLastMapPosition 제거하여 무한 루프 방지
+    }, [map, setLastMapPosition]);
 
   useEffect(() => {
     if (!map) return;
@@ -438,6 +438,7 @@ const PlanPage = () => {
                   type={marker.type}
                   isTemporary={true}
                   title={`${marker.name} (${marker.dayIndex + 1}일차)`}
+                  color={marker.color} // 마커 색상 전달
                 />
               ))}
             </Map>

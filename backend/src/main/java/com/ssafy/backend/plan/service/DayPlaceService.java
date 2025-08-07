@@ -1,6 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
+import com.ssafy.backend.plan.dto.request.PutMemoRequestDTO;
 import com.ssafy.backend.plan.entity.DayPlace;
 import com.ssafy.backend.plan.entity.DaySchedule;
 import com.ssafy.backend.plan.entity.Plan;
@@ -65,6 +66,27 @@ public class DayPlaceService {
 
         dayPlaceRepository.save(dayPlace);
 
+        return true;
+    }
+
+    @Transactional
+    public boolean updateMemo(Long planId, Long dayScheduleId, Long dayPlaceId, PutMemoRequestDTO putMemoRequestDTO, Long userId) {
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+
+        DayPlace dayPlace = dayPlaceRepository
+                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId);
+        if(dayPlace == null) {
+            throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
+        }
+
+        dayPlace.setMemo(putMemoRequestDTO.getMemo());
         return true;
     }
 

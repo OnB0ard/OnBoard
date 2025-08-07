@@ -5,7 +5,7 @@ import BookmarkModal from './BookmarkModal';
 import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';
-import useMapStore from '../../store/useMapStore';
+import { useDayMarkersStore } from '../../store/mapStore';
 import './DailyPlanCreate1.css';
 
 const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
@@ -68,7 +68,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   } = useDailyPlanStore();
 
   // 지도 스토어에서 일차별 마커 액션들 가져오기
-  const { setDayMarkers, clearDayMarkers } = useMapStore();
+  const { setDayMarkers, clearDayMarkers } = useDayMarkersStore();
 
   // planId가 변경될 때 스토어에 설정
   useEffect(() => {

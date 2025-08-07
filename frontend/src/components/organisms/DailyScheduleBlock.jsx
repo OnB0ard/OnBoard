@@ -36,8 +36,16 @@ const DailyScheduleBlock = ({
 
   // 일차 클릭 핸들러 (드래그와 구분)
   const handleDayClick = (e) => {
-    // 드래그 중이거나 input 요소 클릭시 무시
-    if (isDragging || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+    // 드래그 중이면 무시
+    if (isDragging) {
+      return;
+    }
+    
+    // title input과 버튼 클릭시 무시
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
+        e.target.classList.contains('day-title-input') ||
+        e.target.classList.contains('remove-day-button') ||
+        e.target.classList.contains('add-place-button')) {
       return;
     }
     
@@ -62,8 +70,10 @@ const DailyScheduleBlock = ({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       onDragLeave={onDragLeave}
+      onClick={handleDayClick}
+      style={{ cursor: 'pointer' }}
     >
-      <div className="day-header" onClick={handleDayClick} style={{ cursor: 'pointer' }}>
+      <div className="day-header">
         <input
           type="text"
           value={day.title}

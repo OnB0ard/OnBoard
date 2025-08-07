@@ -1,16 +1,16 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import useMapStore from '../../store/useMapStore';
+import { usePlaceDetailsStore, useBookmarkStore } from '../../store/mapStore';
 import StarRating from '../atoms/StarRating';
 import './PlaceDetailModal.css'; // 이전 CSS 파일을 그대로 사용합니다.
 
 const PlaceDetailModal = () => {
   // 1. 새로운 방식의 상태 관리는 그대로 유지 (Zustand 스토어 직접 사용)
-  const isPlaceDetailModalOpen = useMapStore((state) => state.isPlaceDetailModalOpen);
-  const place = useMapStore((state) => state.selectedPlace);
-  const placeDetailPosition = useMapStore((state) => state.placeDetailPosition);
-  const closePlaceDetailModal = useMapStore((state) => state.closePlaceDetailModal);
-  const toggleBookmark = useMapStore((state) => state.toggleBookmark);
-  const isBookmarked = useMapStore((state) => state.isBookmarked);
+  const isPlaceDetailModalOpen = usePlaceDetailsStore((state) => state.isPlaceDetailModalOpen);
+  const place = usePlaceDetailsStore((state) => state.selectedPlace);
+  const placeDetailPosition = usePlaceDetailsStore((state) => state.placeDetailPosition);
+  const closePlaceDetailModal = usePlaceDetailsStore((state) => state.closePlaceDetailModal);
+  const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
+  const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
   
   const modalRef = useRef(null);
 

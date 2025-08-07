@@ -4,27 +4,33 @@ import SearchBar from "./SearchBar";
 import PlaceResult from "./PlaceResult";
 import Bookmark from "./Bookmark";
 import PlaceDetailModal from "./PlaceDetailModal";
-import useMapStore from "../../store/useMapStore";
+import { useSearchStore, useBookmarkStore, usePlaceDetailsStore } from "../../store/mapStore";
 import "./SearchPlace.css";
 
 const SearchPlace = ({ isOpen, onClose }) => {
   const popupRef = useRef(null);
 
-  const {
-    toggleBookmark,
-    isBookmarked,
+  // Bookmark store functionality
+  const { toggleBookmark, isBookmarked } = useBookmarkStore();
+  
+  // Search store functionality
+  const { 
     searchPlacesByQuery,
     clearSearchResults,
     isSearching,
     hasSearched,
-    searchResults,
+    searchResults 
+  } = useSearchStore();
+  
+  // Place details store functionality
+  const {
     setIsPlaceDetailModalOpen,
     setSelectedPlace,
     setPlaceDetailPosition,
     isPlaceDetailModalOpen,
     selectedPlace,
     placeDetailPosition,
-  } = useMapStore();
+  } = usePlaceDetailsStore();
 
   // 외부 클릭 감지 및 검색창 열기/닫기 시 초기화
   useEffect(() => {

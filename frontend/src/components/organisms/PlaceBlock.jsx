@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import StarRating from '../atoms/StarRating';
-import useMapStore from '../../store/useMapStore';
+import { useMapCoreStore } from '../../store/mapStore';
 import './PlaceBlock.css';
 
 const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, isDailyPlanModalOpen = false }) => {
-  const panToPlace = useMapStore((state) => state.panToPlace);
+  const panToPlace = useMapCoreStore((state) => state.panToPlace);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 

@@ -12,6 +12,7 @@ const buttonVariants = cva(
         dark: "bg-slate-700 hover:bg-slate-600",
         white: "bg-white hover:bg-gray-100",
         sky: "bg-[#E1EAFD] hover:bg-[#C4E4FD]", // 여행에 어울릴 것 같은 하늘색
+        red: "bg-red-500 hover:bg-red-600", // 로그아웃 버튼용 빨간색
       },
       textColor: {
         white: "text-white",

@@ -40,7 +40,13 @@ function AvatarFallback({ className, ...props }) {
         className
       )}
       {...props}
-    />
+    >
+      <img 
+        src="/images/profile_default.png" 
+        alt="기본 프로필 이미지"
+        className="size-full object-cover rounded-full"
+      />
+    </AvatarPrimitive.Fallback>
   )
 }
 

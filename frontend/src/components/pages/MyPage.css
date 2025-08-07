@@ -126,6 +126,8 @@
   margin-bottom: 3rem;
   padding: 0 1rem;
   position: relative;
+  display: flex;
+  justify-content: center;
 }
 
 @media (min-width: 640px) {
@@ -151,6 +153,9 @@
   gap: 1.5rem;
   margin-bottom: 2rem;
   transition: transform 0.25s ease-out, opacity 0.2s ease-out;
+  justify-items: center;
+  width: 100%;
+  max-width: 1200px;
 }
 
 .cards-grid.slide-left {

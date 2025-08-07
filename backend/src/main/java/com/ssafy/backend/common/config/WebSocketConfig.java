@@ -43,7 +43,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")  // WebSocket 연결 시 사용할 엔드포인트 경로
-                .setAllowedOriginPatterns("https://2a3e46f54cc9.ngrok-free.app") // 모든 도메인 허용 (CORS 설정)
+                .setAllowedOrigins("https://2a3e46f54cc9.ngrok-free.app") // 모든 도메인 허용 (CORS 설정)
                 .withSockJS(); // SockJS를 사용하여 WebSocket 미지원 브라우저 호환성 제공
         // 최종 연결 주소: ws://localhost:8080/ws
     }

@@ -52,7 +52,7 @@ function MapInitializer() {
       map.setCenter(koreaCenter);
       map.setZoom(koreaZoom);
     }
-  }, [map]); // lastMapPosition 의존성 제거
+  }, [map, lastMapPosition]);
 
   // 역할 3: 맵 이벤트 리스너 등록 (map이 준비되면 한 번만 등록)
   useEffect(() => {
@@ -73,7 +73,7 @@ function MapInitializer() {
       window.google.maps.event.removeListener(dragListener);
       window.google.maps.event.removeListener(zoomListener);
     };
-  }, [map, setLastMapPosition]); // 루프를 유발하던 lastMapPosition 의존성 제거
+  }, [map, setLastMapPosition]); 
 }
 
 // Google Place API의 카테고리를 CustomMarker의 type으로 변환
@@ -93,7 +93,7 @@ const PlanPage = () => {
   const mapsLib = useMapsLibrary('maps');
   const { planId } = useParams();
   const { userId } = useAuthStore(); // PlanAccessRoute가 로그인 여부를 보장하므로 userId를 가져옵니다.
-  const { participants, creator, fetchParticipants, joinPlan, error, isLoading } = useParticipantStore();
+  const { fetchMyRole, joinPlan, error: participantError, isLoading: isParticipantLoading } = useParticipantStore();
 
   const [accessStatus, setAccessStatus] = useState('loading');
   const [modalState, setModalState] = useState({ isOpen: false, type: 'permission', message: '' });
@@ -128,74 +128,66 @@ const PlanPage = () => {
   // 접근 권한 확인
   useEffect(() => {
     const checkAccess = async () => {
+      if (!userId) {
+        setAccessStatus('denied');
+        setModalState({ isOpen: true, type: 'error', message: '로그인이 필요합니다.' });
+        return;
+      }
+
       try {
-        await fetchParticipants(planId);
-        
-        // fetchParticipants 완료 후 스토어에서 최신 데이터 가져오기
-        const { creator, participants } = useParticipantStore.getState();
-        
-        // 현재 사용자가 생성자인지 확인
-        const isCreator = creator && creator.userId === userId;
-        
-        // 현재 사용자가 승인된 참여자인지 확인
-        const isApprovedParticipant = participants.some(
-          participant => participant.userId === userId && participant.userStatus === 'APPROVED'
-        );
-        
-        if (isCreator || isApprovedParticipant) {
+        const response = await fetchMyRole(planId, userId);
+        console.log('👤 내 역할 응답:', response);
+        const status = response?.body?.userStatus;
+
+        if (status === 'APPROVED' || status === 'PARTICIPANT') {
           setAccessStatus('approved');
-          setModalState({ isOpen: false, type: 'permission', message: '' });
+        } else if (status === 'PENDING') {
+          setAccessStatus('pending');
+          setModalState({ isOpen: true, type: 'pending', message: '승인 대기중입니다. 방장의 수락을 기다려주세요.' });
         } else {
-          // 참여자 목록에 있지만 승인되지 않은 경우
-          const isPendingParticipant = participants.some(
-            participant => participant.userId === userId && participant.userStatus === 'PENDING'
-          );
-          
-          if (isPendingParticipant) {
-            setAccessStatus('pending');
-            setModalState({ isOpen: true, type: 'pending', message: '참여 요청이 승인 대기 중입니다.' });
-          } else {
-            setAccessStatus('denied');
-            setModalState({ isOpen: true, type: 'permission', message: '이 여행 계획에 참여할 권한이 없습니다.' });
-          }
+          // 응답은 성공했지만, 예상치 못한 status 값이거나 status가 없는 경우
+          setAccessStatus('denied');
+          setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 접근할 권한이 없습니다. 참여를 요청하시겠습니까?' });
         }
       } catch (error) {
-        console.error('참여 정보를 가져오는 데 실패했습니다:', error);
-        setAccessStatus('denied');
-        setModalState({ isOpen: true, type: 'permission', message: '플랜 정보를 가져오는 데 실패했습니다.' });
+        console.error('접근 권한 확인 중 오류 발생:', error.response);
+        // 사용자가 방에 속하지 않은 특정 에러(403, PLAN-013) 처리
+        if (error.response?.status === 403 && error.response?.data?.body?.code === 'PLAN-013') {
+          setAccessStatus('denied');
+          setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 접근할 권한이 없습니다. 참여를 요청하시겠습니까?' });
+        } else {
+          // 그 외 다른 에러 처리
+          setAccessStatus('denied');
+          setModalState({ isOpen: true, type: 'error', message: '접근 권한을 확인하는 중 오류가 발생했습니다.' });
+        }
       }
     };
     checkAccess();
-  }, [planId, fetchParticipants]);
+  }, [planId, userId, fetchMyRole]);
 
   // 스토어의 에러 상태 감지
   useEffect(() => {
-    if (error) {
-      console.error('참여자 정보 로딩 에러:', error);
+    if (participantError) {
+      console.error('참여자 정보 로딩 에러:', participantError);
       setAccessStatus('denied');
-      setModalState({ 
-        isOpen: true, 
-        type: 'permission', 
-        message: '플랜 정보를 가져오는 데 실패했습니다. 참여 권한이 없을 수 있습니다.' 
-      });
+      setModalState({ isOpen: true, type: 'error', message: participantError.message || '오류가 발생했습니다.' });
     }
-  }, [error]);
+  }, [participantError]);
 
   // 참여자 정보 기반으로 접근 상태 결정
   useEffect(() => {
     // 에러가 있으면 이미 처리됨
-    if (error) return;
+    if (participantError) return;
     
     // 로딩 중이면 대기
-    if (isLoading || (!creator && participants.length === 0)) {
+    if (isParticipantLoading) {
       setAccessStatus('loading');
       return;
     }
 
-    const isCreator = creator?.userId === userId;
-    const currentUser = participants.find(p => p.userId === userId);
-    const isApprovedParticipant = currentUser?.status === 'APPROVED';
-    const isPendingParticipant = currentUser?.status === 'PENDING';
+    const isCreator = false;
+    const isApprovedParticipant = false;
+    const isPendingParticipant = false;
 
     if (isCreator || isApprovedParticipant) {
       setAccessStatus('approved');
@@ -207,7 +199,7 @@ const PlanPage = () => {
       setAccessStatus('denied');
       setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 참여하려면 방장의 수락이 필요합니다.' });
     }
-  }, [creator, participants, userId, error, isLoading]);
+  }, [isParticipantLoading, participantError]);
 
   // 지도 중심 위치 설정
   useEffect(() => {

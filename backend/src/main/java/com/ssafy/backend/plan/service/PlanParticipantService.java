@@ -176,16 +176,15 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean delegateRequest(Long planId, Long userId, JwtUserInfo jwtUserInfo) {
+    public boolean delegateRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, JwtUserInfo jwtUserInfo) {
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(userId);
         User delegator = validateUserExistence(jwtUserInfo.getUserId());
+        User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
 
         if (!userPlanRepository.existsByPlanAndUser(plan, delegator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
         UserPlan delegatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, delegator);
-
         if (delegatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
         } // else if 작성 안하고, 생성자라고 생각 함
@@ -216,6 +215,24 @@ public class PlanParticipantService {
                 .userStatus(userPlan.getUserStatus())
                 .userType(userPlan.getUserType())
                 .build();
+    }
+
+    public boolean resignRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, Long userId) {
+        User user = validateUserExistence(userId);
+        Plan plan = validatePlanExistence(planId);
+
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+        }
+        if (userPlan.getUserType() == UserType.USER) {
+            throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
+        }
+
+        User goodbyeUser = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
+        userPlanRepository.deleteUserPlanByPlanAndUser(plan, goodbyeUser);
+        return true;
     }
 
     private User validateUserExistence(Long userId) {

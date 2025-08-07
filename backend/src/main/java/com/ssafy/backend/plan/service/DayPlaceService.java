@@ -202,10 +202,22 @@ public class DayPlaceService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
+        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+
         DayPlace dayPlace = dayPlaceRepository
                 .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId);
         if(dayPlace == null) {
             throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
+        }
+
+        List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
+        dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));
+
+        for (DayPlace dp : dayPlaces) {
+            int idx = dp.getIndexOrder();
+            if (idx > dayPlace.getIndexOrder()) {
+                dp.setIndexOrder(idx - 1);
+            }
         }
 
         dayPlaceRepository.delete(dayPlace);

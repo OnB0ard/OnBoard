@@ -17,6 +17,7 @@ const buttonVariants = cva(
       textColor: {
         white: "text-white",
         black: "text-black",
+        red: "text-red-500",
       },
       shape: {
         rounded: "rounded-md",

@@ -10,6 +10,8 @@ import { useCardStore } from "../../store/useCardStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useParticipantStore } from "../../store/usePlanUserStore"; // 추가: useParticipantStore import
 import { getMyRole, leavePlan } from "../../apis/planUser";
+import Icon from "../atoms/Icon";
+import "./Card.css";
 
 const Card = ({
   planData,
@@ -17,6 +19,8 @@ const Card = ({
   onEdit,
   onDelete,
   onLeave,
+  onShowLeaveModal,
+  hideDropdown = false,
 }) => {
   const {
     participantOpenId,
@@ -87,19 +91,9 @@ const Card = ({
     }
   };
 
-  const handleLeavePlan = async () => {
-    if (window.confirm('정말 이 여행 계획을 나가시겠습니까?')) {
-      try {
-        await leavePlan(Number(planId));
-        alert('여행 계획에서 나갔습니다.');
-        // 성공적으로 나간 후, 부모 컴포넌트에 알려 리스트를 새로고침합니다.
-        if (onLeave) {
-          onLeave(planData);
-        }
-      } catch (error) {
-        console.error('여행 계획 나가기 실패:', error);
-        alert('계획 나가기에 실패했습니다. 다시 시도해주세요.');
-      }
+  const handleLeavePlan = () => {
+    if (onShowLeaveModal) {
+      onShowLeaveModal(planData);
     }
   };
 
@@ -144,28 +138,30 @@ const Card = ({
       onClick={handleCardClick}
     >
       {/* 카드 우상단 드롭다운 - 레이아웃 영향 없음 */}
-      <div className="absolute top-4 right-5 z-20">
-        <CardDropDown
-          items={
-            isLoadingRole
-              ? []
-              : userType === 'CREATOR'
-              ? [
-                  { label: '수정', onClick: () => onEdit && onEdit(planData), className: 'edit-item' },
-                  { label: '삭제', onClick: () => onDelete && onDelete(planData), className: 'delete' },
-                ]
-              : userType === 'USER'
-              ? [{ label: '나가기', onClick: handleLeavePlan, className: 'leave' }]
-              : []
-          }
-        >
-          <div className="w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-            </svg>
-          </div>
-        </CardDropDown>
-      </div>
+      {!hideDropdown && (
+        <div className="absolute top-4 right-5 z-20">
+          <CardDropDown
+            items={
+              isLoadingRole
+                ? []
+                : userType === 'CREATOR'
+                ? [
+                    { label: '수정', onClick: () => onEdit && onEdit(planData), className: 'edit-item' },
+                    { label: '삭제', onClick: () => onDelete && onDelete(planData), className: 'delete' },
+                  ]
+                : userType === 'USER'
+                ? [{ label: '나가기', onClick: handleLeavePlan, className: 'leave' }]
+                : []
+            }
+          >
+            <div className="w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+              </svg>
+            </div>
+          </CardDropDown>
+        </div>
+      )}
 
       {/* 카드 컨텐츠 */}
       <div className="flex items-center gap-2">
@@ -292,10 +288,9 @@ const Card = ({
             </>
           )}
         </div>
-       </div>
-       
-       
-     
+      
+      
+             </div>
    );
  };
 

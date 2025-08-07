@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
 import { Button } from "../atoms/Button";
 import Icon from "../atoms/Icon";
 import SettingModal from "../organisms/SettingModal";
+import "./MyPage.css";
 import Card from "../organisms/Card";
 import { useAuthStore } from "../../store/useAuthStore";
 import { getPlanList } from "../../apis/planList";
@@ -22,6 +23,8 @@ const MyPage = () => {
   const [completedCurrentPage, setCompletedCurrentPage] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [slideDirection, setSlideDirection] = useState('none'); // 'left', 'right', 'none'
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const { userName, profileImage } = useAuthStore();
 
   // 프로필 이미지 URL 생성 (이미지 파일이 있는 경우)
@@ -110,16 +113,29 @@ const MyPage = () => {
   };
 
   // 삭제 버튼 클릭 핸들러
-  const handleDeleteClick = async (planData) => {
-    if (window.confirm(`'${planData.name}' 계획을 정말 삭제하시겠습니까?`)) {
-      try {
-        await deletePlan(planData.planId);
-        await fetchPlans(); // 삭제 후 목록 새로고침
-      } catch (error) {
-        alert('계획 삭제에 실패했습니다.');
-        console.error('계획 삭제 실패:', error);
-      }
+  const handleDeleteClick = (planData) => {
+    setDeleteTarget(planData);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    
+    try {
+      await deletePlan(deleteTarget.planId);
+      await fetchPlans(); // 삭제 후 목록 새로고침
+    } catch (error) {
+      alert('계획 삭제에 실패했습니다.');
+      console.error('계획 삭제 실패:', error);
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
   };
 
   const handleSettingClick = () => {
@@ -294,6 +310,7 @@ const MyPage = () => {
                               onDelete={() => handleDeleteClick(plan)}
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
+                              hideDropdown={true}
                             />
                           </div>
                         ))}
@@ -359,6 +376,7 @@ const MyPage = () => {
                               onDelete={() => handleDeleteClick(plan)}
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
+                              hideDropdown={true}
                             />
                           </div>
                         ))}
@@ -412,6 +430,47 @@ const MyPage = () => {
         isOpen={isSettingModalOpen} 
         onClose={handleCloseSettingModal} 
       />
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && deleteTarget && (
+        <div className="delete-modal__backdrop">
+          <div className="delete-modal">
+            <div className="delete-modal__header">
+              <div className="delete-modal__icon">
+                <Icon type="sign-out" />
+              </div>
+              <h2 className="delete-modal__title">계획 삭제</h2>
+            </div>
+            
+            <div className="delete-modal__content">
+              <p className="delete-modal__message">
+                '{deleteTarget.name}' 계획을 정말 삭제하시겠습니까?
+              </p>
+              <p className="delete-modal__submessage">
+                삭제된 계획은 복구할 수 없습니다.
+              </p>
+            </div>
+
+            <div className="delete-modal__footer">
+              <Button 
+                background="white"
+                textColor="black"
+                border="gray"
+                onClick={handleDeleteCancel}
+              >
+                취소
+              </Button>
+              <Button 
+                background="red"
+                textColor="white"
+                onClick={handleDeleteConfirm}
+              >
+                삭제
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

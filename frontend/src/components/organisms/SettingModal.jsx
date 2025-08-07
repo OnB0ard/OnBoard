@@ -5,6 +5,7 @@ import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import Icon from "@/components/atoms/Icon";
 import { updateUserProfile } from "../../apis/updateProfile"; 
+import { deleteUserAccount } from "../../apis/deleteUserAccount";
 import { useAuthStore } from "@/store/useAuthStore"; // zustand store import
 
 // 이미지 압축 함수
@@ -55,12 +56,14 @@ const SettingModal = ({ isOpen, onClose }) => {
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false); 
   const [isEditing, setIsEditing] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const fileInputRef = useRef(null);
 
   const userId = useAuthStore((state) => state.userId);
   const userName = useAuthStore((state) => state.userName);
   const profileImage = useAuthStore((state) => state.profileImage);
   const updateProfile = useAuthStore((state) => state.updateProfile);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   // 모달이 열릴 때 현재 사용자 정보로 초기화
   useEffect(() => {
@@ -153,6 +156,42 @@ const handleSave = async () => {
   }
 };
 
+const handleWithdraw = () => {
+  setShowWithdrawModal(true);
+};
+
+const handleWithdrawConfirm = async () => {
+  try {
+    setLoading(true);
+    setShowWithdrawModal(false);
+    
+    // 회원 탈퇴 처리
+    console.log("회원 탈퇴 처리:", userId);
+    
+    // 백엔드 API 호출
+    await deleteUserAccount(userId);
+    
+    // 로컬 상태 정리
+    clearAuth();
+    localStorage.removeItem('landingActiveIndex');
+    
+    alert("회원 탈퇴가 완료되었습니다.");
+    onClose();
+    
+    // 랜딩 페이지로 이동
+    window.location.href = '/';
+  } catch (error) {
+    console.error("회원 탈퇴 실패:", error);
+    alert("회원 탈퇴 중 오류가 발생했습니다.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleWithdrawCancel = () => {
+  setShowWithdrawModal(false);
+};
+
 
 
 
@@ -205,12 +244,13 @@ const handleSave = async () => {
         <div className="modal-actions">
           <Button
             className="custom-outline-button"
-            textColor="black"
+            textColor="red"
             size="md"
             shape="pill"
-            onClick={onClose}
+            onClick={handleWithdraw}
+            disabled={loading}
           >
-            취소
+            회원 탈퇴
           </Button>
           <Button
             className="custom-purple-button"
@@ -224,6 +264,47 @@ const handleSave = async () => {
           </Button>
         </div>
       </div>
+      
+      {/* 회원 탈퇴 확인 모달 */}
+      {showWithdrawModal && (
+        <div className="withdraw-modal__backdrop">
+          <div className="withdraw-modal">
+            <div className="withdraw-modal__header">
+              <div className="withdraw-modal__icon">
+                <Icon type="sign-out" />
+              </div>
+              <h2 className="withdraw-modal__title">회원 탈퇴</h2>
+            </div>
+            
+            <div className="withdraw-modal__content">
+              <p className="withdraw-modal__message">
+                정말로 회원 탈퇴하시겠습니까?
+              </p>
+              <p className="withdraw-modal__submessage">
+                탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
+              </p>
+            </div>
+
+            <div className="withdraw-modal__footer">
+              <Button 
+                background="white"
+                textColor="black"
+                border="gray"
+                onClick={handleWithdrawCancel}
+              >
+                취소
+              </Button>
+              <Button 
+                background="red"
+                textColor="white"
+                onClick={handleWithdrawConfirm}
+              >
+                탈퇴
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,187 @@
+/* 삭제 모달 스타일 */
+.delete-modal__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.delete-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.delete-modal .delete-modal__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.delete-modal .delete-modal__icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  background-color: #FEF2F2;
+  border-radius: 50%;
+  margin-bottom: 0.25rem;
+  color: #DC2626;
+}
+
+.delete-modal .delete-modal__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-top: 0.75rem;
+}
+
+.delete-modal .delete-modal__content {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.delete-modal .delete-modal__message {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.delete-modal .delete-modal__submessage {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.delete-modal .delete-modal__footer {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 나가기 모달 스타일 - 삭제 모달과 동일한 디자인 */
+.leave-modal__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.leave-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.leave-modal .leave-modal__header {
+  text-align: center;
+  margin-bottom: 24px;
+  background: transparent;
+  padding: 0;
+}
+
+.leave-modal .leave-modal__icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  background-color: #FEF2F2;
+  border-radius: 50%;
+  margin-bottom: 0.25rem;
+  color: #DC2626;
+}
+
+.leave-modal .leave-modal__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+.leave-modal .leave-modal__content {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 32px;
+  padding: 0;
+}
+
+.leave-modal .leave-modal__message {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.leave-modal .leave-modal__submessage {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.leave-modal .leave-modal__footer {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 0;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+  .delete-modal {
+    margin: 16px;
+    padding: 24px;
+  }
+  
+  .delete-modal .delete-modal__footer {
+    flex-direction: column;
+  }
+  
+  .leave-modal {
+    margin: 16px;
+    padding: 24px;
+  }
+  
+  .leave-modal .leave-modal__footer {
+    flex-direction: column;
+  }
+}

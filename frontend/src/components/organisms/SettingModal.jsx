@@ -66,7 +66,7 @@ const SettingModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setNickname(userName || "");
-      setPreviewUrl(profileImage || "/default-profile.png");
+      setPreviewUrl(profileImage || "/images/profile_default.png");
       setImageFile(null);
       setIsEditing(false);
     }
@@ -111,6 +111,8 @@ const SettingModal = ({ isOpen, onClose }) => {
       }
     }
   };
+
+
 
 const handleSave = async () => {
   if (!nickname.trim()) {

@@ -6,7 +6,12 @@ import {
 } from "@shinyongjun/react-fullpage";
 import "@shinyongjun/react-fullpage/css";
 import "./Landing.css";
+import "../../router/PrivateRoute.css";
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useGoogleLogin } from "@/hooks/useGoogleLogin";
+import Icon from "@/components/atoms/Icon";
+import { Button } from "@/components/atoms/Button";
 
 // 타자기 효과 컴포넌트
 function TypewriterText({ text, speed = 100 }) {
@@ -33,7 +38,10 @@ function TypewriterText({ text, speed = 100 }) {
 
 function Landing() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
+  const { accessToken } = useAuthStore();
+  const handleGoogleLogin = useGoogleLogin();
 
   // activeIndex를 전역 상태로 설정 (Navbar에서 접근 가능하도록)
   useEffect(() => {
@@ -46,8 +54,50 @@ function Landing() {
     }));
   }, [activeIndex]);
 
+  // 네비게이션에서 로그인 모달 요청 이벤트 감지
+  useEffect(() => {
+    const handleShowLoginModal = (event) => {
+      setShowLoginModal(true);
+      // 이벤트에서 리다이렉트할 페이지 정보를 받음
+      if (event.detail && event.detail.redirectTo) {
+        setRedirectTo(event.detail.redirectTo);
+      }
+    };
+
+    window.addEventListener('showLoginModal', handleShowLoginModal);
+
+    return () => {
+      window.removeEventListener('showLoginModal', handleShowLoginModal);
+    };
+  }, []);
+
   const handleStartClick = () => {
-    navigate('/list');
+    if (accessToken) {
+      navigate('/list');
+    } else {
+      setShowLoginModal(true);
+      setRedirectTo('/list');
+    }
+  };
+
+  const handleLoginConfirm = () => {
+    setShowLoginModal(false);
+    handleGoogleLogin();
+  };
+
+  // 로그인 성공 후 이동할 페이지 추적
+  const [redirectTo, setRedirectTo] = useState(null);
+  
+  useEffect(() => {
+    if (accessToken && showLoginModal === false && redirectTo) {
+      // 모달이 닫혀있고 토큰이 있고, 리다이렉트할 페이지가 있으면 이동
+      navigate(redirectTo);
+      setRedirectTo(null);
+    }
+  }, [accessToken, showLoginModal, redirectTo, navigate]);
+
+  const handleLoginCancel = () => {
+    setShowLoginModal(false);
   };
 
   const features = [
@@ -166,6 +216,44 @@ function Landing() {
           />
         ))}
       </div>
+
+      {/* 로그인 모달 */}
+      {showLoginModal && (
+        <div className="login-alert-modal__backdrop">
+          <div className="login-alert-modal">
+            <div className="login-alert-modal__header">
+              <div className="login-alert-modal__icon">
+                <Icon type="magnifying-glass" />
+              </div>
+              <h2 className="login-alert-modal__title">로그인이 필요합니다</h2>
+            </div>
+            
+            <div className="login-alert-modal__content">
+              <p className="login-alert-modal__message">
+                로그인 후 더 많은 기능을 이용할 수 있습니다.
+              </p>
+            </div>
+
+            <div className="login-alert-modal__footer">
+              <Button 
+                background="white"
+                textColor="black"
+                border="gray"
+                onClick={handleLoginCancel}
+              >
+                취소
+              </Button>
+              <Button 
+                background="sky"
+                textColor="black"
+                onClick={handleLoginConfirm}
+              >
+                로그인하기
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

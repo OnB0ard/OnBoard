@@ -5,13 +5,13 @@ export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
     const formData = new FormData();
 
     const profileBlob = new Blob([JSON.stringify(profileData)], {
-  type: "application/json",
-});
-formData.append("modifyProfileRequestDTO", profileBlob); // ✅ key 이름 맞춤
+      type: "application/json",
+    });
+    formData.append("modifyProfileRequestDTO", profileBlob); // ✅ key 이름 맞춤
 
-if (imageFile) {
-  formData.append("image", imageFile);
-}
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
 
 
     console.log("🔍 [updateUserProfile] userId:", userId);

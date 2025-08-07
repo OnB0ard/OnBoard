@@ -48,6 +48,8 @@
   position: relative;
 }
 
+
+
 .modal-avatar {
   width: 150px;
   height: 150px;
@@ -75,6 +77,8 @@
   bottom: 0.5rem;
   right: calc(10% - 55px * -1 + 0.5rem); /* 아바타 중심에서 오른쪽으로 75px */
 }
+
+
 
 .modal-inputs {
   display: flex;

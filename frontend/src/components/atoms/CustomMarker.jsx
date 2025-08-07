@@ -34,7 +34,9 @@ const CustomMarker = ({
   type = 'default',
   isTemporary = false, // 임시 마커 여부
 }) => {
-  const pinColor = isTemporary ? colorPalette.blue : (colorPalette[color] || colorPalette.default);
+    const pinColor = isTemporary
+    ? color !== 'default' ? color : colorPalette.blue
+    : (colorPalette[color] || colorPalette.default);
   const Icon = iconComponents[type] || iconComponents.default;
   const zIndex = isTemporary ? 10 : 1;
 

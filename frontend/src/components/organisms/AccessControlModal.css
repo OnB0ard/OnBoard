@@ -98,47 +98,7 @@
   justify-content: center;
 }
 
-.access-control-modal__button {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
 
-.access-control-modal__button--secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.access-control-modal__button--secondary:hover {
-  background-color: #e5e7eb;
-  border-color: #9ca3af;
-}
-
-.access-control-modal__button--primary {
-  background: linear-gradient(135deg, #E1EAFD 0%, #B8D4F0 100%);
-  color: #2C5282;
-  border: 1px solid #A0C3E8;
-  box-shadow: 0 2px 4px rgba(225, 234, 253, 0.4);
-}
-
-.access-control-modal__button--primary:hover {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, #D1E3FA 0%, #A0C3E8 100%);
-  box-shadow: 0 4px 8px rgba(225, 234, 253, 0.6);
-}
-
-.access-control-modal__button--primary:active {
-  transform: translateY(0);
-  background: linear-gradient(135deg, #C1D9F7 0%, #8BB5E0 100%);
-  box-shadow: 0 2px 4px rgba(225, 234, 253, 0.4);
-}
 
 /* 반응형 디자인 */
 @media (max-width: 480px) {
@@ -160,7 +120,5 @@
     flex-direction: column;
   }
   
-  .access-control-modal__button {
-    width: 100%;
-  }
+
 } 

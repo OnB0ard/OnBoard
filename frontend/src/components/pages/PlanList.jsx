@@ -8,6 +8,10 @@ import { getPlanList } from "../../apis/planList";
 import { deletePlan } from "../../apis/planDelete";
 import { createPlan } from "../../apis/planCreate";
 import { updatePlan } from "../../apis/planUpdate";
+import { leavePlan } from "../../apis/planUser";
+import { Button } from "../atoms/Button";
+import Icon from "../atoms/Icon";
+import "./PlanList.css";
 
 // 정렬 함수
 const sortPlans = (plans, type) => {
@@ -74,6 +78,14 @@ const PlanList = () => {
   // 정렬 상태 관리
   const [sortType, setSortType] = useState('created'); // 'created' | 'date'
   const [isSorting, setIsSorting] = useState(false); // 정렬 중 로딩 상태
+  
+  // 삭제 모달 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // 나가기 모달 상태
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveTarget, setLeaveTarget] = useState(null);
 
   // 여행 계획 목록 조회
   const fetchPlans = useCallback(async () => {
@@ -132,20 +144,56 @@ const PlanList = () => {
     fetchPlans();
   };
 
-  // 삭제 버튼 클릭 핸들러
-  const handleDeleteClick = async (planData) => {
-    if (window.confirm(`'${planData.name}' 계획을 정말 삭제하시겠습니까?`)) {
-      setIsLoading(true);
-      try {
-        await deletePlan(planData.planId);
-        await fetchPlans(); // 삭제 후 목록 새로고침
-      } catch (error) {
-        alert('계획 삭제에 실패했습니다.');
-        console.error('계획 삭제 실패:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  const handleShowLeaveModal = (planData) => {
+    console.log('나가기 모달 열기:', planData);
+    setLeaveTarget(planData);
+    setShowLeaveModal(true);
+  };
+
+  const handleLeaveConfirm = async () => {
+    try {
+      await leavePlan(Number(leaveTarget.planId));
+      // 성공적으로 나간 후, 리스트를 새로고침합니다.
+      fetchPlans();
+    } catch (error) {
+      console.error('여행 계획 나가기 실패:', error);
+    } finally {
+      setShowLeaveModal(false);
+      setLeaveTarget(null);
     }
+  };
+
+  const handleLeaveCancel = () => {
+    setShowLeaveModal(false);
+    setLeaveTarget(null);
+  };
+
+  // 삭제 버튼 클릭 핸들러
+  const handleDeleteClick = (planData) => {
+    setDeleteTarget(planData);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    
+    setIsLoading(true);
+    try {
+      await deletePlan(deleteTarget.planId);
+      await fetchPlans(); // 삭제 후 목록 새로고침
+    } catch (error) {
+      alert('계획 삭제에 실패했습니다.');
+      console.error('계획 삭제 실패:', error);
+    } finally {
+      setIsLoading(false);
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
   };
 
   // 정렬 변경 핸들러
@@ -245,15 +293,16 @@ const PlanList = () => {
                     transitionDelay: isSorting ? '0ms' : `${index * 50}ms`
                   }}
                 >
-                  <Card
-                    planData={plan}
-                    onView={() => handleCardClick(plan)}
-                    onEdit={() => handleEditClick(plan)}
-                    onDelete={() => handleDeleteClick(plan)}
-                    onLeave={handleLeave}
-                    isAnyPopoverOpen={isAnyPopoverOpen}
-                    onPopoverOpenChange={setIsAnyPopoverOpen}
-                  />
+                                     <Card
+                     planData={plan}
+                     onView={() => handleCardClick(plan)}
+                     onEdit={() => handleEditClick(plan)}
+                     onDelete={() => handleDeleteClick(plan)}
+                     onLeave={handleLeave}
+                     onShowLeaveModal={handleShowLeaveModal}
+                     isAnyPopoverOpen={isAnyPopoverOpen}
+                     onPopoverOpenChange={setIsAnyPopoverOpen}
+                   />
                 </div>
               ))}
               <div
@@ -283,18 +332,19 @@ const PlanList = () => {
               </div>
             </div>
             <div className="main-content-done grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {completedPlans.map((plan) => (
-                <Card
-                  key={plan.planId}
-                  planData={plan}
-                  onView={() => handleCardClick(plan)}
-                  onEdit={() => handleEditClick(plan)}
-                  onDelete={() => handleDeleteClick(plan)}
-                  onLeave={handleLeave}
-                  isAnyPopoverOpen={isAnyPopoverOpen}
-                  onPopoverOpenChange={setIsAnyPopoverOpen}
-                />
-              ))}
+                             {completedPlans.map((plan) => (
+                 <Card
+                   key={plan.planId}
+                   planData={plan}
+                   onView={() => handleCardClick(plan)}
+                   onEdit={() => handleEditClick(plan)}
+                   onDelete={() => handleDeleteClick(plan)}
+                   onLeave={handleLeave}
+                   onShowLeaveModal={handleShowLeaveModal}
+                   isAnyPopoverOpen={isAnyPopoverOpen}
+                   onPopoverOpenChange={setIsAnyPopoverOpen}
+                 />
+               ))}
             </div>
           </div>
         </div>
@@ -316,6 +366,88 @@ const PlanList = () => {
           onClose={() => setIsEditModalOpen(false)}
           onSubmit={handleSubmissionSuccess}
         />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && deleteTarget && (
+        <div className="delete-modal__backdrop">
+          <div className="delete-modal">
+            <div className="delete-modal__header">
+              <div className="delete-modal__icon">
+                <Icon type="sign-out" />
+              </div>
+              <h2 className="delete-modal__title">계획 삭제</h2>
+            </div>
+            
+            <div className="delete-modal__content">
+              <p className="delete-modal__message">
+                '{deleteTarget.name}' 계획을 정말 삭제하시겠습니까?
+              </p>
+              <p className="delete-modal__submessage">
+                삭제된 계획은 복구할 수 없습니다.
+              </p>
+            </div>
+
+            <div className="delete-modal__footer">
+              <Button 
+                background="white"
+                textColor="black"
+                border="gray"
+                onClick={handleDeleteCancel}
+              >
+                취소
+              </Button>
+              <Button 
+                background="red"
+                textColor="white"
+                onClick={handleDeleteConfirm}
+              >
+                삭제
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 나가기 확인 모달 */}
+      {showLeaveModal && leaveTarget && (
+        <div className="leave-modal__backdrop">
+          <div className="leave-modal">
+            <div className="leave-modal__header">
+              <div className="leave-modal__icon">
+                <Icon type="sign-out" />
+              </div>
+              <h2 className="leave-modal__title">계획 나가기</h2>
+            </div>
+            
+            <div className="leave-modal__content">
+               <p className="leave-modal__message">
+                 '{leaveTarget.name}' 여행 계획을 나가시겠습니까?
+               </p>
+               <p className="leave-modal__submessage">
+                 나간 후에는 권한 요청을 다시 보내야 참여할 수 있습니다.
+               </p>
+             </div>
+
+            <div className="leave-modal__footer">
+              <Button 
+                background="white"
+                textColor="black"
+                border="gray"
+                onClick={handleLeaveCancel}
+              >
+                취소
+              </Button>
+              <Button 
+                background="red"
+                textColor="white"
+                onClick={handleLeaveConfirm}
+              >
+                나가기
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       
       <LoadingOverlay isVisible={isLoading} message="처리 중..." />

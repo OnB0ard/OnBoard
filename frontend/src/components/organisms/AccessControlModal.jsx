@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '../../hooks/useGoogleLogin';
 import Icon from '../atoms/Icon';
+import { Button } from '../atoms/Button';
 import './AccessControlModal.css';
 
 const AccessControlModal = ({ 
@@ -56,12 +57,14 @@ const AccessControlModal = ({
           </div>
 
           <div className="access-control-modal__footer">
-            <button 
-              className="access-control-modal__button access-control-modal__button--secondary"
+            <Button 
+              background="white"
+              textColor="black"
+              border="gray"
               onClick={handleCancel}
             >
               확인
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -86,18 +89,21 @@ const AccessControlModal = ({
           </div>
 
                      <div className="access-control-modal__footer">
-             <button 
-               className="access-control-modal__button access-control-modal__button--secondary"
+             <Button 
+               background="white"
+               textColor="black"
+               border="gray"
                onClick={handleCancel}
              >
                취소
-             </button>
-             <button 
-               className="access-control-modal__button access-control-modal__button--primary"
+             </Button>
+             <Button 
+               background="sky"
+               textColor="black"
                onClick={handleLogin}
              >
                로그인하기
-             </button>
+             </Button>
            </div>
         </div>
       </div>
@@ -122,19 +128,22 @@ const AccessControlModal = ({
           </div>
 
           <div className="access-control-modal__footer">
-            <button 
-              className="access-control-modal__button access-control-modal__button--secondary"
+            <Button 
+              background="white"
+              textColor="black"
+              border="gray"
               onClick={handleCancel}
             >
               확인
-            </button>
+            </Button>
             {onRequestPermission && (
-              <button 
-                className="access-control-modal__button access-control-modal__button--primary"
+              <Button 
+                background="sky"
+                textColor="black"
                 onClick={handleRequestPermission}
               >
                 권한 요청하기
-              </button>
+              </Button>
             )}
           </div>
         </div>

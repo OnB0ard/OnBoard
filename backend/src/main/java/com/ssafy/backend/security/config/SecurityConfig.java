@@ -66,12 +66,7 @@ public class SecurityConfig {
 //        http.authorizeHttpRequests(authorize -> authorize
 //                .anyRequest().permitAll()
 //        );
-        http.authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/ws/**").permitAll() // ✅ WebSocket 연결 허용
-                .requestMatchers("/topic/**").permitAll() // ✅ 구독 주소도 허용
-                .requestMatchers("/app/**").permitAll()   // ✅ 메시지 발행 주소 허용
-                .anyRequest().permitAll()
-        );
+
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

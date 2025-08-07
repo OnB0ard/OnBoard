@@ -3,6 +3,8 @@ package com.ssafy.backend.plan.entity;
 import com.ssafy.backend.user.entity.UserPlan;
 import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,6 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "day_place")
 @Data
+@Builder
+@AllArgsConstructor
 public class DayPlace {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -68,11 +68,11 @@ public class DayScheduleService {
 
     public PlanScheduleResponseDTO getPlanSchedule(Long planId, Long userId) {
         User user = validateUserExistence(userId);
-            Plan plan = validatePlanExistence(planId);
+        Plan plan = validatePlanExistence(planId);
 
-            UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                    .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
-            if (userPlan.getUserStatus() == UserStatus.PENDING) {
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
                 throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 

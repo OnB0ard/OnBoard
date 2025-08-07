@@ -9,11 +9,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DayScheduleRepository extends JpaRepository<DaySchedule,Long> {
+public interface DayScheduleRepository extends JpaRepository<DaySchedule,Long>, DayScheduleQueryRepository {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT COALESCE(MAX(d.dayOrder), 0) FROM DaySchedule d WHERE d.plan = :plan")
     Integer findMaxDayOrderByPlan(Plan plan);
 
-    DaySchedule findDayScheduleByDayScheduleId(Long dayScheduleId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ds FROM DaySchedule ds WHERE ds.dayScheduleId = :dayScheduleId")
+    DaySchedule findByIdForUpdate(Long dayScheduleId);
 }

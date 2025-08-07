@@ -26,4 +26,11 @@ public class WhiteBoardObjectExceptionHandler {
         );
     }
 
+    @ExceptionHandler(WhiteBoardObjectIsNotPlaceException.class)
+    public CommonResponse<ErrorBody> WhiteBoardObjectIsNotPlaceException(WhiteBoardObjectIsNotPlaceException e, HttpServletRequest request) {
+        log.warn("WhiteBoard-003> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
+        return new CommonResponse<>(new ErrorBody("WhiteBoard-003", "여행지 이외의 것은 일정에 넣을 수 없습니다."),
+                HttpStatus.BAD_REQUEST
+        );
+    }
 }

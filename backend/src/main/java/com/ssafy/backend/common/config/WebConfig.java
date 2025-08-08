@@ -11,6 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 .allowedOrigins("http://localhost:5173") // 프론트 주소
+                .allowedOrigins("https://i13a504.p.ssafy.io/")
                 .allowedMethods("*")
                 .allowedHeaders("*")
                 .allowCredentials(true); // JWT 쿠키 등 허용 시 필요

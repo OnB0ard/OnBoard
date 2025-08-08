@@ -26,7 +26,6 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         // CONNECT 프레임일 때만 JWT 검증
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String bearerToken = accessor.getFirstNativeHeader("Authorization");
-
             if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
                 log.warn("Authorization 헤더가 없거나 Bearer 형식이 아닙니다.");
                 throw new IllegalArgumentException("Authorization 헤더가 없거나 Bearer 형식이 아닙니다.");

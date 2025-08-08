@@ -9,7 +9,7 @@ export const setAccessTokenGetter = (getterFn) => {
 };
 
 const apiClient = axios.create({
-  baseURL: "https://i13a504.p.ssafy.io/api/v1/",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
   headers: { },
 });

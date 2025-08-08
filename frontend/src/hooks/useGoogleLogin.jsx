@@ -8,8 +8,8 @@ export const useGoogleLogin = () => {
   const getAccessToken = useAuthStore((state) => state.accessToken); // 토큰 getter
 
   return useCallback(() => {
-    const clientId = "406153969379-njhcgskl5tuv1utb2unqmvgoe4igjfe9.apps.googleusercontent.com";
-    const redirectUri = `https://i13a504.p.ssafy.io/popup.html`;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/popup.html`;
     const scope = "email profile openid";
     const state = Math.random().toString(36).substring(2);
 

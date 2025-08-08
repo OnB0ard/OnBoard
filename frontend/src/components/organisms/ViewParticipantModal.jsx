@@ -22,6 +22,7 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
     denyRequest,
     clearParticipants,
     delegateCreatorRole,
+    kickUser,
   } = useParticipantStore();
 
   const { userId: currentUserId } = useAuthStore();
@@ -71,6 +72,13 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
       delegateCreatorRole(planId, targetUserId);
     }
   };  
+
+  const handleKick = (targetUserId, name) => {
+    console.log('Kicking:', { planId, targetUserId }); // 디버깅용 로그
+    if (window.confirm(`${name}님을 강퇴하시겠습니까?`)) {
+      kickUser(planId, targetUserId);
+    }
+  };
 
   const combinedParticipants = [
     ...(creator ? [{ ...creator, status: 'CREATOR' }] : []),
@@ -134,6 +142,7 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
               <button
                 className="ml-1 p-1 rounded-full hover:bg-red-200 text-red-500 transition"
                 title="강퇴"
+                onClick={() => handleKick(p.userId, p.userName)}
               >
                 <Icon type="minus" />
               </button>

@@ -1,5 +1,6 @@
 package com.ssafy.backend.plan.service;
 
+import com.ssafy.backend.common.util.S3Util;
 import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
 import com.ssafy.backend.plan.dto.response.UserInformationResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
@@ -30,6 +31,7 @@ public class PlanParticipantService {
     private final UserPlanRepository userPlanRepository;
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
+    private final S3Util s3Util;
 
     @Transactional
     public boolean joinRequest(Long planId, JwtUserInfo jwtUserInfo) {
@@ -146,7 +148,7 @@ public class PlanParticipantService {
                         .userId(c.getUserId())
                         .userName(c.getUserName())
                         .googleEmail(c.getGoogleEmail())
-                        .profileImage(c.getProfileImage())
+                        .profileImage(c.getProfileImage() != null ? s3Util.getUrl(c.getProfileImage()) : null)
                         .createdAt(c.getCreatedAt())
                         .updatedAt(c.getUpdatedAt())
                         .userStatus(up.getUserStatus())
@@ -158,7 +160,7 @@ public class PlanParticipantService {
                         .userId(p.getUserId())
                         .userName(p.getUserName())
                         .googleEmail(p.getGoogleEmail())
-                        .profileImage(p.getProfileImage())
+                        .profileImage(p.getProfileImage() != null ? s3Util.getUrl(p.getProfileImage()) : null)
                         .createdAt(p.getCreatedAt())
                         .updatedAt(p.getUpdatedAt())
                         .userType(up.getUserType())

@@ -49,7 +49,7 @@ deploy-fe:
 
         sudo find "$TARGET" -type d -exec chmod 755 -- {} +
         sudo find "$TARGET" -type f -exec chmod 644 -- {} +
-        
+
         sudo ln -sfnT "$TARGET" '"$DEPLOY_PATH"';
 
         cd /var/www/releases && sudo ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf;

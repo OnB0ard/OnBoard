@@ -17,7 +17,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
 
   const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
 
-  const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   const handleSearchClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();

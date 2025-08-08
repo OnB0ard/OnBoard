@@ -71,7 +71,7 @@
 .logout-modal__backdrop {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 99999; /* 가장 높은 z-index로 설정 */
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -94,6 +94,7 @@
   font-family: 'Poppins', sans-serif;
   animation: slideIn 0.3s ease-out;
   transform-origin: center;
+  z-index: 9999;
 }
 
 .logout-modal__header {

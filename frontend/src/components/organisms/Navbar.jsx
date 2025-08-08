@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './Navbar.css';
 import {Button} from "@/components/ui/button"
 import {useGoogleLogin} from "@/hooks/useGoogleLogin"
@@ -123,7 +124,7 @@ const Navbar = () => {
       </div>
 
       {/* 로그아웃 확인 모달 */}
-      {showLogoutModal && (
+      {showLogoutModal && createPortal(
         <div className="logout-modal__backdrop">
           <div className="logout-modal">
             <div className="logout-modal__header">
@@ -157,7 +158,8 @@ const Navbar = () => {
               </CustomButton>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

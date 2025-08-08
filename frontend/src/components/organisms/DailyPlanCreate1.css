@@ -30,12 +30,19 @@
   flex-shrink: 0; /* 헤더는 고정 크기 */
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .daily-plan-header h2 {
   font-size: 15px;
   font-weight: 600;
   color: #111827;
   margin: 0;
 }
+
 
 .close-button {
   background: none;

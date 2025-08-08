@@ -233,7 +233,9 @@ public class PlanParticipantService {
         }
 
         User goodbyeUser = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
-        userPlanRepository.deleteUserPlanByPlanAndUser(plan, goodbyeUser);
+        UserPlan goodbyeUserPlan = userPlanRepository.findByPlanAndUser(plan, goodbyeUser)
+                .orElseThrow(() -> new NotInThisRoomException("이 방의 참여자가 아닙니다."));
+        userRepository.delete(goodbyeUser);
         return true;
     }
 

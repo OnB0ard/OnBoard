@@ -39,12 +39,12 @@ public class PlanParticipantController {
         return new CommonResponse<>(planParticipantService.getUserList(planId, jwtUserInfo), HttpStatus.OK);
     }
 
-    @PostMapping("{planId}/delegate")
+    @PostMapping("/{planId}/delegate")
     public CommonResponse<SuccessResponseDTO> delegateRequest(@PathVariable("planId") Long planId, @RequestBody AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.delegateRequest(planId, acceptOrDenyUserRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
 
-    @GetMapping("{planId}/userStatus")
+    @GetMapping("/{planId}/userStatus")
     public CommonResponse<UserInformationResponseDTO> getUserInformation(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(planParticipantService.getUserInformation(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }

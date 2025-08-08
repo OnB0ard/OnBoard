@@ -1,7 +1,7 @@
 stages: [build-fe, deploy-fe]
 
 variables:
-  FE_BUILD_DIR: dist
+  FE_BUILD_DIR: dist          
   DEPLOY_PATH: /var/www/html
   TZ: Asia/Seoul
 
@@ -11,7 +11,7 @@ cache:
 
 build-fe:
   stage: build-fe
-  tags: [fe-docker]
+  tags: [fe-docker]           
   image: node:20
   script:
     - cd frontend
@@ -32,12 +32,15 @@ deploy-fe:
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
     - export SSHPARAMS="-i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    - '[ -n "$SSH_USER" ] && [ -n "$SSH_HOST" ] || { echo "SSH_USER/SSH_HOST not set"; exit 1; }'
   script:
     - test -d frontend/$FE_BUILD_DIR || { echo "❌ frontend/$FE_BUILD_DIR not found"; exit 1; }
+
     - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build'
+
     - scp $SSHPARAMS -r frontend/$FE_BUILD_DIR/* $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
     - ssh $SSHPARAMS $SSH_USER@$SSH_HOST '
-        set -euo pipefail
+        set -euo pipefail;
         TS=$(date +%Y%m%d%H%M%S);
         TARGET=/var/www/releases/$TS;
 
@@ -48,6 +51,7 @@ deploy-fe:
         sudo find "$TARGET" -type f -exec chmod 644 {} \;
 
         sudo ln -sfnT "$TARGET" '"$DEPLOY_PATH"';
+
         cd /var/www/releases && sudo ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf;
         sudo nginx -t && sudo systemctl reload nginx
       '

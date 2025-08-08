@@ -1,10 +1,12 @@
 package com.ssafy.backend.plan.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.ssafy.backend.plan.entity.DaySchedule;
-import com.ssafy.backend.plan.entity.QDaySchedule;
-import com.ssafy.backend.plan.entity.QPlan;
+import com.ssafy.backend.place.entity.QPlace;
+import com.ssafy.backend.plan.entity.*;
+import com.ssafy.backend.whiteBoard.entity.QWhiteBoardObject;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 public class DayScheduleQueryRepositoryImpl implements DayScheduleQueryRepository {
@@ -20,5 +22,15 @@ public class DayScheduleQueryRepositoryImpl implements DayScheduleQueryRepositor
                 .where(ds.dayScheduleId.eq(dayScheduleId)
                         .and(p.planId.eq(planId)))
                 .fetchOne();
+    }
+
+    public List<DaySchedule> findByPlanId(Long planId) {
+        QDaySchedule ds = QDaySchedule.daySchedule;
+        QPlan p = QPlan.plan;
+
+        return queryFactory.selectFrom(ds)
+                .join(ds.plan, p)
+                .where(p.planId.eq(planId))
+                .fetch();
     }
 }

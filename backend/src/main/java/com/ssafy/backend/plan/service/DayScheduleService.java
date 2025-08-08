@@ -182,8 +182,7 @@ public class DayScheduleService {
     @Transactional
     public boolean removeDaySchedule(Long planId, Long dayScheduleId, Long userId) {
         User user = validateUserExistence(userId);
-        Plan plan = validatePlanExistence(planId);
-        DaySchedule daySchedule = validateDaySchedule(dayScheduleId);
+        Plan plan = planRepository.findByIdForUpdate(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
@@ -191,9 +190,23 @@ public class DayScheduleService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
+        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+        if(daySchedule == null) {
+            throw new DayScheduleNotExistException("존재하지 않는 일정입니다.");
+        }
         if(daySchedule.getPlan().getPlanId() != planId)
         {
             throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
+        }
+
+        List<DaySchedule> daySchedules = dayScheduleRepository.findByPlanId(planId);
+        daySchedules.sort(Comparator.comparingInt(DaySchedule::getDayOrder));
+
+        for (DaySchedule ds : daySchedules) {
+            int idx = ds.getDayOrder();
+            if (idx > daySchedule.getDayOrder()) {
+                ds.setDayOrder(idx - 1);
+            }
         }
 
         dayScheduleRepository.delete(daySchedule);

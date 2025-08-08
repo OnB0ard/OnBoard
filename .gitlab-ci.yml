@@ -1,7 +1,7 @@
 stages: [build-fe, deploy-fe]
 
 variables:
-  FE_BUILD_DIR: dist          
+  FE_BUILD_DIR: dist
   DEPLOY_PATH: /var/www/html
   TZ: Asia/Seoul
 
@@ -11,8 +11,8 @@ cache:
 
 build-fe:
   stage: build-fe
-  tags: [fe-docker]           
-  image: node:20              
+  tags: [fe-docker]
+  image: node:20
   script:
     - cd frontend
     - npm ci || npm install
@@ -33,15 +33,35 @@ deploy-fe:
     - chmod 600 private_key.pem
     - export SSHPARAMS="-i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
   script:
+    # dist 존재 확인 (빌드 실패 시 조기 종료)
+    - test -d frontend/$FE_BUILD_DIR || { echo "❌ frontend/$FE_BUILD_DIR not found"; exit 1; }
+
+    # 임시 업로드 디렉터리 생성
     - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build'
     - scp $SSHPARAMS -r frontend/$FE_BUILD_DIR/* $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
+
+    # 원자적 배포 + 권한 정리 + 오래된 릴리즈 정리
     - ssh $SSHPARAMS $SSH_USER@$SSH_HOST '
-        set -e
+        set -euo pipefail
         TS=$(date +%Y%m%d%H%M%S);
-        sudo mkdir -p /var/www/releases/$TS &&
-        sudo rsync -av --delete /home/ubuntu/front-build/ /var/www/releases/$TS/ &&
-        sudo ln -sfn /var/www/releases/$TS '"$DEPLOY_PATH"' &&
-        sudo systemctl reload nginx
+        TARGET=/var/www/releases/$TS;
+
+        # 릴리즈 폴더 생성 후 동기화
+        sudo mkdir -p "$TARGET";
+        sudo rsync -av --delete /home/ubuntu/front-build/ "$TARGET"/;
+
+        # 권한 정리(nginx가 읽을 수 있도록)
+        sudo find "$TARGET" -type d -exec chmod 755 {} \;;
+        sudo find "$TARGET" -type f -exec chmod 644 {} \;;
+
+        # /var/www/html 을 최신 릴리즈로 "항상" 교체(디렉터리여도 교체)
+        sudo ln -sfnT "$TARGET" '"$DEPLOY_PATH"';
+
+        # 최근 5개만 보관(선택)
+        cd /var/www/releases && sudo ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf;
+
+        # Nginx 재적용
+        sudo nginx -t && sudo systemctl reload nginx
       '
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-FE"'

@@ -1,0 +1,40 @@
+stages:
+  - build-fe
+  - deploy-fe
+
+variables:
+  FE_BUILD_DIR: dist        # Vite면 dist
+  DEPLOY_PATH: /var/www/html
+  TZ: Asia/Seoul
+
+cache:
+  paths:
+    - frontend/node_modules/
+
+build-fe:
+  stage: build-fe
+  tags: [fe-local]           # 방금 만든 shell 러너 태그
+  script:
+    - cd frontend
+    - npm ci || npm install
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/$FE_BUILD_DIR
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop-FE"'
+      when: always
+
+deploy-fe:
+  stage: deploy-fe
+  tags: [fe-local]
+  needs: ["build-fe"]
+  script:
+    - TS=$(date +%Y%m%d%H%M%S)
+    - sudo mkdir -p /var/www/releases/$TS
+    - sudo rsync -av --delete frontend/$FE_BUILD_DIR/ /var/www/releases/$TS/
+    - sudo ln -sfn /var/www/releases/$TS $DEPLOY_PATH
+    - sudo systemctl reload nginx
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop-FE"'
+      when: always

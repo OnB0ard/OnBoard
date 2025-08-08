@@ -219,6 +219,7 @@ public class PlanParticipantService {
                 .build();
     }
 
+    @Transactional
     public boolean resignRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);

@@ -11,6 +11,20 @@
   /* backdrop-filter: blur(4px); */
   height: 50px;
   padding: 0 20px;
+  transition: all 0.3s ease; /* 부드러운 전환 효과 */
+}
+
+/* 스크롤 시 적용되는 스타일 */
+.Header.scrolled {
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Landing 페이지 첫 번째 섹션에서의 스타일 */
+.Header.landing-page {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .left, .center, .right {
@@ -42,6 +56,7 @@
   font-weight: bold;
   color: #333;
   font-size: 24px;
+  transition: color 0.3s ease;
 }
 
 .home:hover {
@@ -52,6 +67,7 @@
   font-weight: bold;
   color: #333;
   font-size: 16px;
+  transition: color 0.3s ease;
 }
 
 .temp:hover {
@@ -65,6 +81,15 @@
 
 .landing-text:hover {
   color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 스크롤 시 사용할 어두운 텍스트 스타일 */
+.scrolled-text {
+  color: #333 !important;
+}
+
+.scrolled-text:hover {
+  color: #666 !important;
 }
 
 /* 로그아웃 모달 스타일 */

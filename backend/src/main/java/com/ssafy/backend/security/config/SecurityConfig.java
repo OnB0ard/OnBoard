@@ -59,8 +59,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // JWT 사용을 위한 기본 설정
         http.csrf(AbstractHttpConfigurer::disable) // CSRF 토큰 필요 없음
-//                .cors(Customizer.withDefaults()); // 기본 CORS 정책 사용
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())); // 커스텀 설정 연결
+                .cors(Customizer.withDefaults()); // 기본 CORS 정책 사용
+//                .cors(cors -> cors.configurationSource(corsConfigurationSource())); // 커스텀 설정 연결
 
 
         // JWT로 대체되므로 비활성화
@@ -81,17 +81,17 @@ public class SecurityConfig {
         return http.build();
     }
 
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-
-//        config.setAllowedOrigins(List.of("http://localhost:5173", "https://i13a504.p.ssafy.io"));
-        config.setAllowedOrigins(Collections.singletonList("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true); // 인증정보 포함 허용 (쿠키, JWT)
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration config = new CorsConfiguration();
+//
+////        config.setAllowedOrigins(List.of("http://localhost:5173", "https://i13a504.p.ssafy.io"));
+//        config.setAllowedOrigins(Collections.singletonList("*"));
+//        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//        config.setAllowedHeaders(List.of("*"));
+//        config.setAllowCredentials(true); // 인증정보 포함 허용 (쿠키, JWT)
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config);
+//        return source;
+//    }
 }

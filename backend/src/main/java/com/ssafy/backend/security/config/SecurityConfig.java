@@ -15,6 +15,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Collections;
+import java.util.List;
 
 @Configuration
 @AllArgsConstructor
@@ -53,12 +59,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // JWT 사용을 위한 기본 설정
         http.csrf(AbstractHttpConfigurer::disable) // CSRF 토큰 필요 없음
-                .cors(Customizer.withDefaults()); // 기본 CORS 정책 사용
+//                .cors(Customizer.withDefaults()); // 기본 CORS 정책 사용
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())); // 커스텀 설정 연결
+
 
         // JWT로 대체되므로 비활성화
         http.formLogin(AbstractHttpConfigurer::disable); // 폼 로그인 비활성화
         http.httpBasic(AbstractHttpConfigurer::disable); // HTTP Basic 인증 비활성화
         http.logout(AbstractHttpConfigurer::disable); // 기본 로그아웃 비활성화
+
 
         // JWT는 세션 생성 X
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -70,5 +79,19 @@ public class SecurityConfig {
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+//        config.setAllowedOrigins(List.of("http://localhost:5173", "https://i13a504.p.ssafy.io"));
+        config.setAllowedOrigins(Collections.singletonList("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true); // 인증정보 포함 허용 (쿠키, JWT)
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }

@@ -47,8 +47,8 @@ deploy-fe:
         sudo mkdir -p "$TARGET";
         sudo rsync -av --delete /home/ubuntu/front-build/ "$TARGET"/;
 
-        sudo find "$TARGET" -type d -exec chmod 755 {} ';'
-        sudo find "$TARGET" -type f -exec chmod 644 {} ';'
+        sudo find "$TARGET" -type d -print0 | sudo xargs -0 chmod 755
+        sudo find "$TARGET" -type f -print0 | sudo xargs -0 chmod 644
 
         sudo ln -sfnT "$TARGET" '"$DEPLOY_PATH"';
 

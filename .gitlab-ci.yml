@@ -15,6 +15,7 @@ build-fe:
   image: node:20
   script:
     - cd frontend
+    - printenv | grep ^VITE_ > .env.production
     - npm ci || npm install
     - npm run build
   artifacts:

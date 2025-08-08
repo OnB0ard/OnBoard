@@ -1,8 +1,8 @@
 stages: [build-fe, deploy-fe]
 
 variables:
-  FE_BUILD_DIR: dist          
-  DEPLOY_PATH: /var/www/html
+  FE_BUILD_DIR: dist              # vite build output
+  DEPLOY_PATH: /var/www/html      # nginx root가 여길 바라보도록 설정
   TZ: Asia/Seoul
 
 cache:
@@ -11,7 +11,7 @@ cache:
 
 build-fe:
   stage: build-fe
-  tags: [fe-docker]           
+  tags: [fe-docker]
   image: node:20
   script:
     - cd frontend
@@ -28,33 +28,55 @@ deploy-fe:
   stage: deploy-fe
   tags: [fe-docker]
   needs: ["build-fe"]
+  image: debian:stable-slim
   before_script:
+    # 배포용 도구 설치 (ssh/rsync)
+    - apt-get update
+    - apt-get install -y openssh-client rsync ca-certificates
+
+    # SSH 키/옵션
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
     - export SSHPARAMS="-i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+    # 필수 변수 체크
     - '[ -n "$SSH_USER" ] && [ -n "$SSH_HOST" ] || { echo "SSH_USER/SSH_HOST not set"; exit 1; }'
   script:
+    # 산출물 존재 확인
     - test -d frontend/$FE_BUILD_DIR || { echo "❌ frontend/$FE_BUILD_DIR not found"; exit 1; }
 
-    - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build'
+    # 원격 업로드/릴리즈 폴더 준비
+    - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build /var/www/releases'
 
-    - scp $SSHPARAMS -r frontend/$FE_BUILD_DIR/* $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
-    - ssh $SSHPARAMS $SSH_USER@$SSH_HOST '
-        set -euo pipefail;
-        TS=$(date +%Y%m%d%H%M%S);
-        TARGET=/var/www/releases/$TS;
+    # rsync로 빠르게 전송 (권한/시간 보존, 삭제 동기화)
+    - rsync -az --delete -e "ssh $SSHPARAMS" frontend/$FE_BUILD_DIR/ $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
 
-        sudo mkdir -p "$TARGET";
-        sudo rsync -av --delete /home/ubuntu/front-build/ "$TARGET"/;
+    # 원격 배포(heredoc: 인용/개행 문제 방지)
+    # DEPLOY_PATH는 로컬에서 값 치환 후 원격 환경변수로 전달
+    - |
+      ssh $SSHPARAMS $SSH_USER@$SSH_HOST "DEPLOY_PATH='$DEPLOY_PATH'" bash -s <<'REMOTE'
+      set -euo pipefail
 
-        sudo find "$TARGET" -type d -exec chmod 755 -- {} +
-        sudo find "$TARGET" -type f -exec chmod 644 -- {} +
+      TS=$(date +%Y%m%d%H%M%S)
+      TARGET="/var/www/releases/$TS"
 
-        sudo ln -sfnT "$TARGET" '"$DEPLOY_PATH"';
+      # 릴리즈 폴더로 반영
+      sudo mkdir -p "$TARGET"
+      sudo rsync -a --delete /home/ubuntu/front-build/ "$TARGET"/
 
-        cd /var/www/releases && sudo ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf;
-        sudo nginx -t && sudo systemctl reload nginx
-      '
+      # 퍼미션 정리 (디렉토리 755, 파일 644)
+      sudo find "$TARGET" -type d -exec chmod 755 {} \;
+      sudo find "$TARGET" -type f -exec chmod 644 {} \;
+
+      # 심볼릭 링크 갱신 (Nginx root가 이 경로를 바라보도록 설정되어 있어야 함)
+      sudo ln -sfnT "$TARGET" "$DEPLOY_PATH"
+
+      # 릴리즈 폴더 정리 (최신 5개만 유지)
+      sudo bash -lc 'cd /var/www/releases && ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r rm -rf'
+
+      # Nginx 설정 검증 및 무중단 반영
+      sudo nginx -t && sudo systemctl reload nginx
+      REMOTE
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-FE"'
       when: always

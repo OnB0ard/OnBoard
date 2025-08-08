@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -25,7 +26,7 @@ public class WhiteBoardSocketController {
 
     @MessageMapping("/whiteboard/{planId}")
     public void handleWhiteBoardSocket(@DestinationVariable Long planId,
-                                       WhiteBoardSocketDTO whiteBoardSocketDTO,
+                                       @Payload WhiteBoardSocketDTO whiteBoardSocketDTO,
                                        SimpMessageHeaderAccessor accessor) throws JsonProcessingException {
 
         Long userId = (Long) accessor.getSessionAttributes().get("userId");
@@ -75,6 +76,7 @@ public class WhiteBoardSocketController {
                 Long lineId = whiteBoardService.createLine(planId, createLineRequestDTO, userId);
                 createLineRequestDTO.setWhiteBoardObjectId(lineId);
                 messagingTemplate.convertAndSend("/topic/whiteboard/" + planId, createLineRequestDTO);
+                break;
             default:
                 log.warn("지원하지 않는 WebSocket action: {}", whiteBoardSocketDTO.getAction());
                 throw new IllegalArgumentException("지원하지 않는 WebSocket action: " + whiteBoardSocketDTO.getAction());

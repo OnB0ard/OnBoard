@@ -75,6 +75,7 @@ public class WhiteBoardSocketController {
                 Long lineId = whiteBoardService.createLine(planId, createLineRequestDTO, userId);
                 createLineRequestDTO.setWhiteBoardObjectId(lineId);
                 messagingTemplate.convertAndSend("/topic/whiteboard/" + planId, createLineRequestDTO);
+                break;
             default:
                 log.warn("지원하지 않는 WebSocket action: {}", whiteBoardSocketDTO.getAction());
                 throw new IllegalArgumentException("지원하지 않는 WebSocket action: " + whiteBoardSocketDTO.getAction());

@@ -26,7 +26,20 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         // CONNECT 프레임일 때만 JWT 검증
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String bearerToken = accessor.getFirstNativeHeader("Authorization");
+            // 🧪 누가 연결 시도하는지 확인용 상세 로그
+            log.warn("[CONNECT] No Auth Header. Details ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓");
+            log.warn("Session ID: {}", accessor.getSessionId());
+            log.warn("Native Headers: {}", accessor.toNativeHeaderMap());
+            log.warn("User Agent: {}", accessor.getFirstNativeHeader("User-Agent"));
+            log.warn("Origin: {}", accessor.getFirstNativeHeader("Origin"));
+            log.warn("Host: {}", accessor.getFirstNativeHeader("Host"));
+            log.warn("Heartbeat: {}", accessor.getHeartbeat());
+            log.warn("Command: {}", accessor.getCommand());
 
+            // 🎯 IP 정보도 출력 (Message에서 직접 추출)
+            Object simpSessionAttributes = accessor.getHeader("simpSessionAttributes");
+            Object simpConnectMessage = accessor.getHeader("simpConnectMessage");
+            log.warn("simpConnectMessage: {}", simpConnectMessage);
             if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
                 log.warn("Authorization 헤더가 없거나 Bearer 형식이 아닙니다.");
                 throw new IllegalArgumentException("Authorization 헤더가 없거나 Bearer 형식이 아닙니다.");

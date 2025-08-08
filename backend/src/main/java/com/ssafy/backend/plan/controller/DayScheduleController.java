@@ -3,6 +3,7 @@ package com.ssafy.backend.plan.controller;
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
 import com.ssafy.backend.plan.dto.request.TitleRequestDTO;
+import com.ssafy.backend.plan.dto.request.UpdateSchedulePositionRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
@@ -38,6 +39,11 @@ public class DayScheduleController {
     @PutMapping("/{dayScheduleId}/updateTitle")
     public CommonResponse<SuccessResponseDTO> modifyTitle(@PathVariable Long planId, @PathVariable Long dayScheduleId, @RequestBody TitleRequestDTO titleRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(new SuccessResponseDTO(dayScheduleService.modifyTitle(planId, dayScheduleId, titleRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
+    }
+
+    @PutMapping("/{dayScheduleId}/updateSchedulePosition")
+    public CommonResponse<SuccessResponseDTO> updateSchedulePosition(@PathVariable Long planId, @PathVariable Long dayScheduleId, @RequestBody UpdateSchedulePositionRequestDTO updateSchedulePositionRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(dayScheduleService.updateSchedulePosition(planId, dayScheduleId, updateSchedulePositionRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
     }
 
     @DeleteMapping("/{dayScheduleId}")

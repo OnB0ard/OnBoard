@@ -33,6 +33,7 @@ deploy-fe:
   tags: [fe-docker]
   needs: ["build-fe"]
   image: debian:stable-slim
+  resource_group: fe-deploy
   before_script:
     # 배포용 도구 설치 (ssh/rsync)
     - apt-get update

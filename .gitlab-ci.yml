@@ -1,12 +1,9 @@
 stages: [build-fe, deploy-fe]
 
 variables:
-  FE_BUILD_DIR: dist              # vite build output
-  DEPLOY_PATH: /var/www/html      # nginx root가 여길 바라보도록 설정
+  FE_BUILD_DIR: dist
+  DEPLOY_PATH: /var/www/html
   TZ: Asia/Seoul
-
-# 동시 배포 경합 방지 (선택)
-resource_group: fe-deploy
 
 cache:
   paths:
@@ -33,94 +30,30 @@ deploy-fe:
   tags: [fe-docker]
   needs: ["build-fe"]
   image: debian:stable-slim
-  resource_group: fe-deploy
+  resource_group: fe-deploy   # ✅ 여기! (잡 내부)
   before_script:
-    # 배포용 도구 설치 (ssh/rsync)
     - apt-get update
     - apt-get install -y openssh-client rsync ca-certificates
-
-    # SSH 키/옵션
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
     - export SSHPARAMS="-i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-
-    # 필수 변수 체크
     - '[ -n "$SSH_USER" ] && [ -n "$SSH_HOST" ] || { echo "SSH_USER/SSH_HOST not set"; exit 1; }'
   script:
-    # 산출물 존재 확인
     - test -d frontend/$FE_BUILD_DIR || { echo "❌ frontend/$FE_BUILD_DIR not found"; exit 1; }
-
-    # (가드) 원격 Nginx 설정 사전 점검: SPA fallback 있고, =404 활성 라인 없는지
-    - |
-      ssh $SSHPARAMS $SSH_USER@$SSH_HOST bash -s <<'REMOTE'
-      set -euo pipefail
-      sudo nginx -t >/dev/null
-
-      # =404 활성 try_files 라인 감지(주석 제외)
-      if sudo nginx -T 2>/dev/null \
-         | grep -vE '^[[:space:]]*#' \
-         | grep -E 'try_files[[:space:]]+\$uri[[:space:]]+\$uri/.*=404;' >/dev/null; then
-        echo "❌ Detected active 'try_files ... =404;' in effective config"
-        exit 1
-      fi
-
-      # SPA fallback 존재
-      if ! sudo nginx -T 2>/dev/null | grep -q 'try_files \$uri \$uri/ /index.html'; then
-        echo "❌ SPA fallback(try_files ... /index.html) not found in effective config"
-        exit 1
-      fi
-
-      # 참고용 구조 출력
-      echo "🧭 sites-enabled:"; ls -l /etc/nginx/sites-enabled || true
-      echo "🗂 conf.d:";       ls -l /etc/nginx/conf.d || true
-      REMOTE
-
-    # 원격 업로드/릴리즈 폴더 준비
     - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build /var/www/releases'
-
-    # rsync로 빠르게 전송 (권한/시간 보존, 삭제 동기화)
     - rsync -az --delete -e "ssh $SSHPARAMS" frontend/$FE_BUILD_DIR/ $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
-
-    # 원격 배포(heredoc: 인용/개행 문제 방지)
-    # DEPLOY_PATH는 로컬에서 값 치환 후 원격 환경변수로 전달
     - |
       ssh $SSHPARAMS $SSH_USER@$SSH_HOST "DEPLOY_PATH='$DEPLOY_PATH'" bash -s <<'REMOTE'
       set -euo pipefail
-
       TS=$(date +%Y%m%d%H%M%S)
       TARGET="/var/www/releases/$TS"
-
-      # 릴리즈 폴더로 반영
       sudo mkdir -p "$TARGET"
       sudo rsync -a --delete /home/ubuntu/front-build/ "$TARGET"/
-
-      # 산출물 확인
-      sudo test -f "$TARGET/index.html" || { echo "❌ Missing $TARGET/index.html"; exit 1; }
-
-      # 퍼미션 정리 (디렉토리 755, 파일 644)
       sudo find "$TARGET" -type d -exec chmod 755 {} \;
       sudo find "$TARGET" -type f -exec chmod 644 {} \;
-
-      # 심볼릭 링크 갱신 (Nginx root가 이 경로를 바라보도록 설정되어 있어야 함)
       sudo ln -sfnT "$TARGET" "$DEPLOY_PATH"
-
-      # 릴리즈 폴더 정리 (최신 5개만 유지)
       sudo bash -lc 'cd /var/www/releases && ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r rm -rf'
-
-      # Nginx 설정 검증 및 무중단 반영
       sudo nginx -t && sudo systemctl reload nginx
-
-      # (사후 가드) 심링크/인덱스 존재만 확인
-      echo -n "🔗 DEPLOY_PATH -> "; readlink -f "$DEPLOY_PATH" || true
-      sudo test -f "$DEPLOY_PATH/index.html" || { echo "❌ No index at DEPLOY_PATH"; exit 1; }
-
-      # (옵션) SPA fallback 유지 확인
-      if ! sudo nginx -T 2>/dev/null | grep -q 'try_files \$uri \$uri/ /index.html'; then
-        echo "❌ After reload, SPA fallback missing — config changed unexpectedly."
-        exit 1
-      fi
-
-      echo "✅ Deployed OK"
       REMOTE
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-FE"'

@@ -1,9 +1,12 @@
 stages: [build-fe, deploy-fe]
 
 variables:
-  FE_BUILD_DIR: dist              # vite build output
-  DEPLOY_PATH: /var/www/html      # nginx root가 여길 바라보도록 설정
+  FE_BUILD_DIR: dist
+  DEPLOY_PATH: /var/www/html
   TZ: Asia/Seoul
+
+# 같은 리소스(프론트 배포) 직렬화해서 경합 방지
+resource_group: fe-deploy
 
 cache:
   paths:
@@ -31,29 +34,52 @@ deploy-fe:
   needs: ["build-fe"]
   image: debian:stable-slim
   before_script:
-    # 배포용 도구 설치 (ssh/rsync)
     - apt-get update
-    - apt-get install -y openssh-client rsync ca-certificates
+    - apt-get install -y openssh-client rsync ca-certificates curl
 
-    # SSH 키/옵션
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
     - export SSHPARAMS="-i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-    # 필수 변수 체크
     - '[ -n "$SSH_USER" ] && [ -n "$SSH_HOST" ] || { echo "SSH_USER/SSH_HOST not set"; exit 1; }'
   script:
-    # 산출물 존재 확인
     - test -d frontend/$FE_BUILD_DIR || { echo "❌ frontend/$FE_BUILD_DIR not found"; exit 1; }
 
-    # 원격 업로드/릴리즈 폴더 준비
-    - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build /var/www/releases'
+    # 원격: 사전 가드(현재 설정이 SPA fallback인지, =404 활성 라인 없는지 진단)
+    - |
+      ssh $SSHPARAMS $SSH_USER@$SSH_HOST bash -s <<'REMOTE'
+      set -euo pipefail
 
-    # rsync로 빠르게 전송 (권한/시간 보존, 삭제 동기화)
+      echo "🔎 Pre-check: Nginx effective config"
+      sudo nginx -t >/dev/null
+
+      # =404 활성 라인(주석 제외) 탐지
+      if sudo nginx -T 2>/dev/null | awk '/try_files/ && $0 !~ /^[[:space:]]*#/ && $0 ~ /=404;/{bad=1} END{exit bad?0:1}'; then
+        echo "❌ Detected active 'try_files ... =404;' somewhere in effective config"
+        echo "---- Hints (first 200 lines around matches) ----"
+        sudo nginx -T 2>/dev/null | nl -ba | awk 'p&&c<200{print; c++} /try_files[[:space:]]+\$uri[[:space:]]+\$uri\/.*=404;/{p=1;c=0}'; echo "-----------------------------------------------"
+        exit 1
+      fi
+
+      # SPA fallback 존재 확인
+      if ! sudo nginx -T 2>/dev/null | grep -q 'try_files \$uri \$uri/ /index.html'; then
+        echo "❌ SPA fallback(try_files ... /index.html) not found in effective config"
+        echo "Tip: ensure sites-enabled/default (or active server) has 'location / { try_files \$uri \$uri/ /index.html; }'"
+        exit 1
+      fi
+
+      # include/활성 사이트 구조도 간단 출력
+      echo "🧭 Active site links:"
+      ls -l /etc/nginx/sites-enabled || true
+      echo "🗂  conf.d listing:"
+      ls -l /etc/nginx/conf.d || true
+      REMOTE
+
+    # 업로드
+    - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build /var/www/releases'
     - rsync -az --delete -e "ssh $SSHPARAMS" frontend/$FE_BUILD_DIR/ $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
 
-    # 원격 배포(heredoc: 인용/개행 문제 방지)
-    # DEPLOY_PATH는 로컬에서 값 치환 후 원격 환경변수로 전달
+    # 원격 배포 + 사후 가드/원인 진단
     - |
       ssh $SSHPARAMS $SSH_USER@$SSH_HOST "DEPLOY_PATH='$DEPLOY_PATH'" bash -s <<'REMOTE'
       set -euo pipefail
@@ -61,22 +87,54 @@ deploy-fe:
       TS=$(date +%Y%m%d%H%M%S)
       TARGET="/var/www/releases/$TS"
 
-      # 릴리즈 폴더로 반영
+      echo "🚚 Sync to release: $TARGET"
       sudo mkdir -p "$TARGET"
       sudo rsync -a --delete /home/ubuntu/front-build/ "$TARGET"/
 
-      # 퍼미션 정리 (디렉토리 755, 파일 644)
+      # 산출물 sanity check
+      if ! sudo test -f "$TARGET/index.html"; then
+        echo "❌ Missing $TARGET/index.html (build artifact problem)"; exit 1
+      fi
+      echo "✅ index.html present in release"
+
+      # 권한 정리
       sudo find "$TARGET" -type d -exec chmod 755 {} \;
       sudo find "$TARGET" -type f -exec chmod 644 {} \;
 
-      # 심볼릭 링크 갱신 (Nginx root가 이 경로를 바라보도록 설정되어 있어야 함)
+      # 심링크 스위치(원자적)
       sudo ln -sfnT "$TARGET" "$DEPLOY_PATH"
 
-      # 릴리즈 폴더 정리 (최신 5개만 유지)
+      # 릴리즈 폴더 정리 (최신 5개 유지)
       sudo bash -lc 'cd /var/www/releases && ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r rm -rf'
 
-      # Nginx 설정 검증 및 무중단 반영
+      # Nginx 재검증 & reload
       sudo nginx -t && sudo systemctl reload nginx
+
+      echo "🔎 Post-check: SPA fallback & index served"
+      # 효과적 설정에 SPA fallback 유지되는지
+      if ! sudo nginx -T 2>/dev/null | grep -q 'try_files \$uri \$uri/ /index.html'; then
+        echo "❌ After reload, SPA fallback missing — config changed unexpectedly."
+        exit 1
+      fi
+
+      # 현재 심링크/인덱스 확인
+      echo -n "🔗 DEPLOY_PATH -> "; readlink -f "$DEPLOY_PATH" || true
+      sudo test -f "$DEPLOY_PATH/index.html" || { echo "❌ No index at DEPLOY_PATH"; exit 1; }
+
+      # 로컬헬스: 루트 요청 200 확인(본문 길이와 헤더)
+      set +e
+      HDRS=$(curl -sI http://127.0.0.1/ || true)
+      CODE=$(printf "%s" "$HDRS" | awk 'NR==1{print $2}')
+      set -e
+      echo "🌐 curl HEAD / -> $CODE"
+      if [ "${CODE:-}" != "200" ]; then
+        echo "⚠️  HEAD not 200. Dumping small diagnostics:"
+        echo "---- server_name ----"; sudo nginx -T 2>/dev/null | grep -E 'server_name|listen 80' -n | sed -n '1,50p'
+        echo "---- access/error tail ----"; sudo tail -n 50 /var/log/nginx/access.log 2>/dev/null || true; sudo tail -n 50 /var/log/nginx/error.log 2>/dev/null || true
+        exit 1
+      fi
+
+      echo "✅ Deployed OK"
       REMOTE
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop-FE"'

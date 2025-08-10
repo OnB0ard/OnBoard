@@ -7,7 +7,7 @@ import {
   denyJoinRequest,
   delegatePermissions,
   getMyRole,
-  kickUser
+  kickUser as kickUserApi
 } from '@/apis/planUser'; // API 모듈에서 모든 함수를 가져옵니다.
 
 /**
@@ -173,7 +173,7 @@ export const useParticipantStore = create((set, get) => ({
    */
     kickUser: async (planId, targetUserId) => {
       try {
-        await kickUser(planId, targetUserId);
+        await kickUserApi(planId, targetUserId);
         // 성공하면 서버에서 최신 데이터를 다시 가져와서 정확한 상태로 업데이트합니다.
         await get().fetchParticipants(planId);
       } catch (error) {

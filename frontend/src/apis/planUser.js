@@ -130,3 +130,19 @@ export const getMyRole = async (planId, userId) => {
     throw error;
   }
 }; 
+
+
+/**
+ * 강퇴 시키기
+ * @param {number} userId - 사용자 ID
+ * @returns {Promise<Object>} API 응답 데이터
+ */
+export const kickUser = async (planId, userId) => {
+  try {
+    const response = await apiClient.post(`/plan/${planId}/resign`, { userId });
+    return response.data;
+  } catch (error) {
+    console.error(`사용자(ID: ${userId}) 강퇴 실패:`, error);
+    throw error;
+  }
+};

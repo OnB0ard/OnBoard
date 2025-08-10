@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import Card from "../organisms/Card";
 import PlanAddCard from "../organisms/PlanAddCard";
@@ -13,6 +14,7 @@ import { Button } from "../atoms/Button";
 import Icon from "../atoms/Icon";
 import "./PlanList.css";
 import SearchBar from "../organisms/SearchBar";
+import "../organisms/ViewParticipantModal.css";
 
 // 정렬 함수
 const sortPlans = (plans, type) => {
@@ -107,6 +109,25 @@ const PlanList = () => {
   // 나가기 모달 상태
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveTarget, setLeaveTarget] = useState(null);
+
+  // 상위 확인 모달 상태 (참여자 수락/거절/위임 등)
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmText: "확인",
+    onConfirm: null,
+    variant: undefined,
+    iconType: undefined,
+  });
+
+  const handleRequestConfirm = useCallback(({ title, message, onConfirm, confirmText = "확인", variant, iconType }) => {
+    setConfirmModal({ open: true, title, message, onConfirm, confirmText, variant, iconType });
+  }, []);
+
+  const closeConfirmModal = useCallback(() => {
+    setConfirmModal((s) => ({ ...s, open: false }));
+  }, []);
 
   // 여행 계획 목록 조회
   const fetchPlans = useCallback(async () => {
@@ -351,6 +372,7 @@ const PlanList = () => {
                         onShowLeaveModal={handleShowLeaveModal}
                         isAnyPopoverOpen={isAnyPopoverOpen}
                         onPopoverOpenChange={setIsAnyPopoverOpen}
+                        onRequestConfirm={handleRequestConfirm}
                       />
                     </div>
                   ))}
@@ -411,8 +433,7 @@ const PlanList = () => {
                     onDelete={() => handleDeleteClick(plan)}
                     onLeave={handleLeave}
                     onShowLeaveModal={handleShowLeaveModal}
-                    isAnyPopoverOpen={isAnyPopoverOpen}
-                    onPopoverOpenChange={setIsAnyPopoverOpen}
+                    onRequestConfirm={handleRequestConfirm}
                   />
                 ))
               ) : searchTerm.trim() ? (
@@ -430,7 +451,7 @@ const PlanList = () => {
                     완료된 여행이 없습니다.
                   </div>
                   <div className="text-gray-400 text-sm mt-2 font-['Poppins']">
-                    여행을 완료하면 여기에 표시됩니다.
+                    이전 여행을 회상해보세요!
                   </div>
                 </div>
               )}
@@ -510,13 +531,13 @@ const PlanList = () => {
             </div>
             
             <div className="leave-modal__content">
-               <p className="leave-modal__message">
-                 '{leaveTarget.name}' 여행 계획을 나가시겠습니까?
-               </p>
-               <p className="leave-modal__submessage">
-                 나간 후에는 권한 요청을 다시 보내야 참여할 수 있습니다.
-               </p>
-             </div>
+              <p className="leave-modal__message">
+                '{leaveTarget.name}' 여행 계획을 나가시겠습니까?
+              </p>
+              <p className="leave-modal__submessage">
+                나간 후에는 권한 요청을 다시 보내야 참여할 수 있습니다.
+              </p>
+            </div>
 
             <div className="leave-modal__footer">
               <Button 
@@ -538,7 +559,44 @@ const PlanList = () => {
           </div>
         </div>
       )}
-      
+
+      {/* 참여자 액션 확인 모달 (페이지 레벨) */}
+      {confirmModal.open && createPortal(
+        (
+          <div className="participant-action-modal__backdrop" onClick={closeConfirmModal}>
+            <div className={`participant-action-modal ${confirmModal.variant === 'danger' ? 'participant-action-modal--danger' : ''}`} onClick={(e) => e.stopPropagation()}>
+              <div className="participant-action-modal__header">
+                <div className="participant-action-modal__icon">
+                  <Icon type={confirmModal.iconType || "magnifying-glass"} />
+                </div>
+                <h2 className="participant-action-modal__title">{confirmModal.title}</h2>
+              </div>
+              <div className="participant-action-modal__content">
+                <p className="participant-action-modal__message">{confirmModal.message}</p>
+              </div>
+              <div className="participant-action-modal__footer">
+                <Button 
+                  background="white"
+                  textColor="black"
+                  border="gray"
+                  onClick={closeConfirmModal}
+                >
+                  취소
+                </Button>
+                <Button 
+                  background={confirmModal.variant === 'danger' ? 'red' : 'sky'}
+                  textColor={confirmModal.variant === 'danger' ? 'white' : 'black'}
+                  onClick={() => { confirmModal.onConfirm?.(); closeConfirmModal(); }}
+                >
+                  {confirmModal.confirmText}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ),
+        document.getElementById('modal-root') || document.body
+      )}
+
       <LoadingOverlay isVisible={isLoading} message="처리 중..." />
     </>
   );

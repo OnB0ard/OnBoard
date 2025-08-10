@@ -7,6 +7,7 @@ import {
   denyJoinRequest,
   delegatePermissions,
   getMyRole,
+  kickUser
 } from '@/apis/planUser'; // API 모듈에서 모든 함수를 가져옵니다.
 
 /**
@@ -164,6 +165,23 @@ export const useParticipantStore = create((set, get) => ({
       set({ error });
     }
   },
+
+    /**
+   * (관리) 생성자가 다른 참여자를 강퇴한다.
+   * @param {number|string} planId - 현재 여행 계획 ID
+   * @param {number} targetUserId - 강퇴할 사용자의 ID
+   */
+    kickUser: async (planId, targetUserId) => {
+      try {
+        await kickUser(planId, targetUserId);
+        // 성공하면 서버에서 최신 데이터를 다시 가져와서 정확한 상태로 업데이트합니다.
+        await get().fetchParticipants(planId);
+      } catch (error) {
+        console.error("강퇴 실패:", error);
+        set({ error });
+      }
+    },
+  
 
   /**
    * 스토어의 모든 참여자 관련 상태를 초기화합니다.

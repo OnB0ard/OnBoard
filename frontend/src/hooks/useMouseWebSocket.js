@@ -42,7 +42,7 @@ export function useMouseStomp({ userName, planId, wsUrl, token, throttleMs = 60 
       reconnectDelay: 1500,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      debug: (msg) => console.log("[STOMP DEBUG]", msg),
+      // debug: (msg) => console.log("[STOMP DEBUG]", msg),
       onConnect: () => {
         setConnected(true);
 

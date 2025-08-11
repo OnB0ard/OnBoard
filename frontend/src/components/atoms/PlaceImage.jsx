@@ -2,7 +2,7 @@
 import Icon from './Icon';
 
 const PlaceImage = ({ imageUrl, isBookmarked = false, onBookmarkClick, showBookmark = true }) => {
-    const defaultImage = 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지';
+    const defaultImage = '/images/placeImage_default.png';
   
   return (
     <div className="relative group">

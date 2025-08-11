@@ -1,9 +1,7 @@
 package com.ssafy.backend.plan.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.ssafy.backend.place.entity.QPlace;
 import com.ssafy.backend.plan.entity.*;
-import com.ssafy.backend.whiteBoard.entity.QWhiteBoardObject;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;

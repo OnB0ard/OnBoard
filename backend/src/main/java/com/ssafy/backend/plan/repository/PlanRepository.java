@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 public interface PlanRepository extends JpaRepository<Plan, Long>, PlanQueryRepository {
-
+    // DaySchedule에서 등록, 삭제, 수정 시 DayOrder로 버그 일으킬 가능성 있으므로 Lock 걸고 조회.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Plan p WHERE p.planId = :planId")
     Plan findByIdForUpdate(Long planId);

@@ -1,7 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
-import com.ssafy.backend.plan.dto.request.PutMemoRequestDTO;
+import com.ssafy.backend.plan.dto.request.RenameMemoRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateInnerPositionRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateOuterPositionRequestDTO;
 import com.ssafy.backend.plan.entity.DayPlace;
@@ -39,7 +39,7 @@ public class DayPlaceService {
     private final DayScheduleRepository dayScheduleRepository;
 
     @Transactional
-    public boolean addDayPlace(Long planId, Long dayScheduleId, CreateDayPlaceRequestDTO createDayPlaceRequestDTO, Long userId) {
+    public Long createDayPlace(Long planId, Long dayScheduleId, CreateDayPlaceRequestDTO createDayPlaceRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -84,11 +84,11 @@ public class DayPlaceService {
 
         dayPlaceRepository.save(dayPlace);
 
-        return true;
+        return dayPlace.getDayPlaceId();
     }
 
     @Transactional
-    public boolean updateMemo(Long planId, Long dayScheduleId, Long dayPlaceId, PutMemoRequestDTO putMemoRequestDTO, Long userId) {
+    public boolean renameMemo(Long planId, Long dayScheduleId, Long dayPlaceId, RenameMemoRequestDTO renameMemoRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -104,7 +104,7 @@ public class DayPlaceService {
             throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
         }
 
-        dayPlace.setMemo(putMemoRequestDTO.getMemo());
+        dayPlace.setMemo(renameMemoRequestDTO.getMemo());
         return true;
     }
 
@@ -220,7 +220,7 @@ public class DayPlaceService {
     }
 
     @Transactional
-    public boolean deleteDayPlace(Long planId, Long dayScheduleId, Long dayPlaceId, Long userId) {
+    public void deleteDayPlace(Long planId, Long dayScheduleId, Long dayPlaceId, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -249,7 +249,6 @@ public class DayPlaceService {
         }
 
         dayPlaceRepository.delete(dayPlace);
-        return true;
     }
 
     private User validateUserExistence(Long userId) {

@@ -5,7 +5,6 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class CreateDayPlaceRequestDTO {
-    private Long whiteBoardObjectId;
-    private Integer indexOrder;
+public class RenameDayScheduleRequestDTO {
+    private String title;
 }

@@ -1,8 +1,8 @@
 package com.ssafy.backend.plan.service;
 
-import com.ssafy.backend.plan.dto.request.TitleRequestDTO;
+import com.ssafy.backend.plan.dto.request.CreateDayScheduleRequestDTO;
+import com.ssafy.backend.plan.dto.request.RenameDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateSchedulePositionRequestDTO;
-import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayPlaceResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
@@ -39,7 +39,7 @@ public class DayScheduleService {
     private final DayPlaceRepository dayPlaceRepository;
 
     @Transactional
-    public CreateDayScheduleResponseDTO createDaySchedule(Long planId, TitleRequestDTO titleRequestDTO, Long userId) {
+    public Long createDaySchedule(Long planId, CreateDayScheduleRequestDTO createDayScheduleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = planRepository.findByIdForUpdate(planId);
 
@@ -51,20 +51,18 @@ public class DayScheduleService {
 
         Integer maxDayOrder = dayScheduleRepository.findMaxDayOrderByPlan(plan);
 
+//        int count = dayScheduleRepository.countByPlan(plan);
+//        if (count >= 30) throw new TooManyDaySchedulesException("최대 30개");
+
         DaySchedule daySchedule = DaySchedule.builder()
                 .plan(plan)
                 .dayOrder(maxDayOrder+1)
-                .title(titleRequestDTO.getTitle())
+                .title(createDayScheduleRequestDTO.getTitle())
                 .build();
 
         dayScheduleRepository.save(daySchedule);
 
-        return CreateDayScheduleResponseDTO.builder()
-                .dayScheduleId(daySchedule.getDayScheduleId())
-                .planId(plan.getPlanId())
-                .dayOrder(daySchedule.getDayOrder())
-                .title(daySchedule.getTitle())
-                .build();
+        return daySchedule.getDayScheduleId();
     }
 
     public PlanScheduleResponseDTO getPlanSchedule(Long planId, Long userId) {
@@ -160,7 +158,7 @@ public class DayScheduleService {
     }
 
     @Transactional
-    public boolean modifyTitle(Long planId, Long dayScheduleId, TitleRequestDTO titleRequestDTO, Long userId) {
+    public void renameDaySchedule(Long planId, Long dayScheduleId, RenameDayScheduleRequestDTO renameDayScheduleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
         DaySchedule daySchedule = validateDaySchedule(dayScheduleId);
@@ -176,8 +174,7 @@ public class DayScheduleService {
             throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
         }
 
-        daySchedule.setTitle(titleRequestDTO.getTitle());
-        return true;
+        daySchedule.setTitle(renameDayScheduleRequestDTO.getTitle());
     }
 
     @Transactional
@@ -233,7 +230,7 @@ public class DayScheduleService {
     }
 
     @Transactional
-    public boolean removeDaySchedule(Long planId, Long dayScheduleId, Long userId) {
+    public void deleteDaySchedule(Long planId, Long dayScheduleId, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = planRepository.findByIdForUpdate(planId);
 
@@ -263,7 +260,6 @@ public class DayScheduleService {
         }
 
         dayScheduleRepository.delete(daySchedule);
-        return true;
     }
 
     private User validateUserExistence(Long userId) {

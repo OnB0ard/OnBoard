@@ -26,13 +26,15 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
   const onMessage = useMemo(() => (msg) => {
     try {
       const { type, payload } = msg || {};
-      switch (type) {
+      const action = (type || '').toUpperCase();
+      switch (action) {
         case 'CREATE_PLACE': {
-          const { objectInfo, whiteBoardPlace, whiteBoardObjectId } = payload || {};
+          const { type: payloadType, objectInfo, whiteBoardPlace, whiteBoardObjectId, id } = payload || {};
+          if (payloadType !== 'PLACE') break;
           if (!objectInfo || !whiteBoardPlace) break;
           const position = { x: objectInfo.x, y: objectInfo.y };
           const place = {
-            id: whiteBoardObjectId,
+            id: whiteBoardObjectId ?? id,
             googlePlaceId: whiteBoardPlace.googlePlaceId,
             placeName: whiteBoardPlace.placeName,
             address: whiteBoardPlace.address,
@@ -50,15 +52,20 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
           break;
         }
         case 'MOVE': {
-          const { whiteBoardObjectId, objectInfo } = payload || {};
-          if (!whiteBoardObjectId || !objectInfo) break;
-          updatePlaceBlockPosition(whiteBoardObjectId, { x: objectInfo.x, y: objectInfo.y }, planId);
+          const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payload || {};
+          if (payloadType !== 'PLACE') break;
+          if (!objectInfo) break;
+          const targetId = whiteBoardObjectId ?? id;
+          if (!targetId) break;
+          updatePlaceBlockPosition(targetId, { x: objectInfo.x, y: objectInfo.y }, planId);
           break;
         }
         case 'DELETE': {
-          const { whiteBoardObjectId } = payload || {};
-          if (!whiteBoardObjectId) break;
-          removePlaceBlock(whiteBoardObjectId, planId);
+          const { type: payloadType, whiteBoardObjectId, id } = payload || {};
+          if (payloadType !== 'PLACE') break;
+          const targetId = whiteBoardObjectId ?? id;
+          if (!targetId) break;
+          removePlaceBlock(targetId, planId);
           break;
         }
         default:

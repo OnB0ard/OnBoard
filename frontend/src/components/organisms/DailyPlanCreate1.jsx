@@ -7,7 +7,9 @@ import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';
 import { useDayMarkersStore } from '../../store/mapStore';
 import { savePlanSchedule, getPlanSchedule } from '../../apis/planSchedule';
-import { useStompSchedule } from '../../hooks/useStompSchedule';
+import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
+import { useAuthStore } from '@/store/useAuthStore';
+
 import './DailyPlanCreate1.css';
 
 const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
@@ -16,6 +18,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   const autoScrollIntervalRef = useRef(null);
   const lastLoadedPlanIdRef = useRef(null);
   const saveCacheTimeoutRef = useRef(null);
+  const accessToken = useAuthStore((s) => s.accessToken);
   
   // Zustand 스토어에서 상태와 액션들 가져오기
   const {
@@ -73,51 +76,56 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
 
   // 지도 스토어에서 일차별 마커 액션들 가져오기
   const { setDayMarkers, clearDayMarkers } = useDayMarkersStore();
-  // WebSocket 연결 설정 (화이트보드와 동일한 구조)
-  const { sendMessage, connectionStatus, myUuid } = useStompSchedule({
+  
+
+  // DaySchedule 전용 WebSocket (신규)
+  const {
+    connected: dayWsConnected,
+    createDay,
+    renameDay,
+    moveDayRealtime,
+    updateSchedule,
+    deleteDay,
+  } = useStompDaySchedule({
     planId,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
+    accessToken,
     onMessage: (msg) => {
-      const { type, payload, uuid } = msg;
-
-      console.log('실시간 일정 업데이트 수신:', msg);
-
-      // 내가 보낸 메시지는 무시 (로컬에 이미 반영됨)
-      if (uuid === myUuid) return;
-
-      switch (type) {
-        case 'PLAN_UPDATED':
-          console.log('전체 일정 업데이트 수신');
-          break;
-        case 'PLACE_ADDED':
-          addPlaceToDay(payload.dayIndex, payload.place, payload.insertIndex);
-          break;
-        case 'PLACE_REMOVED':
-          removePlace(payload.dayIndex, payload.placeIndex);
-          break;
-        case 'PLACE_MOVED':
-          reorderPlaces(
-            payload.fromDayIndex,
-            payload.fromPlaceIndex,
-            payload.toDayIndex,
-            payload.toPlaceIndex
-          );
-          break;
-        case 'DAY_ADDED':
-          addDailyPlan();
-          break;
-        case 'DAY_REMOVED':
-          removeDailyPlan(payload.dayId);
-          break;
-        case 'DAY_REORDERED':
-          reorderDailyPlans(payload.fromIndex, payload.toIndex);
-          break;
-        default:
-          console.warn('알 수 없는 메시지 타입:', type);
+      try {
+        const { action, ...payload } = msg || {};
+        console.log('[DaySchedule][recv]', action, payload);
+        switch (action) {
+          case 'RENAME': {
+            const { dayScheduleId, title } = payload || {};
+            if (dayScheduleId != null && typeof title === 'string') {
+              updateDayTitle(dayScheduleId, title);
+            }
+            break;
+          }
+          case 'CREATE':
+          case 'DELETE':
+          case 'MOVE':
+          case 'UPDATE_SCHEDULE': {
+            // 서버가 권위 소스로 전체 일정을 재조회하여 동기화
+            // 중복/인덱스 계산 문제를 피하기 위해 재로딩 방식 채택
+            try { DailyPlanCreate1.loadPlanSchedule?.(true); } catch (e) { console.warn('reload after ws failed', e); }
+            break;
+          }
+          default:
+            console.warn('[DaySchedule] unknown action:', action);
+        }
+      } catch (e) {
+        console.warn('[DaySchedule] onMessage handler error', e);
       }
-    }
+    },
+    onSubscribed: () => {
+      console.log('[DailyPlanCreate1] daySchedule subscribed');
+      // 구독 직후 서버 상태로 초기 동기화
+      try { DailyPlanCreate1.loadPlanSchedule?.(false); } catch (e) { console.warn('initial load after subscribe failed', e); }
+    },
   });
 
-
+  // 장소/화이트보드 관련 WebSocket 제거됨: DailyPlanCreate1에서는 사용하지 않음
 
   // planId가 "실제로 변경될 때만" 초기화/로드 수행
   useEffect(() => {
@@ -281,11 +289,11 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         await savePlanSchedule(planId, dailyPlans);
         console.log('✅ 일정 자동 저장 완료');
         
-        // WebSocket으로도 전체 일정 업데이트 알림
-        sendMessage('PLAN_SAVED', {
-          planId,
-          dailyPlans
-        });
+        // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
+        console.groupCollapsed('[WS][disabled] PLAN_SAVED in DailyPlanCreate1');
+        console.log('planId:', planId);
+        console.log('dailyPlans length:', dailyPlans?.length);
+        console.groupEnd();
       }
     } catch (error) {
       console.error('❌ 일정 자동 저장 실패:', error);
@@ -503,11 +511,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         
         reorderDailyPlans(draggedDayIndex, targetIndex);
         
-        // WebSocket으로 일정 순서 변경 알림
-        sendMessage('DAY_REORDERED', {
-          fromIndex: draggedDayIndex,
-          toIndex: targetIndex
-        });
+        // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
+        console.groupCollapsed('[WS][disabled] DAY_REORDERED in DailyPlanCreate1');
+        console.log('fromIndex:', draggedDayIndex, 'toIndex:', targetIndex);
+        console.groupEnd();
         
         clearDragState();
         return;
@@ -741,11 +748,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       addPlaceToDay(targetDayIndex, dragData.place, insertIndex);
       
       // WebSocket으로 장소 추가 알림
-      sendMessage('PLACE_ADDED', {
-        dayIndex: targetDayIndex,
-        place: dragData.place,
-        insertIndex
-      });
+      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
+      console.groupCollapsed('[WS][disabled] PLACE_ADDED in DailyPlanCreate1');
+      console.log('dayIndex:', targetDayIndex, 'place:', dragData.place, 'insertIndex:', insertIndex);
+      console.groupEnd();
       
       // 북마크 모달은 열어둠 (연속 추가를 위해)
       
@@ -785,11 +791,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       addPlaceToDay(targetDayIndex, normalizedPlace, insertIndex);
       
       // WebSocket으로 장소 추가 알림
-      sendMessage('PLACE_ADDED', {
-        dayIndex: targetDayIndex,
-        place: normalizedPlace,
-        insertIndex
-      });
+      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
+      console.groupCollapsed('[WS][disabled] PLACE_ADDED in DailyPlanCreate1');
+      console.log('dayIndex:', targetDayIndex, 'place:', normalizedPlace, 'insertIndex:', insertIndex);
+      console.groupEnd();
       
       return;
     }
@@ -823,13 +828,15 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     try {
       reorderPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, finalTargetPlaceIndex);
       
-      // WebSocket으로 장소 이동 알림
-      sendMessage('PLACE_MOVED', {
+      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
+      console.groupCollapsed('[WS][disabled] PLACE_MOVED in DailyPlanCreate1');
+      console.log({
         fromDayIndex: sourceDayIndex,
         fromPlaceIndex: sourcePlaceIndex,
         toDayIndex: targetDayIndex,
         toPlaceIndex: finalTargetPlaceIndex
       });
+      console.groupEnd();
       
       console.log('✅ 장소 이동 성공!');
     } catch (error) {
@@ -1005,21 +1012,11 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     if (dayIndex !== -1 && placeIndex !== -1) {
       updatePlaceMemo(dayIndex, placeIndex, memo);
       
-      // WebSocket으로 메모 업데이트 알림
-      sendMessage('PLAN_UPDATED', {
-        plans: dailyPlans.map((day, idx) => 
-          idx === dayIndex 
-            ? { 
-                ...day, 
-                places: day.places.map((p, pIdx) => 
-                  pIdx === placeIndex 
-                    ? { ...p, memo }
-                    : p
-                )
-              }
-            : day
-        )
-      });
+      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
+      console.groupCollapsed('[WS][disabled] PLAN_UPDATED (memo) in DailyPlanCreate1');
+      console.log('dayIndex:', dayIndex, 'placeIndex:', placeIndex);
+      console.log('memo:', memo);
+      console.groupEnd();
     }
     closeMemoModal();
   };
@@ -1085,11 +1082,17 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             onDrop={(e) => handleDayDrop(e, dayIndex)}
             onDragEnd={handleDayDragEnd}
             onDragLeave={handleDayDragLeave}
-            onUpdateTitle={updateDayTitle}
+            onUpdateTitle={(dayId, newTitle) => {
+              // 로컬 업데이트
+              updateDayTitle(dayId, newTitle);
+              // WS 전송 (신규 채널)
+              try { renameDay({ dayScheduleId: dayId, title: newTitle }); } catch (e) { console.warn('renameDay send failed', e); }
+            }}
             onRemoveDay={(dayId) => {
+              // 로컬 제거
               removeDailyPlan(dayId);
-              // WebSocket으로 일정 삭제 알림
-              sendMessage('DAY_REMOVED', { dayId });
+              // WS 전송 (신규 채널)
+              try { deleteDay({ dayScheduleId: dayId }); } catch (e) { console.warn('deleteDay send failed', e); }
             }}
             onAddPlaceClick={handleAddPlaceClick}
             onDayClick={handleDayClick}
@@ -1097,8 +1100,8 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             onRemovePlace={(dayIndex, placeIndex) => {
               const placeId = dailyPlans[dayIndex].places[placeIndex].id;
               removePlace(dayIndex, placeIndex);
-              // WebSocket으로 장소 제거 알림
-              sendMessage('PLACE_REMOVED', { dayIndex, placeId });
+              // 실시간 전송 제거됨: DaySchedule 채널에서 필요한 경우 별도 처리
+              console.log('[DailyPlanCreate1] PLACE_REMOVED (ws disabled)', { dayIndex, placeId });
             }}
             onUpdatePlaceMemo={updatePlaceMemo}
             onOpenMemoModal={handleOpenMemoModal}
@@ -1125,8 +1128,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             className="add-day-button" 
             onClick={() => {
               const newDay = addDailyPlan();
-                      // WebSocket으로 일정 추가 알림
-        sendMessage('DAY_ADDED', { day: newDay });
+              // WS 전송 (신규 채널): title과 순서를 함께 전송
+              const order = (Array.isArray(dailyPlans) ? dailyPlans.length : 0) + 1;
+              const title = newDay?.title || `Day ${order}`;
+              try { createDay({ title, dayOrder: order }); } catch (e) { console.warn('createDay send failed', e); }
             }}
           >
             + 일정 추가

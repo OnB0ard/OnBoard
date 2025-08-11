@@ -9,6 +9,7 @@ export const useGoogleLogin = () => {
 
   return useCallback(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    // const clientId = "406153969379-njhcgskl5tuv1utb2unqmvgoe4igjfe9.apps.googleusercontent.com";
     const redirectUri = `${window.location.origin}/popup.html`;
     const scope = "email profile openid";
     const state = Math.random().toString(36).substring(2);

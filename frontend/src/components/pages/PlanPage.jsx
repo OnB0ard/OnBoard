@@ -423,7 +423,7 @@ const PlanPage = () => {
       }}
     >
         <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
-        <WhiteBoard />
+        <WhiteBoard planId = {Number(planId)}/>
         {/* <EditToolBar /> */}
         {isMapVisible && (
           <MapContainer>

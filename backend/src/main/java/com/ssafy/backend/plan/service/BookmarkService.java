@@ -2,8 +2,8 @@ package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.plan.dto.request.CreateBookmarkRequestDTO;
 import com.ssafy.backend.place.entity.Place;
-import com.ssafy.backend.plan.dto.response.BookmarkResponseDTO;
-import com.ssafy.backend.plan.dto.response.BookmarkListResponseDTO;
+import com.ssafy.backend.plan.dto.response.GetBookmarkResponseDTO;
+import com.ssafy.backend.plan.dto.response.GetBookmarkListResponseDTO;
 import com.ssafy.backend.plan.dto.response.CreateBookmarkResponseDTO;
 import com.ssafy.backend.plan.entity.Bookmark;
 import com.ssafy.backend.plan.entity.Plan;
@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.print.Book;
 import java.util.List;
 
 @Service
@@ -83,7 +82,7 @@ public class BookmarkService {
                 .build();
     }
 
-    public BookmarkListResponseDTO getBookmarkList(Long planId, Long userId) {
+    public GetBookmarkListResponseDTO getBookmarkList(Long planId, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 
@@ -96,21 +95,24 @@ public class BookmarkService {
 
         List<Bookmark> bookmarks = bookmarkRepository.findBookmarksByPlanId(planId);
 
-        List<BookmarkResponseDTO> bookmarkResponseDTOS = bookmarks.stream()
+        List<GetBookmarkResponseDTO> getBookmarkResponseDTOS = bookmarks.stream()
                 .map(bookmark -> {
                     Place place = bookmark.getPlace();
-                    return new BookmarkResponseDTO(
-                            place.getPlaceId(),
-                            place.getPlaceName(),
-                            place.getLatitude(),
-                            place.getLongitude(),
-                            place.getAddress(),
-                            place.getRating(),
-                            place.getImageUrl());
+                    return GetBookmarkResponseDTO.builder()
+                            .bookmarkId(bookmark.getBookmarkId())
+                            .placeId(place.getPlaceId())
+                            .placeName(place.getPlaceName())
+                            .latitude(place.getLatitude())
+                            .longitude(place.getLongitude())
+                            .address(place.getAddress())
+                            .rating(place.getRating())
+                            .ratingCount(place.getRatingCount())
+                            .imageUrl(place.getImageUrl())
+                            .build();
                 }).toList();
 
-        return BookmarkListResponseDTO.builder()
-                .bookmarkList(bookmarkResponseDTOS)
+        return GetBookmarkListResponseDTO.builder()
+                .bookmarkList(getBookmarkResponseDTOS)
                 .build();
     }
 

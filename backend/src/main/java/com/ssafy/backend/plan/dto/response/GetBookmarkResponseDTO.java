@@ -6,12 +6,14 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class BookmarkResponseDTO {
+public class GetBookmarkResponseDTO {
+    private Long bookmarkId;
     private Long placeId;
     private String placeName;
     private Double latitude;
     private Double longitude;
     private String address;
     private Double rating;
+    private Integer ratingCount;
     private String imageUrl;
 }

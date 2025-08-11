@@ -2,7 +2,7 @@ package com.ssafy.backend.place.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
 import com.ssafy.backend.plan.entity.Bookmark;
-import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
+import com.ssafy.backend.plan.entity.DayPlace;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,8 +49,8 @@ public class Place extends DateEntity {
     private String category;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<WhiteBoardObject> WhiteBoardObjects;
+    private List<DayPlace> dayPlaces;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Bookmark> bookMarks;
+    private List<Bookmark> bookmarks;
 }

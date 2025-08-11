@@ -1,5 +1,7 @@
 package com.ssafy.backend.plan.service;
 
+import com.ssafy.backend.place.entity.Place;
+import com.ssafy.backend.place.repository.PlaceRepository;
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameMemoRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateInnerPositionRequestDTO;
@@ -16,10 +18,6 @@ import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
 import com.ssafy.backend.user.entity.UserStatus;
 import com.ssafy.backend.user.repository.UserRepository;
-import com.ssafy.backend.whiteBoard.entity.ObjectType;
-import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
-import com.ssafy.backend.whiteBoard.exception.WhiteBoardObjectIsNotPlaceException;
-import com.ssafy.backend.whiteBoard.repository.WhiteBoardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +33,8 @@ public class DayPlaceService {
     private final UserRepository userRepository;
     private final UserPlanRepository userPlanRepository;
     private final PlanRepository planRepository;
-    private final WhiteBoardRepository whiteBoardRepository;
     private final DayScheduleRepository dayScheduleRepository;
+    private final PlaceRepository placeRepository;
 
     @Transactional
     public Long createDayPlace(Long planId, Long dayScheduleId, CreateDayPlaceRequestDTO createDayPlaceRequestDTO, Long userId) {
@@ -49,16 +47,13 @@ public class DayPlaceService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
         if (!daySchedule.getPlan().getPlanId().equals(planId)) {
             throw new DayScheduleNotExistException("존재하지 않거나 해당 플랜에 속하지 않는 일정입니다.");
         }
 
-        WhiteBoardObject whiteBoardObject = whiteBoardRepository.findByWhiteBoardObjectId(createDayPlaceRequestDTO.getWhiteBoardObjectId());
-        if(whiteBoardObject == null || !whiteBoardObject.getObjectType().equals(ObjectType.PLACE))
-        {
-            throw new WhiteBoardObjectIsNotPlaceException("여행지 이외의 것은 넣을 수 없습니다.");
-        }
+        // TODO : placeID 잇는지 확인 및 영속성 확인, 익셉션 고치기
+        Place place = placeRepository.findById(createDayPlaceRequestDTO.getPlaceId()).orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
 
         List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
         dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));
@@ -78,7 +73,7 @@ public class DayPlaceService {
 
         DayPlace dayPlace = DayPlace.builder()
                 .daySchedule(daySchedule)
-                .whiteBoardObject(whiteBoardObject)
+                .place(place)
                 .indexOrder(insertIndex)
                 .build();
 
@@ -88,7 +83,7 @@ public class DayPlaceService {
     }
 
     @Transactional
-    public boolean renameMemo(Long planId, Long dayScheduleId, Long dayPlaceId, RenameMemoRequestDTO renameMemoRequestDTO, Long userId) {
+    public void renameMemo(Long planId, Long dayScheduleId, Long dayPlaceId, RenameMemoRequestDTO renameMemoRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -105,11 +100,10 @@ public class DayPlaceService {
         }
 
         dayPlace.setMemo(renameMemoRequestDTO.getMemo());
-        return true;
     }
 
     @Transactional
-    public boolean updateInnerPosition(Long planId, Long dayScheduleId, UpdateInnerPositionRequestDTO updateInnerPositionRequestDTO, Long userId) {
+    public void updateInnerPosition(Long planId, Long dayScheduleId, UpdateInnerPositionRequestDTO updateInnerPositionRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -119,7 +113,7 @@ public class DayPlaceService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
 
         DayPlace dayPlace = dayPlaceRepository
                 .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateInnerPositionRequestDTO.getDayPlaceId());
@@ -161,11 +155,10 @@ public class DayPlaceService {
         }
 
         dayPlace.setIndexOrder(updateInnerPositionRequestDTO.getModifiedIndexOrder());
-        return true;
     }
 
     @Transactional
-    public boolean updateOuterPosition(Long planId, Long dayScheduleId, UpdateOuterPositionRequestDTO updateOuterPositionRequestDTO, Long userId) {
+    public void updateOuterPosition(Long planId, Long dayScheduleId, UpdateOuterPositionRequestDTO updateOuterPositionRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -175,8 +168,8 @@ public class DayPlaceService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
-        DaySchedule modifiedDaySchedule = dayScheduleRepository.findByIdForUpdate(updateOuterPositionRequestDTO.getModifiedDayScheduleId());
+        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
+        DaySchedule modifiedDaySchedule = dayScheduleRepository.findByDayScheduleId(updateOuterPositionRequestDTO.getModifiedDayScheduleId());
 
         DayPlace dayPlace = dayPlaceRepository
                 .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateOuterPositionRequestDTO.getDayPlaceId());
@@ -215,8 +208,6 @@ public class DayPlaceService {
 
         dayPlace.setDaySchedule(modifiedDaySchedule);
         dayPlace.setIndexOrder(updateOuterPositionRequestDTO.getModifiedIndexOrder());
-
-        return true;
     }
 
     @Transactional
@@ -230,7 +221,7 @@ public class DayPlaceService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
 
         DayPlace dayPlace = dayPlaceRepository
                 .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId);

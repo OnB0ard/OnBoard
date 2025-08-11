@@ -110,6 +110,7 @@ const WhiteBoard = ({ planId }) => {
     accessToken,
     onMessage: (msg) => {
       // 서버 브로드캐스트는 { action, whiteBoardObjectId, type, x,y,... } 형태
+      console.log('[WS IN]', JSON.stringify(msg, null, 2));
       const { action } = msg || {};
 
       // (예외) MODIFY_LINE 응답은 CreateLineRequestDTO 그대로라 action이 없을 수 있음
@@ -183,7 +184,6 @@ const WhiteBoard = ({ planId }) => {
           // 서버가 생성 완료 후 내려준 도형을 store에 추가
           const id = String(msg.whiteBoardObjectId);
           const type = (msg.type || '').toLowerCase();
-          console.log(msg.whiteBoardObjectId);
           addShapeFromSocket({
             id,
             type,
@@ -200,7 +200,6 @@ const WhiteBoard = ({ planId }) => {
           return;
         }
 
-        // CREATE_PLACE 등은 현재 미사용
         default:
           return;
       }

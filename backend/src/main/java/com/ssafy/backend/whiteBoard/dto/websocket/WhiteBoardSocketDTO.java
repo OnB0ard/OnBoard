@@ -85,6 +85,7 @@ public class WhiteBoardSocketDTO {
     }
     public CreateLineRequestDTO toCreateLineRequestDTO() {
         return CreateLineRequestDTO.builder()
+                .action(action)
                 .type(type)
                 .x(x)
                 .y(y)

@@ -183,6 +183,7 @@ const WhiteBoard = ({ planId }) => {
           // 서버가 생성 완료 후 내려준 도형을 store에 추가
           const id = String(msg.whiteBoardObjectId);
           const type = (msg.type || '').toLowerCase();
+          console.log(msg.whiteBoardObjectId);
           addShapeFromSocket({
             id,
             type,

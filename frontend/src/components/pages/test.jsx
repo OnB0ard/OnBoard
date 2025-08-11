@@ -4,7 +4,7 @@ import { APIProvider } from '@vis.gl/react-google-maps';
 import Map from "../organisms/Map";
 import { useMapCoreStore } from "../../store/mapStore";
 
-const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k'; // 본인의 API 키를 입력하세요
+const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // 본인의 API 키를 입력하세요
 
 function Test() {
   const { isMapVisible, setIsMapVisible } = useMapCoreStore();

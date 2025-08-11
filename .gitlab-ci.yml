@@ -1,0 +1,60 @@
+stages: [build-fe, deploy-fe]
+
+variables:
+  FE_BUILD_DIR: dist
+  DEPLOY_PATH: /var/www/html
+  TZ: Asia/Seoul
+
+cache:
+  paths:
+    - frontend/node_modules/
+
+build-fe:
+  stage: build-fe
+  tags: [fe-docker]
+  image: node:20
+  script:
+    - cd frontend
+    - printenv | grep ^VITE_ > .env.production
+    - npm ci || npm install
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/$FE_BUILD_DIR
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop-FE"'
+      when: always
+
+deploy-fe:
+  stage: deploy-fe
+  tags: [fe-docker]
+  needs: ["build-fe"]
+  image: debian:stable-slim
+  resource_group: fe-deploy   # ✅ 여기! (잡 내부)
+  before_script:
+    - apt-get update
+    - apt-get install -y openssh-client rsync ca-certificates
+    - echo "$SSH_PRIVATE_KEY" > private_key.pem
+    - chmod 600 private_key.pem
+    - export SSHPARAMS="-i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    - '[ -n "$SSH_USER" ] && [ -n "$SSH_HOST" ] || { echo "SSH_USER/SSH_HOST not set"; exit 1; }'
+  script:
+    - test -d frontend/$FE_BUILD_DIR || { echo "❌ frontend/$FE_BUILD_DIR not found"; exit 1; }
+    - ssh $SSHPARAMS $SSH_USER@$SSH_HOST 'mkdir -p ~/front-build /var/www/releases'
+    - rsync -az --delete -e "ssh $SSHPARAMS" frontend/$FE_BUILD_DIR/ $SSH_USER@$SSH_HOST:/home/ubuntu/front-build/
+    - |
+      ssh $SSHPARAMS $SSH_USER@$SSH_HOST "DEPLOY_PATH='$DEPLOY_PATH'" bash -s <<'REMOTE'
+      set -euo pipefail
+      TS=$(date +%Y%m%d%H%M%S)
+      TARGET="/var/www/releases/$TS"
+      sudo mkdir -p "$TARGET"
+      sudo rsync -a --delete /home/ubuntu/front-build/ "$TARGET"/
+      sudo find "$TARGET" -type d -exec chmod 755 {} \;
+      sudo find "$TARGET" -type f -exec chmod 644 {} \;
+      sudo ln -sfnT "$TARGET" "$DEPLOY_PATH"
+      sudo bash -lc 'cd /var/www/releases && ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r rm -rf'
+      sudo nginx -t && sudo systemctl reload nginx
+      REMOTE
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop-FE"'
+      when: always

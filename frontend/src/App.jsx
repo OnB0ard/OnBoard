@@ -1,13 +1,12 @@
-import { Button } from "@/components/ui/button"
 import {Routes, Route} from "react-router-dom"
 
 import Landing from './components/pages/Landing'
 import Navbar from './components/organisms/Navbar'
 import PlanList from './components/pages/PlanList'
-import Test from './components/pages/Test'
+import Test from './components/pages/test'
 import PlanPage from './components/pages/PlanPage'
-import MyPage from "./components/pages/Mypage"
-import PrivateRoute from './router/PrivateRoute';
+import MyPage from "./components/pages/MyPage"
+import PrivateRoute from './router/PrivateRoute'
 import PlanAccessRoute from './router/PlanAccessRoute'
 
 

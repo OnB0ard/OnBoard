@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Input } from "@/components/atoms/Input";
-import { Textarea } from "@/components/atoms/Textarea";
+import { Textarea } from "@/components/atoms/TextArea";
 import { Button } from "@/components/atoms/Button";
 import CalendarModal from "@/components/organisms/CalendarModal";
 import PlanImage from "@/components/atoms/PlanImage";

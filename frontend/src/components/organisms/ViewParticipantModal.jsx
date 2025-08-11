@@ -25,7 +25,7 @@ const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm }) => 
     denyRequest,
     clearParticipants,
     delegateCreatorRole,
-    kickUser
+    kickUser,
   } = useParticipantStore();
 
   const { userId: currentUserId } = useAuthStore();
@@ -109,6 +109,13 @@ const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm }) => 
     );
   };
 
+
+  const handleKick = (targetUserId, name) => {
+    console.log('Kicking:', { planId, targetUserId }); // 디버깅용 로그
+    if (window.confirm(`${name}님을 강퇴하시겠습니까?`)) {
+      kickUser(planId, targetUserId);
+    }
+  };
 
   const combinedParticipants = [
     ...(creator ? [{ ...creator, status: 'CREATOR' }] : []),

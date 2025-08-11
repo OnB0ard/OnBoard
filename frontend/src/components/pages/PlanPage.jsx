@@ -14,7 +14,7 @@ import { useParticipantStore } from '../../store/usePlanUserStore';
 import { useStompPlaceBlock } from '../../hooks/useStompPlaceBlock';
 
 
-const apiKey = 'AIzaSyBALfPLn3-5jL1DwbRz6FJRIRAp-X_ko-k';
+const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const fallbackCenter = { lat: 37.5665, lng: 126.9780 };
 
@@ -123,6 +123,7 @@ const PlanPage = () => {
     markerType,
     panToPlace,
     lastMapPosition,
+    mapInstance,
   } = useMapCoreStore();
   const {
     dayMarkers,
@@ -272,6 +273,39 @@ const PlanPage = () => {
       setMapCenter(lastMapPosition);
     }
   }, [lastMapPosition]);
+
+  // 일차 마커 표시 시 지도 자동 줌/이동 (마커들이 한 화면에 보이도록)
+  useEffect(() => {
+    if (!mapInstance) return;
+    if (!showDayMarkers || !dayMarkers || dayMarkers.length === 0) return;
+
+    // LatLngBounds로 마커 범위 계산
+    const bounds = new window.google.maps.LatLngBounds();
+    dayMarkers.forEach((m) => {
+      // m.position은 { lat, lng }
+      if (m?.position?.lat != null && m?.position?.lng != null) {
+        bounds.extend(m.position);
+      }
+    });
+
+    // 마커 1개일 때는 적절한 줌으로 센터 고정
+    const validCount = dayMarkers.filter((m) => m?.position?.lat != null && m?.position?.lng != null).length;
+    if (validCount === 1) {
+      const single = dayMarkers.find((m) => m?.position?.lat != null && m?.position?.lng != null);
+      mapInstance.setCenter(single.position);
+      mapInstance.setZoom(17); // 더 타이트하게
+      return;
+    }
+
+    // 여러 개면 fitBounds로 한눈에 보이도록, 사이드바/상단 여백 고려 패딩
+    try {
+      // 더 타이트한 패딩으로 최대한 확대
+      mapInstance.fitBounds(bounds, 40);
+    } catch (e) {
+      // bounds가 비정상적이거나 오류가 나도 앱이 죽지 않도록 방어
+      console.warn('fitBounds failed:', e);
+    }
+  }, [mapInstance, showDayMarkers, dayMarkers]);
 
   // =================== Handlers ===================
   const handleRequestPermission = async () => {

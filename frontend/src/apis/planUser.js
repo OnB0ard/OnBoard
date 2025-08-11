@@ -131,7 +131,6 @@ export const getMyRole = async (planId, userId) => {
   }
 }; 
 
-
 /**
  * 강퇴 시키기
  * @param {number} userId - 사용자 ID

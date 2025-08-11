@@ -1,5 +1,16 @@
-// useBoardStore.js
 import { create } from 'zustand';
+
+// lint-safe hasOwnProperty
+const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+//  null이 아닌 키만 머지
+const mergeNonNull = (target, patch) =>
+  Object.fromEntries(
+    Object.entries({ ...target, ...patch }).map(([k, v]) => [
+      k,
+      (has(patch, k) && patch[k] === null) ? target[k] : v
+    ])
+  );
 
 export const useBoardStore = create((set, get) => ({
   shapes: [],
@@ -114,14 +125,6 @@ export const useBoardStore = create((set, get) => ({
     get().saveHistory(updated, get().lines);
   },
 
-  // 위치 및 transform 속성 업데이트
-  updateShapeTransform: (id, attrs) => {
-    const updated = get().shapes.map((s) =>
-      s.id === id ? { ...s, ...attrs } : s
-    );
-    get().saveHistory(updated, get().lines);
-  },
-
   // Pen 라인 추가
   addLine: (line) => {
     const updated = [...get().lines, line];
@@ -162,6 +165,61 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  addShapeFromSocket: (shape) => {
+  const updated = [...get().shapes, shape];
+  set({ shapes: updated }); // 서버에서 받은 건 히스토리 저장 X
+  },
+
+  // 드래그 중 임시 위치 반영 (히스토리 저장 X)
+  updateShapePositionTemp: (id, x, y) => {
+    const updated = get().shapes.map((s) =>
+      s.id === id ? { ...s, x, y } : s
+    );
+    set({ shapes: updated }); // 히스토리 저장 없음
+  },
+
+  // 위치/트랜스폼 최종 저장 (히스토리 저장 O)
+  updateShapeTransform: (id, attrs) => {
+    const updated = get().shapes.map((s) =>
+      s.id === id ? { ...s, ...attrs } : s
+    );
+    get().saveHistory(updated, get().lines);
+  },
+
+  // 부분 업데이트 임시반영: 히스토리 저장 X (실시간 미리보기용)
+  updateShapeFieldsTemp: (id, fields) => {
+    const updated = get().shapes.map(s => {
+      if (s.id !== id) return s;
+      const next = { ...s };
+      const keys = ['type','x','y','points','scaleX','scaleY','rotation','text','stroke','width','height','radius','fill'];
+      for (const key of keys) {
+        if (has(fields, key) && fields[key] !== null) next[key] = fields[key];
+      }
+      return next;
+    });
+    set({ shapes: updated }); // 히스토리 저장 안 함
+  },
+
+  // 부분 업데이트 커밋: 히스토리 저장 O
+  updateShapeFieldsCommit: (id, fields) => {
+    const updated = get().shapes.map(s => {
+      if (s.id !== id) return s;
+      const merged = {};
+      const keys = ['type','x','y','points','scaleX','scaleY','rotation','text','stroke','width','height','radius','fill'];
+      for (const key of keys) {
+        if (has(fields, key)) merged[key] = (fields[key] === null) ? s[key] : fields[key];
+      }
+      return { ...s, ...merged };
+    });
+    get().saveHistory(updated, get().lines);
+  },
+
+  // 소켓 수신 커밋(히스토리 저장 O)
+  updateShapeFromSocketCommit: (id, fields) => {
+    const updated = get().shapes.map(s => (s.id === id ? mergeNonNull(s, fields) : s));
+    get().saveHistory(updated, get().lines);
+  },
+
   setShapeType: (type) => set(() => {
     console.log('Tool Selected:', type);
     return { shapeType: type };
@@ -170,3 +228,4 @@ export const useBoardStore = create((set, get) => ({
   setSelectedId: (id) => set(() => ({ selectedId: id })),
   setIsEditingTextId: (id) => set(() => ({ isEditingTextId: id }))
 }));
+

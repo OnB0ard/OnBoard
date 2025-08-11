@@ -16,7 +16,7 @@ public class BookmarkController {
     private final BookmarkService bookmarkService;
 
     @GetMapping("")
-    public CommonResponse<BookmarkListResponseDTO> showBookmark(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(bookmarkService.showBookmark(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
+    public CommonResponse<BookmarkListResponseDTO> getBookmarkList(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(bookmarkService.getBookmarkList(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
 }

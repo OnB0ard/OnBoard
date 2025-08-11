@@ -3,6 +3,6 @@ package com.ssafy.backend.plan.dto.request;
 import lombok.Getter;
 
 @Getter
-public class AcceptOrDenyUserRequestDTO {
+public class UserIdRequestDTO {
     private Long userId;
 }

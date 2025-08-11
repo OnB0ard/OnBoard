@@ -2,6 +2,8 @@ package com.ssafy.backend.plan.entity;
 
 import com.ssafy.backend.place.entity.Place;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Table(name = "bookmark")
 @Data
+@Builder
+@AllArgsConstructor
 public class Bookmark {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

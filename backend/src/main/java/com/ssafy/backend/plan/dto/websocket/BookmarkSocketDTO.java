@@ -1,6 +1,6 @@
 package com.ssafy.backend.plan.dto.websocket;
 
-import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
+import com.ssafy.backend.plan.dto.request.CreateBookmarkRequestDTO;
 import lombok.*;
 
 @Getter
@@ -27,8 +27,8 @@ public class BookmarkSocketDTO {
     private String siteUrl;
     private String category;
 
-    public CreatePlaceRequestDTO toCreatePlaceRequestDTO() {
-        return CreatePlaceRequestDTO.builder()
+    public CreateBookmarkRequestDTO toCreateBookmarkRequestDTO() {
+        return CreateBookmarkRequestDTO.builder()
                 .googlePlaceId(googlePlaceId)
                 .placeName(placeName)
                 .latitude(latitude)

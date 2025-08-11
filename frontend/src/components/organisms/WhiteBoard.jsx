@@ -698,7 +698,7 @@ const WhiteBoard = ({ planId }) => {
               case 'arrow': return <Arrow key={id} {...commonProps} {...rest} />;
               case 'circle': 
                 console.log('[RENDER CIRCLE]', shape);
-                return <Circle key={id} {...commonProps} {...rest} />;
+                return <Circle key={id} {...rest} {...commonProps}/>;
               case 'rect':   return <Rect   key={id} {...commonProps} {...rest} />;
               default:       return null;
             }

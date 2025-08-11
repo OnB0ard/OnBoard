@@ -1,7 +1,8 @@
 package com.ssafy.backend.plan.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
+import com.ssafy.backend.plan.dto.request.CreateBookmarkRequestDTO;
+import com.ssafy.backend.plan.dto.response.CreateBookmarkResponseDTO;
 import com.ssafy.backend.plan.dto.websocket.BookmarkSocketDTO;
 import com.ssafy.backend.plan.service.BookmarkService;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +31,11 @@ public class BookmarkSocketController {
 
         switch (bookmarkSocketDTO.getAction()) {
             case "CREATE":
-                CreatePlaceRequestDTO createPlaceRequestDTO = bookmarkSocketDTO.toCreatePlaceRequestDTO();
-                Long placeId = bookmarkService.createBookmark(planId, createPlaceRequestDTO, userId);
-                bookmarkSocketDTO.setPlaceId(placeId);
-                messagingTemplate.convertAndSend("/topic/bookmark/" + planId, bookmarkSocketDTO);
+                CreateBookmarkRequestDTO createBookmarkRequestDTO = bookmarkSocketDTO.toCreateBookmarkRequestDTO();
+                CreateBookmarkResponseDTO createBookmarkResponseDTO = bookmarkService.createBookmark(planId, createBookmarkRequestDTO, userId);
+                bookmarkSocketDTO.setBookmarkId(createBookmarkResponseDTO.getBookmarkId());
+                bookmarkSocketDTO.setPlaceId(createBookmarkResponseDTO.getPlaceId());
+                messagingTemplate.convertAndSend("/topic/bookmark/" + planId, createBookmarkRequestDTO);
                 break;
 
             case "DELETE":
@@ -49,7 +51,6 @@ public class BookmarkSocketController {
             default:
                 log.warn("지원하지 않는 WebSocket action: {}", bookmarkSocketDTO.getAction());
                 throw new IllegalArgumentException("지원하지 않는 WebSocket action: " + bookmarkSocketDTO.getAction());
-
         }
     }
 }

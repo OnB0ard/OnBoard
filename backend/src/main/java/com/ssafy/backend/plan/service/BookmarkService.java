@@ -1,9 +1,10 @@
 package com.ssafy.backend.plan.service;
 
-import com.ssafy.backend.plan.dto.request.CreatePlaceRequestDTO;
+import com.ssafy.backend.plan.dto.request.CreateBookmarkRequestDTO;
 import com.ssafy.backend.place.entity.Place;
 import com.ssafy.backend.plan.dto.response.BookmarkResponseDTO;
 import com.ssafy.backend.plan.dto.response.BookmarkListResponseDTO;
+import com.ssafy.backend.plan.dto.response.CreateBookmarkResponseDTO;
 import com.ssafy.backend.plan.entity.Bookmark;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Book;
 import java.util.List;
 
 @Service
@@ -33,7 +35,7 @@ public class BookmarkService {
     private final UserPlanRepository userPlanRepository;
 
     @Transactional
-    public Long createBookmark(Long planId, CreatePlaceRequestDTO createPlaceRequestDTO, Long userId) {
+    public CreateBookmarkResponseDTO createBookmark(Long planId, CreateBookmarkRequestDTO createBookmarkRequestDTO, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 
@@ -45,21 +47,21 @@ public class BookmarkService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        Place place = placeRepository.findByGooglePlaceIdForUpdate(createPlaceRequestDTO.getGooglePlaceId())
+        Place place = placeRepository.findByGooglePlaceIdForUpdate(createBookmarkRequestDTO.getGooglePlaceId())
                 .orElseGet(() -> placeRepository.save(
                         Place.builder()
-                                .googlePlaceId(createPlaceRequestDTO.getGooglePlaceId())
-                                .placeName(createPlaceRequestDTO.getPlaceName())
-                                .latitude(createPlaceRequestDTO.getLatitude())
-                                .longitude(createPlaceRequestDTO.getLongitude())
-                                .phoneNumber(createPlaceRequestDTO.getPhoneNumber())
-                                .address(createPlaceRequestDTO.getAddress())
-                                .rating(createPlaceRequestDTO.getRating())
-                                .ratingCount(createPlaceRequestDTO.getRatingCount())
-                                .placeUrl(createPlaceRequestDTO.getPlaceUrl())
-                                .imageUrl(createPlaceRequestDTO.getImageUrl())
-                                .siteUrl(createPlaceRequestDTO.getSiteUrl())
-                                .category(createPlaceRequestDTO.getCategory())
+                                .googlePlaceId(createBookmarkRequestDTO.getGooglePlaceId())
+                                .placeName(createBookmarkRequestDTO.getPlaceName())
+                                .latitude(createBookmarkRequestDTO.getLatitude())
+                                .longitude(createBookmarkRequestDTO.getLongitude())
+                                .phoneNumber(createBookmarkRequestDTO.getPhoneNumber())
+                                .address(createBookmarkRequestDTO.getAddress())
+                                .rating(createBookmarkRequestDTO.getRating())
+                                .ratingCount(createBookmarkRequestDTO.getRatingCount())
+                                .placeUrl(createBookmarkRequestDTO.getPlaceUrl())
+                                .imageUrl(createBookmarkRequestDTO.getImageUrl())
+                                .siteUrl(createBookmarkRequestDTO.getSiteUrl())
+                                .category(createBookmarkRequestDTO.getCategory())
                                 .build()
                 ));
 
@@ -68,12 +70,17 @@ public class BookmarkService {
             throw new BookmarkExistException("이미 북마크 되어있습니다.");
         }
 
-        Bookmark bookmark = new Bookmark();
-        bookmark.setPlan(plan);
-        bookmark.setPlace(place);
+        Bookmark bookmark = Bookmark.builder()
+                .plan(plan)
+                .place(place)
+                .build();
 
         bookmarkRepository.save(bookmark);
-        return place.getPlaceId();
+
+        return CreateBookmarkResponseDTO.builder()
+                .placeId(place.getPlaceId())
+                .bookmarkId(bookmark.getBookmarkId())
+                .build();
     }
 
     public BookmarkListResponseDTO getBookmarkList(Long planId, Long userId) {

@@ -5,7 +5,8 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class CreatePlaceRequestDTO {
+public class CreateBookmarkRequestDTO {
+    private Long bookmarkId;
     private String googlePlaceId;
     private String placeName;
     private Double latitude;

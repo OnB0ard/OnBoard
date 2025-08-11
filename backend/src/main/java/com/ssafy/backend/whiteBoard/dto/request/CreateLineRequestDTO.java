@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 public class CreateLineRequestDTO {
     private Long whiteBoardObjectId;
+    private String action;
     private String type;       // CIRCLE, RECT, PEN, TEXT, ARROW 등
     private Double x;
     private Double y;

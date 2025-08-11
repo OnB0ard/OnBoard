@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BookmarkRepository extends JpaRepository<Bookmark,Long>, BookmarkQueryRepository {
-
+    // createBookmark에서 Bookmark 되어 있는지 체크
     boolean existsByPlanAndPlace(Plan plan, Place place);
 }

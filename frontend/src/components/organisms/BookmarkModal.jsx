@@ -163,8 +163,8 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
         ref={modalRef}
         style={{
           position: 'fixed',
-          left: `${safePosition.x}px`,
-          top: `${safePosition.y}px`,
+          left: `410px`,
+          top: `0`,
           margin: 0
         }}
       >

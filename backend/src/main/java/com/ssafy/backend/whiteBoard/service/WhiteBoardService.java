@@ -214,6 +214,7 @@ public class WhiteBoardService {
         // 화이트보드객체를 지운다음 day_place에 남아있는건 어떻게 되는지
         // -> 화이트보드객체를 지우면 day_place에 있는 것도 지워짐
     }
+    @Transactional
     public Long createLine(Long planId, CreateLineRequestDTO createLineRequestDTO, Long userId) throws JsonProcessingException {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);

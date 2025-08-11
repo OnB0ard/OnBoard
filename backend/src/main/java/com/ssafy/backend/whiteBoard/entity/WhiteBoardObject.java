@@ -55,6 +55,6 @@ public class WhiteBoardObject extends DateEntity {
     @JoinColumn(name = "plan_id")
     private Plan plan;
 
-    @OneToMany(mappedBy = "whiteBoardObject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "whiteBoardObject")
     private List<DayPlace> dayPlaces;
 }

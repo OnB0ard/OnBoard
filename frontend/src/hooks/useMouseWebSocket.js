@@ -19,7 +19,7 @@ const throttle = (fn, wait = 60) => {
   };
 };
 
-export function useMouseStomp({ email, planId, wsUrl, token, throttleMs = 60 }) {
+export function useMouseStomp({ userName, planId, wsUrl, token, throttleMs = 60 }) {
   const [connected, setConnected] = useState(false);
   const [users, setUsers] = useState({});
   const [userOrder, setUserOrder] = useState([]);
@@ -52,14 +52,14 @@ export function useMouseStomp({ email, planId, wsUrl, token, throttleMs = 60 }) 
             setSubCount((n) => n + 1);
             setLastDto(dto);
 
-            if (dto?.email) {
+            if (dto?.userName) {
               setUsers((prev) => {
                 const updated = {
                   ...prev,
-                  [dto.email]: { state: { x: dto.x, y: dto.y } },
+                  [dto.userName]: { state: { x: dto.x, y: dto.y } },
                 };
                 setUserOrder((order) =>
-                  order.includes(dto.email) ? order : [...order, dto.email]
+                  order.includes(dto.userName) ? order : [...order, dto.userName]
                 );
                 return updated;
               });
@@ -71,7 +71,7 @@ export function useMouseStomp({ email, planId, wsUrl, token, throttleMs = 60 }) 
 
         c.publish({
           destination: PUB_DEST,
-          body: JSON.stringify({ email, x: 0, y: 0 }),
+          body: JSON.stringify({ userName, x: 0, y: 0 }),
         });
         setPubCount((n) => n + 1);
       },
@@ -82,7 +82,7 @@ export function useMouseStomp({ email, planId, wsUrl, token, throttleMs = 60 }) 
     });
 
     return c;
-  }, [wsUrl, SUB_TOPIC, PUB_DEST, email, token]);
+  }, [wsUrl, SUB_TOPIC, PUB_DEST, userName, token]);
 
   useEffect(() => {
     stompRef.current = client;
@@ -100,19 +100,19 @@ export function useMouseStomp({ email, planId, wsUrl, token, throttleMs = 60 }) 
     const publishMove = throttle((x, y) => {
       const c = stompRef.current;
       if (!c?.connected) return;
-      c.publish({ destination: PUB_DEST, body: JSON.stringify({ email, x, y }) });
+      c.publish({ destination: PUB_DEST, body: JSON.stringify({ userName, x, y }) });
       setPubCount((n) => n + 1);
     }, throttleMs);
 
     const onMove = (e) => publishMove(e.clientX, e.clientY);
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, [PUB_DEST, email, throttleMs]);
+  }, [PUB_DEST, userName, throttleMs]);
 
   const sendMouse = (x, y) => {
     const c = stompRef.current;
     if (!c?.connected) return false;
-    c.publish({ destination: PUB_DEST, body: JSON.stringify({ email, x, y }) });
+    c.publish({ destination: PUB_DEST, body: JSON.stringify({ userName, x, y }) });
     setPubCount((n) => n + 1);
     return true;
   };

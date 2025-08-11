@@ -44,9 +44,11 @@ const throttle = (fn, wait = 60) => {
 };
 
 // 커서 렌더 (내 커서는 숨김, 입장 순서대로 색상 부여)
-const renderCursors = (users, myUserId, userOrder) =>
+const renderCursors = (users, myUserName, userOrder) =>
   Object.entries(users).map(([userId, user]) => {
-    if (userId === myUserId) return null;
+    // const userName = useAuthStore((s) => s.userName);
+
+    if (userId === myUserName) return null;
     const { x, y } = user?.state || {};
     if (x == null || y == null) return null;
 
@@ -94,7 +96,7 @@ const normalizeDiagrams = (list = []) => {
     // 공통 도형 속성
     const base = {
       id,
-      type,                       // 'circle' | 'rect' | 'arrow' | 'text' ...
+      type,           // 'circle' | 'rect' | 'arrow' | 'text' ...
       x: d.x ?? 0,
       y: d.y ?? 0,
       scaleX: d.scaleX ?? 1,
@@ -165,16 +167,16 @@ const WhiteBoard = ({ planId: planIdProp }) => {
   } = useBoardStore();
 
   //커서
-  const email = useAuthStore((s) => s.email);
+  const userName = useAuthStore((s) => s.userName);
   const accessToken = useAuthStore((s) => s.accessToken);
   // const myEmail = useMemo(() => email || getOrCreateClientId(), [email]);
-  const myEmail = useMemo(() => email , [email]);
+  const myUserName = useMemo(() => userName , [userName]);
 
   // const WS_URL = "http://70.12.247.36:8080/ws";
   const WS_URL = "https://i13a504.p.ssafy.io/ws";
 
   const { connected, users, userOrder, lastDto, pubCount, subCount } = useMouseStomp({
-    email: myEmail,
+    userName: myUserName,
     token: accessToken,
     planId,
     wsUrl: WS_URL,
@@ -781,7 +783,7 @@ const WhiteBoard = ({ planId: planIdProp }) => {
         </Layer>
       </Stage>
 
-      {renderCursors(users, myEmail, userOrder)}
+      {renderCursors(users, myUserName, userOrder)}
     </>
   );
 };

@@ -31,29 +31,33 @@ const SearchBar = React.forwardRef(({
       placeholder: "장소를 검색해보세요."
     },
     listsearch: {
-      container: "flex items-center justify-between w-2/5 max-w-[500px] px-4 py-2 bg-[#E1EAFD] rounded-3xl",
-      placeholder: "Which List?"
+      container: "flex items-center justify-between w-full px-6 py-2 bg-gradient-to-r from-gray-50 via-slate-50 to-zinc-50 rounded-full border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm overflow-hidden",
+      placeholder: "해시태그나 제목을 검색하여 여행 계획을 찾아보세요!"
     }
   };
 
   const currentStyle = typeStyles[type] || typeStyles.listsearch;
 
   return (
-    <div className={currentStyle.container}>
-      <Input
-        ref={ref}
-        size="full"
-        placeholder={placeholder || currentStyle.placeholder}
-        className={baseInputClass}
-        value={value}
-        onChange={onChange}
-        onKeyDown={handleKeyDown}
-      />
-      <Icon 
-        type="search" 
-        onClick={handleIconClick} 
-        className="cursor-pointer hover:opacity-70 transition-opacity"
-      />
+    <div className="planlist-searchbar">
+      <div className="search-container">
+        <div className={currentStyle.container}>
+          <Input
+            ref={ref}
+            size="full"
+            placeholder={placeholder || currentStyle.placeholder}
+            className={baseInputClass}
+            value={value}
+            onChange={onChange}
+            onKeyDown={handleKeyDown}
+          />
+          <Icon 
+            type="search" 
+            onClick={handleIconClick} 
+            className="search-icon cursor-pointer hover:opacity-80 transition-all duration-300 text-gray-600"
+          />
+        </div>
+      </div>
     </div>
   );
 });

@@ -18,3 +18,4 @@ export const deleteUserAccount = async (userId) => {
     throw error;
   }
 };
+

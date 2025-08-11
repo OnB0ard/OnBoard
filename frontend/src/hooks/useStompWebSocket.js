@@ -16,7 +16,7 @@ export const useStompWebSocket = ({
   const onMessageRef = useRef(onMessage);
   const onSubscribedRef = useRef(onSubscribed);
   const planIdRef = useRef(planId);
-  const tokenRef = useRef(accessToken);
+  const tokenRef = useRef(accessToken); 
   const outboxRef = useRef([]);
   const [connected, setConnected] = useState(false);
 

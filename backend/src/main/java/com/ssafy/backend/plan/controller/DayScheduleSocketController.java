@@ -3,12 +3,14 @@ package com.ssafy.backend.plan.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ssafy.backend.plan.dto.request.CreateDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameDayScheduleRequestDTO;
+import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.websocket.DayScheduleSocketDTO;
 import com.ssafy.backend.plan.service.DayScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -23,7 +25,7 @@ public class DayScheduleSocketController {
 
     @MessageMapping("/daySchedule/{planId}")
     public void handleDayScheduleSocket(@DestinationVariable Long planId,
-                                        DayScheduleSocketDTO dayScheduleSocketDTO,
+                                        @Payload DayScheduleSocketDTO dayScheduleSocketDTO,
                                         SimpMessageHeaderAccessor accessor) throws JsonProcessingException {
 
         Long userId = (Long) accessor.getSessionAttributes().get("userId");
@@ -31,8 +33,10 @@ public class DayScheduleSocketController {
         switch (dayScheduleSocketDTO.getAction()) {
             case "CREATE" :
                 CreateDayScheduleRequestDTO createDayScheduleRequestDTO = dayScheduleSocketDTO.toCreateDayScheduleRequestDTO();
-                Long dayScheduleId = dayScheduleService.createDaySchedule(planId, createDayScheduleRequestDTO, userId);
-                dayScheduleSocketDTO.setDayScheduleId(dayScheduleId);
+                CreateDayScheduleResponseDTO createDayScheduleResponseDTO = dayScheduleService.createDaySchedule(planId, createDayScheduleRequestDTO, userId);
+                dayScheduleSocketDTO.setDayScheduleId(createDayScheduleResponseDTO.getDayScheduleId());
+                dayScheduleSocketDTO.setTitle(createDayScheduleResponseDTO.getTitle());
+                dayScheduleSocketDTO.setDayOrder(createDayScheduleResponseDTO.getDayOrder());
                 messagingTemplate.convertAndSend("/topic/daySchedule/" + planId, dayScheduleSocketDTO);
                 break;
 

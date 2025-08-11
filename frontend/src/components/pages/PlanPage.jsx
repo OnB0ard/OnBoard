@@ -166,6 +166,8 @@ const PlanPage = () => {
   // PlaceBlock WebSocket 연결
   const { sendMessage: sendPlaceBlockMessage, connectionStatus: placeBlockConnectionStatus, myUuid } = useStompPlaceBlock({
     planId,
+    accessToken,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
     onMessage: (msg) => {
       const { type, payload, uuid } = msg;
 
@@ -175,6 +177,61 @@ const PlanPage = () => {
       if (uuid === myUuid) return;
 
       switch (type) {
+        case 'CREATE_PLACE': {
+          const { objectInfo, whiteBoardPlace, whiteBoardObjectId } = payload || {};
+          if (!objectInfo || !whiteBoardPlace) {
+            console.warn('CREATE_PLACE payload 누락:', payload);
+            break;
+          }
+          const position = { x: objectInfo.x, y: objectInfo.y };
+          // WhiteBoard 응답을 processedPlace 형태로 매핑
+          const place = {
+            id: whiteBoardObjectId,
+            googlePlaceId: whiteBoardPlace.googlePlaceId,
+            placeName: whiteBoardPlace.placeName,
+            address: whiteBoardPlace.address,
+            latitude: whiteBoardPlace.latitude,
+            longitude: whiteBoardPlace.longitude,
+            googleImg: whiteBoardPlace.imageUrl ? [whiteBoardPlace.imageUrl] : [],
+            rating: whiteBoardPlace.rating,
+            ratingCount: whiteBoardPlace.ratingCount,
+            siteUrl: whiteBoardPlace.siteUrl,
+            placeUrl: whiteBoardPlace.placeUrl,
+            phoneNumber: whiteBoardPlace.phoneNumber,
+            primaryCategory: whiteBoardPlace.category,
+          };
+          console.groupCollapsed('[PlaceBlock][ADD] from WS CREATE_PLACE');
+          console.log('position:', position);
+          console.log('place:', place);
+          console.groupEnd();
+          addPlaceBlock(place, position, planId);
+          break;
+        }
+        case 'MOVE': {
+          const { whiteBoardObjectId, objectInfo } = payload || {};
+          if (!whiteBoardObjectId || !objectInfo) {
+            console.warn('MOVE payload 누락:', payload);
+            break;
+          }
+          const position = { x: objectInfo.x, y: objectInfo.y };
+          console.groupCollapsed('[PlaceBlock][MOVE] from WS');
+          console.log('id:', whiteBoardObjectId, 'position:', position);
+          console.groupEnd();
+          updatePlaceBlockPosition(whiteBoardObjectId, position, planId);
+          break;
+        }
+        case 'DELETE': {
+          const { whiteBoardObjectId } = payload || {};
+          if (!whiteBoardObjectId) {
+            console.warn('DELETE payload 누락:', payload);
+            break;
+          }
+          console.groupCollapsed('[PlaceBlock][DELETE] from WS');
+          console.log('id:', whiteBoardObjectId);
+          console.groupEnd();
+          removePlaceBlock(whiteBoardObjectId, planId);
+          break;
+        }
         case 'PLACEBLOCK_ADDED':
           console.log('PlaceBlock 추가 수신:', payload);
           addPlaceBlock(payload.place, payload.position, planId);
@@ -382,9 +439,14 @@ const PlanPage = () => {
   // PlaceBlock 삭제
   const handleRemove = (id) => {
     removePlaceBlock(id, planId);
-    
-    // WebSocket으로 PlaceBlock 제거 알림
-    sendPlaceBlockMessage('PLACEBLOCK_REMOVED', { id });
+    // WebSocket으로 PlaceBlock 삭제 알림
+    const deletePayload = { whiteBoardObjectId: id };
+    console.groupCollapsed('[PlaceBlock][SEND] DELETE');
+    console.log('planId:', planId, 'payload:', deletePayload);
+    console.groupEnd();
+    sendPlaceBlockMessage('DELETE', deletePayload);
+    // 레거시 호환 전송 (선택):
+    // sendPlaceBlockMessage('PLACEBLOCK_REMOVED', { id });
   };
 
   // 마우스 드래그 시작 (화이트보드 내에서 이동)
@@ -409,10 +471,16 @@ const PlanPage = () => {
         updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY }, planId);
         
         // WebSocket으로 PlaceBlock 이동 알림
-        sendPlaceBlockMessage('PLACEBLOCK_MOVED', {
-          id: draggedBlock.id,
-          position: { x: newX, y: newY }
-        });
+        const movePayload = {
+          whiteBoardObjectId: draggedBlock.id,
+          objectInfo: { x: newX, y: newY }
+        };
+        console.groupCollapsed('[PlaceBlock][SEND] MOVE');
+        console.log('planId:', planId, 'payload:', movePayload);
+        console.groupEnd();
+        sendPlaceBlockMessage('MOVE', movePayload);
+        // 레거시 호환 전송 (선택):
+        // sendPlaceBlockMessage('PLACEBLOCK_MOVED', { id: draggedBlock.id, position: { x: newX, y: newY } });
       }
     };
 

@@ -1,5 +1,3 @@
-// Source: https://github.com/steveruizok/perfect-cursors
-
 import { PerfectCursor } from "perfect-cursors"
 import * as React from "react"
 

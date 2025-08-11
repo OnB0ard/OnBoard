@@ -30,13 +30,24 @@ const EditToolBar = ({ shapeType, setShapeType, color, setColor }) => {
         </button>
       ))}
 
-      <input
-        type="color"
-        value={color}
-        onChange={(e) => setColor(e.target.value)}
-        className="w-6 h-6 rounded-full overflow-hidden border cursor-pointer"
-        title="Choose color"
-      />
+      {/* 색상 선택 */}
+      <div className="flex items-center space-x-1 p-2 rounded-full hover:bg-gray-100">
+        <Icon type="color" />
+        {/* 미리보기 원 + color input 겹치기 */}
+        <div className="relative w-4 h-4">
+          <span
+            className="absolute inset-0 rounded-full border cursor-pointer"
+            style={{ backgroundColor: color }}
+          />
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            title="Choose color"
+          />
+        </div>
+      </div>
     </div>
   );
 };

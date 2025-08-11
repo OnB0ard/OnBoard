@@ -110,7 +110,6 @@ const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm }) => 
   };
 
 
-
   const combinedParticipants = [
     ...(creator ? [{ ...creator, status: 'CREATOR' }] : []),
     ...participants,

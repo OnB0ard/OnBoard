@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { updatePlaceOrder } from '../apis/placeOrderUpdate';
 import { devtools, persist } from 'zustand/middleware';
 
 const useDailyPlanStore = create(

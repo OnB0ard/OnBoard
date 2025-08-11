@@ -6,7 +6,6 @@ import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';
 import { useDayMarkersStore } from '../../store/mapStore';
-import { savePlanSchedule, getPlanSchedule } from '../../apis/planSchedule';
 import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -102,13 +101,34 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             }
             break;
           }
-          case 'CREATE':
-          case 'DELETE':
+          case 'CREATE': {
+            // 서버가 브로드캐스트한 새 일차 생성 반영
+            const { dayScheduleId, title, dayOrder } = payload || {};
+            if (dayScheduleId == null) break;
+            const exists = (dailyPlans || []).some((d) => d.id === dayScheduleId);
+            if (exists) break;
+            const insertIndex = Math.max(0, (typeof dayOrder === 'number' ? dayOrder - 1 : (dailyPlans?.length || 0)));
+            const newDay = { id: dayScheduleId, title: title || `${insertIndex + 1}일차`, places: [] };
+            const before = (dailyPlans || []);
+            const next = [...before.slice(0, insertIndex), newDay, ...before.slice(insertIndex)];
+            setDailyPlans(next);
+            break;
+          }
+          case 'DELETE': {
+            const { dayScheduleId } = payload || {};
+            if (dayScheduleId == null) break;
+            removeDailyPlan(dayScheduleId);
+            break;
+          }
           case 'MOVE':
           case 'UPDATE_SCHEDULE': {
-            // 서버가 권위 소스로 전체 일정을 재조회하여 동기화
-            // 중복/인덱스 계산 문제를 피하기 위해 재로딩 방식 채택
-            try { DailyPlanCreate1.loadPlanSchedule?.(true); } catch (e) { console.warn('reload after ws failed', e); }
+            // 특정 dayScheduleId를 modifiedDayOrder 위치로 이동
+            const { dayScheduleId, modifiedDayOrder } = payload || {};
+            if (dayScheduleId == null || typeof modifiedDayOrder !== 'number') break;
+            const fromIndex = (dailyPlans || []).findIndex((d) => d.id === dayScheduleId);
+            const toIndex = Math.max(0, modifiedDayOrder - 1);
+            if (fromIndex < 0 || fromIndex === toIndex) break;
+            reorderDailyPlans(fromIndex, toIndex);
             break;
           }
           default:
@@ -120,8 +140,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     },
     onSubscribed: () => {
       console.log('[DailyPlanCreate1] daySchedule subscribed');
-      // 구독 직후 서버 상태로 초기 동기화
-      try { DailyPlanCreate1.loadPlanSchedule?.(false); } catch (e) { console.warn('initial load after subscribe failed', e); }
+      // REST 기반 초기 동기화 제거됨
     },
   });
 
@@ -150,167 +169,10 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     } catch (e) {
       console.warn('로컬 캐시 로드 실패:', e);
     }
-    // 2) 서버 일정 불러오기 (새 방에서만)
-    loadPlanSchedule(/*isPlanChange*/ true);
+    // REST 기반 서버 일정 불러오기 제거됨
     lastLoadedPlanIdRef.current = planId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, setPlanId]);
-
-  // 기존 일정 불러오기 함수
-  const loadPlanSchedule = async (isPlanChange = false) => {
-    try {
-      console.log('📅 기존 일정 불러오기 시작:', planId);
-      // 이미 로컬에 일정이 있고 동일 방이라면 로드를 생략하여 플리커/초기화 방지
-      if (!isPlanChange && dailyPlans && dailyPlans.length > 0) {
-        console.log('⏭️ 로컬 일정이 있어 서버 로드를 건너뜀');
-        return;
-      }
-      const scheduleData = await getPlanSchedule(planId);
-      
-    if (scheduleData && Array.isArray(scheduleData.schedules) && scheduleData.schedules.length > 0) {
-        // 백엔드 데이터를 프론트엔드 형식으로 변환
-        const convertedPlans = scheduleData.schedules.map((schedule, index) => ({
-          id: Date.now() + index,
-          title: schedule.title || `${schedule.day}일차`,
-                     places: schedule.places.map((place, placeIndex) => {
-             // 서버에서 받은 장소 데이터 로깅
-             console.log(`🔍 서버에서 받은 장소 ${placeIndex}:`, {
-               name: place.placeName,
-               imageUrl: place.imageUrl,
-               googleImg: place.googleImg,
-               photos: place.photos,
-               originalData: place
-             });
-             
-             // 이미지 URL 처리 - 다양한 소스에서 가져오기
-             let imageUrl = place.imageUrl;
-             
-             // 1. googleImg 배열 확인
-             if (!imageUrl && place.googleImg && Array.isArray(place.googleImg) && place.googleImg[0]) {
-               imageUrl = place.googleImg[0];
-               console.log(`📸 googleImg에서 이미지 URL 찾음:`, imageUrl);
-             }
-             
-             // 2. photos 배열 확인
-             if (!imageUrl && place.photos && Array.isArray(place.photos) && place.photos[0]) {
-               const photo = place.photos[0];
-               if (typeof photo.getUrl === 'function') {
-                 try {
-                   imageUrl = photo.getUrl({ maxWidth: 100, maxHeight: 100 });
-                   console.log(`📸 photos.getUrl()에서 이미지 URL 찾음:`, imageUrl);
-                 } catch (error) {
-                   console.warn('Photo getUrl 오류:', error);
-                 }
-               } else if (typeof photo.getURI === 'function') {
-                 try {
-                   imageUrl = photo.getURI();
-                   console.log(`📸 photos.getURI()에서 이미지 URL 찾음:`, imageUrl);
-                 } catch (error) {
-                   console.warn('Photo getURI 오류:', error);
-                 }
-               } else if (typeof photo === 'string') {
-                 imageUrl = photo;
-                 console.log(`📸 photos 문자열에서 이미지 URL 찾음:`, imageUrl);
-               } else if (photo && (photo.url || photo.src || photo.imageUrl)) {
-                 imageUrl = photo.url || photo.src || photo.imageUrl;
-                 console.log(`📸 photos 객체에서 이미지 URL 찾음:`, imageUrl);
-               }
-             }
-             
-             // 3. originalData에서도 확인
-             if (!imageUrl && place.originalData) {
-               const original = place.originalData;
-               if (original.imageUrl) {
-                 imageUrl = original.imageUrl;
-                 console.log(`📸 originalData.imageUrl에서 이미지 URL 찾음:`, imageUrl);
-               } else if (original.googleImg && Array.isArray(original.googleImg) && original.googleImg[0]) {
-                 imageUrl = original.googleImg[0];
-                 console.log(`📸 originalData.googleImg에서 이미지 URL 찾음:`, imageUrl);
-               } else if (original.photos && Array.isArray(original.photos) && original.photos[0]) {
-                 const photo = original.photos[0];
-                 if (typeof photo === 'string') {
-                   imageUrl = photo;
-                   console.log(`📸 originalData.photos 문자열에서 이미지 URL 찾음:`, imageUrl);
-                 } else if (photo && (photo.url || photo.src || photo.imageUrl)) {
-                   imageUrl = photo.url || photo.src || photo.imageUrl;
-                   console.log(`📸 originalData.photos 객체에서 이미지 URL 찾음:`, imageUrl);
-                 }
-               }
-             }
-             
-             console.log(`🎯 최종 이미지 URL:`, imageUrl);
-            
-            return {
-              id: `${place.googlePlaceId}-${Date.now()}-${placeIndex}`,
-              name: place.placeName,
-              address: place.address,
-              latitude: place.latitude,
-              longitude: place.longitude,
-              rating: place.rating,
-              ratingCount: place.ratingCount,
-              imageUrl: imageUrl,
-              phoneNumber: place.phoneNumber,
-              placeUrl: place.placeUrl,
-              siteUrl: place.siteUrl,
-              primaryCategory: place.category,
-              memo: place.memo || '',
-              originalData: place
-            };
-          })
-        }));
-        
-        // 스토어에 일정 설정
-        setDailyPlans(convertedPlans);
-        console.log('✅ 기존 일정 불러오기 완료:', convertedPlans);
-        // 서버 일정 도착 시 캐시 갱신
-        try {
-          localStorage.setItem(`plan-schedules:${planId}`, JSON.stringify(convertedPlans));
-        } catch (e) {
-          console.warn('서버 일정 캐시 저장 실패:', e);
-        }
-    } else if (isPlanChange) {
-      // 방이 바뀐 경우에만 빈 일정으로 초기화
-      // setDailyPlans([]);
-      // console.log('ℹ️ 해당 방에 저장된 일정 없음. 빈 일정으로 초기화');
-    } else {
-      console.log('ℹ️ 서버 일정 없음이지만 동일 방이므로 현재 로컬 상태 유지');
-    }
-    } catch (error) {
-      console.error('❌ 기존 일정 불러오기 실패:', error);
-      // 에러가 발생해도 빈 일정으로 시작
-    }
-  };
-
-  // 일정 자동 저장 함수
-  const autoSavePlanSchedule = async () => {
-    try {
-      if (dailyPlans.length > 0) {
-        console.log('💾 일정 자동 저장 시작');
-        await savePlanSchedule(planId, dailyPlans);
-        console.log('✅ 일정 자동 저장 완료');
-        
-        // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
-        console.groupCollapsed('[WS][disabled] PLAN_SAVED in DailyPlanCreate1');
-        console.log('planId:', planId);
-        console.log('dailyPlans length:', dailyPlans?.length);
-        console.groupEnd();
-      }
-    } catch (error) {
-      console.error('❌ 일정 자동 저장 실패:', error);
-    }
-  };
-
-  // 일정이 변경될 때마다 자동 저장 (디바운스 적용)
-  useEffect(() => {
-    if (!planId || dailyPlans.length === 0) return;
-    
-    const saveTimeout = setTimeout(() => {
-      autoSavePlanSchedule();
-    }, 2000); // 2초 후 저장
-    
-    return () => clearTimeout(saveTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyPlans, planId]);
+  }, [planId, setPlanId])
 
   // 로컬 캐시에 항상 최신 일정 저장 (가벼운 디바운스)
   useEffect(() => {
@@ -483,39 +345,53 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     if (dragDataString) {
       const dragData = JSON.parse(dragDataString);
       console.log('드래그 데이터 (JSON):', dragData);
-      
+
       if (dragData.type === 'day') {
-        // 일차 위치 교환 로직
-        console.log('일차 드롭 감지:', { from: draggedDayIndex, to: dayIndex });
-        if (draggedDayIndex === null || draggedDayIndex === dayIndex) {
-          console.log('일차 드롭 취소: 같은 위치이거나 유효하지 않은 드래그');
-          return;
-        }
-        
-        // 드롭 위치에 따른 인덱스 조정
+        // 드롭 위치 기반 목표 인덱스 산정
         const target = e.currentTarget;
         const dropPosition = target.getAttribute('data-drop-position');
+        // rawTargetIndex: 원본 리스트 기준 삽입될 위치(하단이면 +1)
         let targetIndex = dayIndex;
-        
-        // 하단에 드롭하는 경우 인덱스를 1 증가
-        if (dropPosition === 'bottom') {
-          targetIndex = dayIndex + 1;
+        if (dropPosition === 'bottom') targetIndex = dayIndex + 1;
+
+        // 유효성 체크
+        if (draggedDayIndex === null || draggedDayIndex === undefined) {
+          console.log('일차 드롭 취소: 유효하지 않은 드래그');
+          return;
         }
-        
-        console.log('일차 위치 이동 실행:', { 
-          from: draggedDayIndex, 
-          to: dayIndex, 
-          position: dropPosition,
-          finalIndex: targetIndex 
-        });
-        
-        reorderDailyPlans(draggedDayIndex, targetIndex);
-        
-        // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
-        console.groupCollapsed('[WS][disabled] DAY_REORDERED in DailyPlanCreate1');
-        console.log('fromIndex:', draggedDayIndex, 'toIndex:', targetIndex);
-        console.groupEnd();
-        
+
+        const fromIndex = draggedDayIndex;
+        const maxIndex = Math.max(0, (dailyPlans?.length || 1) - 1);
+        // insertIndex 계산: 소스가 타깃보다 앞이면 제거 후 인덱스가 1 줄어듦
+        let insertIndex = targetIndex - (fromIndex < targetIndex ? 1 : 0);
+        if (insertIndex > maxIndex) insertIndex = maxIndex; // 끝 다음은 끝으로 보정
+        if (insertIndex < 0) insertIndex = 0;
+
+        const toIndex = targetIndex;
+        console.log('일차 드롭 감지:', { from: fromIndex, toRaw: toIndex, finalInsert: insertIndex, position: dropPosition });
+        if (fromIndex === insertIndex) {
+          console.log('일차 드롭 취소: 최종 위치 동일');
+          return;
+        }
+
+        console.log('일차 위치 이동 실행:', { from: fromIndex, toRaw: toIndex, position: dropPosition, finalIndex: insertIndex });
+
+        // 재배치 실행 (로컬)
+        const movedDayId = (dailyPlans || [])[fromIndex]?.id;
+        const prevOrder = (fromIndex ?? 0) + 1;
+        reorderDailyPlans(fromIndex, insertIndex);
+
+        // WS 송신
+        try {
+          if (movedDayId != null) {
+            const finalOrder = (insertIndex ?? 0) + 1;
+            updateSchedule({ dayScheduleId: movedDayId, dayOrder: prevOrder, modifiedDayOrder: finalOrder });
+            console.log('[WS][send] UPDATE_SCHEDULE', { dayScheduleId: movedDayId, dayOrder: prevOrder, modifiedDayOrder: finalOrder });
+          }
+        } catch (e) {
+          console.warn('updateSchedule send failed', e);
+        }
+
         clearDragState();
         return;
       }
@@ -1127,10 +1003,9 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           <Button 
             className="add-day-button" 
             onClick={() => {
-              const newDay = addDailyPlan();
-              // WS 전송 (신규 채널): title과 순서를 함께 전송
+              // 중복 생성 방지: 로컬 즉시 추가 대신 WS 브로드캐스트만 신뢰
               const order = (Array.isArray(dailyPlans) ? dailyPlans.length : 0) + 1;
-              const title = newDay?.title || `Day ${order}`;
+              const title = `Day ${order}`;
               try { createDay({ title, dayOrder: order }); } catch (e) { console.warn('createDay send failed', e); }
             }}
           >

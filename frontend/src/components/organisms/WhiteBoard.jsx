@@ -1,5 +1,5 @@
 // src/components/whiteboard/WhiteBoard.jsx
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { Stage, Layer, Line, Arrow, Circle, Rect, Text, Transformer } from 'react-konva';
 import { useBoardStore } from '../../store/useBoardStore';
 import EditToolBar from './EditToolBar';
@@ -8,6 +8,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useStompWebSocket } from "@/hooks/useStompWebSocket";
 import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
 import { useParams } from "react-router-dom";
+import { useMouseStomp } from "@/hooks/useMouseWebSocket";
+
+//커서 색상(순서)
+const COLORS = ["blue", "purple","yellow", "green","red", "orange" ];
 
 // 렌더링 기본값(화면 표시용; 서버 DTO 기본값과는 분리)
 const RENDER_DEFAULTS = {
@@ -39,14 +43,26 @@ const throttle = (fn, wait = 60) => {
   return throttled;
 };
 
-const renderCursors = (users, myUuid) => {
-  return Object.entries(users).map(([uuid, user]) => {
-    if (uuid === myUuid) return null;
-    const state = user.state;
-    if (!state || state.x == null || state.y == null) return null;
-    return <Cursor key={uuid} userId={uuid} point={[state.x, state.y]} />;
+// 커서 렌더 (내 커서는 숨김, 입장 순서대로 색상 부여)
+const renderCursors = (users, myUserId, userOrder) =>
+  Object.entries(users).map(([userId, user]) => {
+    if (userId === myUserId) return null;
+    const { x, y } = user?.state || {};
+    if (x == null || y == null) return null;
+
+    const colorIndex = userOrder.indexOf(userId);
+    const color = COLORS[colorIndex % COLORS.length] || "gray";
+
+    return (
+      <Cursor
+        key={userId}
+        userId={userId}
+        point={[x, y]}
+        color={color}
+        label={userId} // 이름표로 표시
+      />
+    );
   });
-};
 
 //객체에서 null 또는 undefined 값을 가진 속성을 제거
 const omitNil = (obj) =>
@@ -148,6 +164,23 @@ const WhiteBoard = ({ planId: planIdProp }) => {
     replaceAllFromServer,
   } = useBoardStore();
 
+  //커서
+  const email = useAuthStore((s) => s.email);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  // const myEmail = useMemo(() => email || getOrCreateClientId(), [email]);
+  const myEmail = useMemo(() => email , [email]);
+
+  // const WS_URL = "http://70.12.247.36:8080/ws";
+  const WS_URL = "https://i13a504.p.ssafy.io/ws";
+
+  const { connected, users, userOrder, lastDto, pubCount, subCount } = useMouseStomp({
+    email: myEmail,
+    token: accessToken,
+    planId,
+    wsUrl: WS_URL,
+    throttleMs: 24,
+  });
+
   // 초기 로드: planId로 서버 데이터 가져와 store에 초기화(히스토리 포함)
   useEffect(() => {
     if (!planId) return;
@@ -163,7 +196,7 @@ const WhiteBoard = ({ planId: planIdProp }) => {
   }, [planId, replaceAllFromServer]);
 
   const internalShapeType = shapeType === 'cursor' ? 'select' : shapeType;
-  const accessToken = useAuthStore(s => s.accessToken);
+  // const accessToken = useAuthStore(s => s.accessToken);
 
   // 서버로 보낼 CREATE payload
   const buildCreatePayload = (type, props = {}) => ({
@@ -748,7 +781,7 @@ const WhiteBoard = ({ planId: planIdProp }) => {
         </Layer>
       </Stage>
 
-      {renderCursors(usersMap, myUuid)}
+      {renderCursors(users, myEmail, userOrder)}
     </>
   );
 };

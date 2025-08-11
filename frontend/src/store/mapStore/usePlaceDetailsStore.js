@@ -68,7 +68,7 @@ const usePlaceDetailsStore = create((set, get) => ({
         })) : [],
         primaryCategory: categorized.primaryCategory,
         categories: categorized.categories,
-        googleUrl: searchUrl,
+        placeUrl: searchUrl,
       };
 
       set({
@@ -127,7 +127,7 @@ const usePlaceDetailsStore = create((set, get) => ({
             })) || [],
             primaryCategory: categorized.primaryCategory,
             categories: categorized.categories,
-            googleUrl: searchUrl,
+            placeUrl: searchUrl,
           };
 
           resolve(processedPlace);

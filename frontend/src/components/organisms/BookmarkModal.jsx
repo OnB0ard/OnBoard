@@ -2,54 +2,41 @@ import React, { useRef, useEffect } from 'react';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
-import { useStompBookmark } from '../../hooks/useStompBookmark';
+import useBookmarkWebSocket from '../../hooks/useBookmarkWebSocket';
 import './BookmarkModal.css';
 
 const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 }, planId }) => {
   const modalRef = useRef(null);
-  const { bookmarkedPlaces, toggleBookmark, clearAllBookmarks, setActivePlanId } = useBookmarkStore();
+  const {
+    bookmarkedPlaces,
+    toggleBookmark,
+    clearAllBookmarks,
+    setActivePlanId,
+    setBookmarkWsSenders,
+    clearBookmarkWsSenders,
+    handleBookmarkWsMessage,
+  } = useBookmarkStore();
+
   // 현재 방(planId)에 맞춰 스토어 활성 플랜 설정
   useEffect(() => {
     if (planId) setActivePlanId(planId);
   }, [planId, setActivePlanId]);
   const [isDragging, setIsDragging] = React.useState(false);
 
-  // WebSocket 연결 설정 (북마크 실시간 동기화)
-  const { sendMessage, connectionStatus, myUuid } = useStompBookmark({
+  // WebSocket 연결 설정 (신규 공통 훅)
+  const { sendMessage, sendCreate, sendDelete } = useBookmarkWebSocket({
     planId,
     onMessage: (msg) => {
-      const { type, payload, uuid } = msg;
-
-      console.log('실시간 북마크 업데이트 수신:', msg);
-
-      // 내가 보낸 메시지는 무시 (로컬에 이미 반영됨)
-      if (uuid === myUuid) return;
-
-      switch (type) {
-        case 'BOOKMARK_ADDED':
-          console.log('북마크 추가 수신:', payload.place);
-          toggleBookmark(payload.place, planId);
-          break;
-        case 'BOOKMARK_REMOVED': {
-          console.log('북마크 제거 수신:', payload.placeId);
-          // placeId로 북마크를 찾아서 제거
-          const placeToRemove = bookmarkedPlaces.find(p => (p.googlePlaceId || p.place_id) === payload.placeId);
-          if (placeToRemove) {
-            toggleBookmark(placeToRemove, planId);
-          }
-          break;
-        }
-        case 'BOOKMARK_UPDATED':
-          console.log('북마크 업데이트 수신:', payload.bookmarks);
-          // 전체 북마크 목록 업데이트
-          clearAllBookmarks(planId);
-          payload.bookmarks.forEach(place => toggleBookmark(place, planId));
-          break;
-        default:
-          console.warn('알 수 없는 북마크 메시지 타입:', type);
-      }
-    }
+      // 서버에서 오는 표준 메시지(action: 'CREATE' | 'DELETE' ... )를 스토어 핸들러로 전달
+      handleBookmarkWsMessage(msg);
+    },
   });
+
+  // 스토어에 WS 발신기 연결/해제 (토글 액션에서 사용)
+  useEffect(() => {
+    setBookmarkWsSenders({ sendCreate, sendDelete });
+    return () => clearBookmarkWsSenders();
+  }, [sendCreate, sendDelete, setBookmarkWsSenders, clearBookmarkWsSenders]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -221,16 +208,8 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
-                        // 북마크 토글 및 WebSocket 알림
-                        const isCurrentlyBookmarked = bookmarkedPlaces.some(p => (p.googlePlaceId || p.place_id) === place.place_id);
+                        // 북마크 토글 (스토어가 WS 발신기를 통해 전송 처리)
                         toggleBookmark(place, planId);
-                        
-                        // WebSocket으로 북마크 변경 알림
-                        if (isCurrentlyBookmarked) {
-                          sendMessage('BOOKMARK_REMOVED', { placeId: place.place_id });
-                        } else {
-                          sendMessage('BOOKMARK_ADDED', { place: place });
-                        }
                       }}
                     />
                   </div>

@@ -158,14 +158,17 @@ const usePlaceBlocksStore = create(
                );
                try {
                  console.groupCollapsed('[WS][placeblock][SEND] CREATE_PLACE');
-                 console.log('objectInfo:', objectInfo);
-                 console.log('whiteBoardPlace (cleaned):', cleanedWhiteBoardPlace);
+                 console.log('planId:', currentPlanId, 'objectInfo:', objectInfo, 'whiteBoardPlace (cleaned):', cleanedWhiteBoardPlace);
                  console.groupEnd();
                } catch (_) {
-                 // debug logging failed (e.g., console not available)
-                 // intentionally no-op
+                 // ignore logging errors
                }
-               onWebSocketMessage('CREATE_PLACE', { objectInfo, whiteBoardPlace: cleanedWhiteBoardPlace });
+               onWebSocketMessage('CREATE_PLACE', {
+                 whiteBoardId: Number(currentPlanId),
+                 type: 'PLACE',
+                 objectInfo,
+                 whiteBoardPlace: cleanedWhiteBoardPlace,
+               });
              }
              // 로컬 추가는 서버 에코(CREATE_PLACE 수신)에서 수행
              return placeDetails;

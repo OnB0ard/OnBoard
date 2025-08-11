@@ -52,6 +52,88 @@ const useDailyPlanStore = create(
         };
       }),
 
+    // === WS용 ID 기반 헬퍼/액션 ===
+    // 일차 ID로 dayIndex 찾기
+    findDayIndexById: (dayScheduleId) => {
+      const state = useDailyPlanStore.getState();
+      return (state.dailyPlans || []).findIndex((d) => d.id === dayScheduleId);
+    },
+    // dayPlaceId로 placeIndex 찾기
+    findPlaceIndexByDayPlaceId: (dayIndex, dayPlaceId) => {
+      const state = useDailyPlanStore.getState();
+      const places = state.dailyPlans?.[dayIndex]?.places || [];
+      return places.findIndex((p) => p.id === dayPlaceId);
+    },
+    // 서버 브로드캐스트 기반 삽입 (CREATE)
+    insertPlaceByServer: (dayScheduleId, insertIndex, placeObj) => get()._applyToActivePlans((plans) => {
+      const idx = plans.findIndex((d) => d.id === dayScheduleId);
+      if (idx < 0) return plans;
+      const newPlans = [...plans];
+      const day = newPlans[idx];
+      const places = [...(day.places || [])];
+      const pos = Math.max(0, Math.min(insertIndex, places.length));
+      // 중복 방지: 동일 id가 이미 있으면 무시
+      if (places.some((p) => p.id === placeObj.id)) return plans;
+      places.splice(pos, 0, placeObj);
+      newPlans[idx] = { ...day, places };
+      return newPlans;
+    }),
+    // 메모 갱신 (RENAME)
+    updatePlaceMemoById: (dayScheduleId, dayPlaceId, memo) => get()._applyToActivePlans((plans) => {
+      const idx = plans.findIndex((d) => d.id === dayScheduleId);
+      if (idx < 0) return plans;
+      const newPlans = [...plans];
+      const day = newPlans[idx];
+      const places = (day.places || []).map((p) => (p.id === dayPlaceId ? { ...p, memo } : p));
+      newPlans[idx] = { ...day, places };
+      return newPlans;
+    }),
+    // 같은 일차 내 재정렬 (UPDATE_INNER)
+    reorderPlacesById: (dayScheduleId, dayPlaceId, toIndex) => get()._applyToActivePlans((plans) => {
+      const dIdx = plans.findIndex((d) => d.id === dayScheduleId);
+      if (dIdx < 0) return plans;
+      const newPlans = [...plans];
+      const day = newPlans[dIdx];
+      const places = [...(day.places || [])];
+      const fromIndex = places.findIndex((p) => p.id === dayPlaceId);
+      if (fromIndex < 0) return plans;
+      let insertIndex = Math.max(0, Math.min(toIndex, places.length - 1));
+      const [moved] = places.splice(fromIndex, 1);
+      if (fromIndex < insertIndex) insertIndex -= 1;
+      places.splice(insertIndex, 0, moved);
+      newPlans[dIdx] = { ...day, places };
+      return newPlans;
+    }),
+    // 다른 일차로 이동 (UPDATE_OUTER)
+    movePlaceAcrossDaysById: (dayPlaceId, fromDayScheduleId, toDayScheduleId, toIndex) => get()._applyToActivePlans((plans) => {
+      const fromIdx = plans.findIndex((d) => d.id === fromDayScheduleId);
+      const toIdx = plans.findIndex((d) => d.id === toDayScheduleId);
+      if (fromIdx < 0 || toIdx < 0) return plans;
+      const newPlans = [...plans];
+      const fromDay = newPlans[fromIdx];
+      const toDay = newPlans[toIdx];
+      const fromPlaces = [...(fromDay.places || [])];
+      const toPlaces = [...(toDay.places || [])];
+      const srcIndex = fromPlaces.findIndex((p) => p.id === dayPlaceId);
+      if (srcIndex < 0) return plans;
+      const [moved] = fromPlaces.splice(srcIndex, 1);
+      const insertIndex = Math.max(0, Math.min(toIndex, toPlaces.length));
+      toPlaces.splice(insertIndex, 0, moved);
+      newPlans[fromIdx] = { ...fromDay, places: fromPlaces };
+      newPlans[toIdx] = { ...toDay, places: toPlaces };
+      return newPlans;
+    }),
+    // 삭제 (DELETE)
+    removePlaceById: (dayScheduleId, dayPlaceId) => get()._applyToActivePlans((plans) => {
+      const idx = plans.findIndex((d) => d.id === dayScheduleId);
+      if (idx < 0) return plans;
+      const newPlans = [...plans];
+      const day = newPlans[idx];
+      const places = (day.places || []).filter((p) => p.id !== dayPlaceId);
+      newPlans[idx] = { ...day, places };
+      return newPlans;
+    }),
+
       // === 일차 관련 액션 ===
       setDailyPlans: (plans) => get()._applyToActivePlans(() => plans),
       
@@ -174,32 +256,8 @@ const useDailyPlanStore = create(
         const key = state.activePlanId || state.planId || 'global';
         set({ dailyPlans: newPlans, plansByPlanId: { ...state.plansByPlanId, [key]: newPlans } });
         
-        // API 호출을 위한 데이터 변환
-        try {
-          const nthPlaceList = newPlans.map((day, dayIndex) => ({
-            dayScheduleId: day.id || dayIndex + 1, // dayScheduleId 사용 또는 fallback
-            dayPlaceList: day.places.map((place, placeIndex) => ({
-              dayPlaceId: place.id || place.dayPlaceId, // dayPlaceId 사용
-              indexOrder: placeIndex + 1 // 1부터 시작하는 순서
-            }))
-          }));
-          
-          console.log('📡 API 전송 데이터:', { nthPlaceList });
-          
-          // planId를 얻어와야 함 (상태에서 또는 props로)
-          const planId = state.planId || state.currentPlanId; // planId 가져오기
-          
-          if (planId) {
-            await updatePlaceOrder(planId, { nthPlaceList });
-            console.log('✅ 장소 순서 API 업데이트 성공!');
-          } else {
-            console.warn('⚠️ planId가 없어 API 호출을 건너뛰니다.');
-          }
-        } catch (error) {
-          console.error('❌ 장소 순서 API 업데이트 실패:', error);
-          // API 실패 시 사용자에게 알림 (선택사항)
-          // alert('장소 순서 업데이트에 실패했습니다. 다시 시도해주세요.');
-        }
+        // REST API 호출 제거: 순서 변경은 WS 브로드캐스트를 신뢰함
+        // 필요시 상위 컴포넌트에서 WS 전송을 담당
       },
 
       // === 기본 액션 ===

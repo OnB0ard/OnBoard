@@ -7,6 +7,8 @@ import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';
 import { useDayMarkersStore } from '../../store/mapStore';
 import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
+import { useStompDayPlace } from '@/hooks/useStompDayPlace';
+import { getPlaceDetail } from '@/apis/placeDetail';
 import { useAuthStore } from '@/store/useAuthStore';
 
 import './DailyPlanCreate1.css';
@@ -52,6 +54,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     updatePlaceMemo,
     reorderPlaces,
     swapPlaces,
+    // WS place actions (ID 기반)
+    insertPlaceByServer,
+    updatePlaceMemoById,
+    reorderPlacesById,
+    movePlaceAcrossDaysById,
+    removePlaceById,
+    findDayIndexById,
     setDayDragState,
     setPlaceDragState,
     setDragOverIndex,
@@ -141,6 +150,86 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     onSubscribed: () => {
       console.log('[DailyPlanCreate1] daySchedule subscribed');
       // REST 기반 초기 동기화 제거됨
+    },
+  });
+
+  // DayPlace 전용 WebSocket (신규)
+  const {
+    connected: placeWsConnected,
+    createPlace,
+    renameMemo,
+    updateInner,
+    updateOuter,
+    deletePlace,
+  } = useStompDayPlace({
+    planId,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
+    accessToken,
+    onMessage: async (msg) => {
+      try {
+        const { action, ...payload } = msg || {};
+        console.log('[DayPlace][recv]', action, payload);
+        switch (action) {
+          case 'CREATE': {
+            const { dayScheduleId, dayPlaceId, placeId, indexOrder } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null || placeId == null) break;
+            // 1-based -> 0-based
+            const insertIndex = Math.max(0, (indexOrder || 1) - 1);
+            // 상세 조회 후 삽입
+            try {
+              const detail = await getPlaceDetail(placeId);
+              const placeObj = {
+                id: dayPlaceId,
+                name: detail.placeName,
+                address: detail.address,
+                rating: detail.rating,
+                ratingCount: detail.ratingCount,
+                imageUrl: detail.imageUrl,
+                latitude: detail.latitude,
+                longitude: detail.longitude,
+                primaryCategory: detail.category,
+                originalData: detail,
+                placeId, // 원본 placeId 보관
+                memo: payload.memo || '',
+              };
+              insertPlaceByServer(dayScheduleId, insertIndex, placeObj);
+            } catch (e) {
+              console.error('[DayPlace][CREATE] place detail fetch failed', e);
+            }
+            break;
+          }
+          case 'RENAME': {
+            const { dayScheduleId, dayPlaceId, memo } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null) break;
+            updatePlaceMemoById(dayScheduleId, dayPlaceId, memo || '');
+            break;
+          }
+          case 'UPDATE_INNER': {
+            const { dayScheduleId, dayPlaceId, modifiedIndexOrder } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null || modifiedIndexOrder == null) break;
+            const toIndex = Math.max(0, modifiedIndexOrder - 1);
+            reorderPlacesById(dayScheduleId, dayPlaceId, toIndex);
+            break;
+          }
+          case 'UPDATE_OUTER': {
+            const { dayScheduleId, dayPlaceId, modifiedDayScheduleId, modifiedIndexOrder } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null || modifiedDayScheduleId == null || modifiedIndexOrder == null) break;
+            const toIndex = Math.max(0, modifiedIndexOrder - 1);
+            movePlaceAcrossDaysById(dayPlaceId, dayScheduleId, modifiedDayScheduleId, toIndex);
+            break;
+          }
+          case 'DELETE': {
+            const { dayScheduleId, dayPlaceId } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null) break;
+            removePlaceById(dayScheduleId, dayPlaceId);
+            break;
+          }
+          default:
+            break;
+        }
+      } catch (e) {
+        console.error('[DayPlace][recv] error:', e);
+      }
     },
   });
 
@@ -620,21 +709,18 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         position: dropPosition
       });
       
-      // 지정된 위치에 장소 추가
-      addPlaceToDay(targetDayIndex, dragData.place, insertIndex);
-      
-      // WebSocket으로 장소 추가 알림
-      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
-      console.groupCollapsed('[WS][disabled] PLACE_ADDED in DailyPlanCreate1');
-      console.log('dayIndex:', targetDayIndex, 'place:', dragData.place, 'insertIndex:', insertIndex);
-      console.groupEnd();
+      const dayScheduleId = dailyPlans[targetDayIndex]?.id;
+      if (dayScheduleId != null) {
+        const placeId = dragData.place.id || dragData.place.placeId || dragData.place.googlePlaceId;
+        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
+      }
       
       // 북마크 모달은 열어둠 (연속 추가를 위해)
       
       return;
     }
     
-    // 2. 페이지 PlaceBlock 처리
+    // 2. 페이지 PlaceBlock 처리 (WS 전송)
     if (dragData.type === 'page-place' && dragData.place) {
       console.log('🏢 페이지 PlaceBlock 드롭 처리');
       
@@ -663,19 +749,16 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         originalData: placeData
       };
       
-      // 지정된 위치에 장소 추가
-      addPlaceToDay(targetDayIndex, normalizedPlace, insertIndex);
-      
-      // WebSocket으로 장소 추가 알림
-      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
-      console.groupCollapsed('[WS][disabled] PLACE_ADDED in DailyPlanCreate1');
-      console.log('dayIndex:', targetDayIndex, 'place:', normalizedPlace, 'insertIndex:', insertIndex);
-      console.groupEnd();
+      const dayScheduleId = dailyPlans[targetDayIndex]?.id;
+      if (dayScheduleId != null) {
+        const placeId = normalizedPlace.id || normalizedPlace.placeId || normalizedPlace.googlePlaceId;
+        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e3) { console.warn('createPlace send failed', e3); }
+      }
       
       return;
     }
 
-    // 기존 장소 드래그 처리
+    // 기존 장소 드래그 처리 (WS 전송)
     if (dragData.type !== 'place') {
       console.log('❌ 지원되지 않는 드래그 타입 - 종료');
       return;
@@ -699,24 +782,16 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       return;
     }
 
-    console.log('🔄 장소 위치 이동 실행 시작!');
-    
-    try {
-      reorderPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, finalTargetPlaceIndex);
-      
-      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
-      console.groupCollapsed('[WS][disabled] PLACE_MOVED in DailyPlanCreate1');
-      console.log({
-        fromDayIndex: sourceDayIndex,
-        fromPlaceIndex: sourcePlaceIndex,
-        toDayIndex: targetDayIndex,
-        toPlaceIndex: finalTargetPlaceIndex
-      });
-      console.groupEnd();
-      
-      console.log('✅ 장소 이동 성공!');
-    } catch (error) {
-      console.error('❌ 장소 이동 오류:', error);
+    console.log('🔄 장소 위치 이동 실행 (WS)');
+    const fromDayId = dailyPlans[sourceDayIndex]?.id;
+    const toDayId = dailyPlans[targetDayIndex]?.id;
+    const dayPlaceId = dailyPlans[sourceDayIndex]?.places?.[sourcePlaceIndex]?.id;
+    if (fromDayId == null || toDayId == null || dayPlaceId == null) {
+      console.warn('skip move: missing ids');
+    } else if (fromDayId === toDayId) {
+      try { updateInner({ dayScheduleId: fromDayId, dayPlaceId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: finalTargetPlaceIndex + 1 }); } catch (e4) { console.warn('updateInner send failed', e4); }
+    } else {
+      try { updateOuter({ dayScheduleId: fromDayId, dayPlaceId, modifiedDayScheduleId: toDayId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: finalTargetPlaceIndex + 1 }); } catch (e5) { console.warn('updateOuter send failed', e5); }
     }
 
     handlePlaceDragEnd(e);
@@ -769,7 +844,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   const addPlaceFromBookmark = (place, insertIndex = -1) => {
     console.log('📝 addPlaceFromBookmark 호출:', { selectedDayIndex, placeName: place.name, insertIndex });
     if (selectedDayIndex === null) return;
-    addPlaceToDay(selectedDayIndex, place, insertIndex);
+    const dayScheduleId = dailyPlans[selectedDayIndex]?.id;
+    if (dayScheduleId == null) return;
+    const idx = insertIndex === -1 ? (dailyPlans[selectedDayIndex]?.places?.length || 0) : insertIndex;
+    const indexOrder = idx + 1; // 1-based
+    // place.id 는 원본 placeId 이어야 함
+    try { createPlace({ dayScheduleId, placeId: place.id || place.placeId || place.googlePlaceId, indexOrder }); } catch (e) { console.warn('createPlace send failed', e); }
     closeBookmarkModal();
   };
 
@@ -886,13 +966,11 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const dayIndex = dailyPlans.findIndex(day => day.title === dayTitle);
     const placeIndex = dailyPlans[dayIndex]?.places.findIndex(p => p.id === place.id);
     if (dayIndex !== -1 && placeIndex !== -1) {
-      updatePlaceMemo(dayIndex, placeIndex, memo);
-      
-      // [WS disabled] 이 컴포넌트에서는 WebSocket 송신을 하지 않습니다.
-      console.groupCollapsed('[WS][disabled] PLAN_UPDATED (memo) in DailyPlanCreate1');
-      console.log('dayIndex:', dayIndex, 'placeIndex:', placeIndex);
-      console.log('memo:', memo);
-      console.groupEnd();
+      const dayScheduleId = dailyPlans[dayIndex]?.id;
+      const dayPlaceId = dailyPlans[dayIndex]?.places?.[placeIndex]?.id;
+      if (dayScheduleId != null && dayPlaceId != null) {
+        try { renameMemo({ dayScheduleId, dayPlaceId, memo }); } catch (e) { console.warn('renameMemo send failed', e); }
+      }
     }
     closeMemoModal();
   };
@@ -974,12 +1052,17 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             onDayClick={handleDayClick}
             places={day.places || []}
             onRemovePlace={(dayIndex, placeIndex) => {
-              const placeId = dailyPlans[dayIndex].places[placeIndex].id;
-              removePlace(dayIndex, placeIndex);
-              // 실시간 전송 제거됨: DaySchedule 채널에서 필요한 경우 별도 처리
-              console.log('[DailyPlanCreate1] PLACE_REMOVED (ws disabled)', { dayIndex, placeId });
+              const dayScheduleId = dailyPlans[dayIndex]?.id;
+              const dayPlaceId = dailyPlans[dayIndex]?.places?.[placeIndex]?.id;
+              if (dayScheduleId == null || dayPlaceId == null) return;
+              try { deletePlace({ dayScheduleId, dayPlaceId }); } catch (e) { console.warn('deletePlace send failed', e); }
             }}
-            onUpdatePlaceMemo={updatePlaceMemo}
+            onUpdatePlaceMemo={(dayIndex, placeIndex, memo) => {
+              const dayScheduleId = dailyPlans[dayIndex]?.id;
+              const dayPlaceId = dailyPlans[dayIndex]?.places?.[placeIndex]?.id;
+              if (dayScheduleId == null || dayPlaceId == null) return;
+              try { renameMemo({ dayScheduleId, dayPlaceId, memo }); } catch (e) { console.warn('renameMemo send failed', e); }
+            }}
             onOpenMemoModal={handleOpenMemoModal}
             dragState={{
               isDragging,

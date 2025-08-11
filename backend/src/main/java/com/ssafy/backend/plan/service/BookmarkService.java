@@ -33,7 +33,7 @@ public class BookmarkService {
     private final UserPlanRepository userPlanRepository;
 
     @Transactional
-    public boolean addBookmark(Long planId, CreatePlaceRequestDTO createPlaceRequestDTO, Long userId) {
+    public Long createBookmark(Long planId, CreatePlaceRequestDTO createPlaceRequestDTO, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 
@@ -73,7 +73,7 @@ public class BookmarkService {
         bookmark.setPlace(place);
 
         bookmarkRepository.save(bookmark);
-        return true;
+        return place.getPlaceId();
     }
 
     public BookmarkListResponseDTO showBookmark(Long planId, Long userId) {
@@ -108,7 +108,7 @@ public class BookmarkService {
     }
 
     @Transactional
-    public boolean deleteBookmark(Long planId, Long bookmarkId, Long userId) {
+    public void deleteBookmark(Long planId, Long bookmarkId, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
         Bookmark bookmark = validateBookmarkExistence(bookmarkId);
@@ -126,7 +126,6 @@ public class BookmarkService {
         }
 
         bookmarkRepository.delete(bookmark);
-        return true;
     }
 
     private User validateUserExistence(Long userId) {

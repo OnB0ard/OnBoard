@@ -114,14 +114,19 @@ const WhiteBoard = ({ planId }) => {
     accessToken,
     onMessage: (msg) => {
       const { action } = msg || {};
+      console.log(msg);
+     // 라인 확정: (A) action 없음 + points 있음  OR  (B) action === 'MODIFY_LINE'
+      const isLineCommit =
+        ( !action && Array.isArray(msg?.points) ) ||
+        ( action === 'MODIFY_LINE' && Array.isArray(msg?.points) );
 
-      // (라인 확정) 서버가 라인 저장 후 브로드캐스트: action 없음 + points 있음
-      if (!action && Array.isArray(msg?.points)) {
-        // temp 라인 있으면 제거
+      if (isLineCommit) {
+        // 1) 내가 그리고 있던 temp 라인 제거
         if (tempLineIdRef.current) {
           removeShapeById(tempLineIdRef.current);
           tempLineIdRef.current = null;
         }
+        // 2) 서버 id로 확정 라인 추가
         const lineId = msg.whiteBoardObjectId ?? Date.now();
         addLine({
           id: `line-${lineId}`,

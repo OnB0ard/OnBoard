@@ -8,6 +8,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class BookmarkListResponseDTO {
-    private List<BookmarkResponseDTO> bookmarkList;
+public class GetBookmarkListResponseDTO {
+    private List<GetBookmarkResponseDTO> bookmarkList;
 }

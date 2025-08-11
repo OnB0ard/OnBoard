@@ -209,6 +209,9 @@ public class WhiteBoardService {
         if (!whiteBoardObject.getPlan().equals(plan)) {
             throw new WhiteBoardObjectPlanMismatchException("요청한 플랜에 속하지 않는 화이트보드 객체입니다.");
         }
+        // 자식의 FK 끊기 (white_board_object_id → null)
+        whiteBoardRepository.detachFromWhiteBoardObject(whiteBoardObject.getWhiteBoardObjectId());
+        // 부몬 삭제
         whiteBoardRepository.delete(whiteBoardObject);
 
         // 화이트보드객체를 지운다음 day_place에 남아있는건 어떻게 되는지

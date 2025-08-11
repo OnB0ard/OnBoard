@@ -27,8 +27,8 @@ public class DayPlace {
     @JoinColumn(name = "day_schedule_id")
     private DaySchedule daySchedule;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "white_board_object_id")
+    @ManyToOne(fetch = FetchType.LAZY,optional = true)
+    @JoinColumn(name = "white_board_object_id",nullable = true)
     private WhiteBoardObject whiteBoardObject;
 
     @Column(name = "index_order")

@@ -71,32 +71,19 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
                   
                   {/* 오른쪽: 이미지 */}
                   <div className="bookmark-item-image">
-                    {(() => {
-                      const fallback = 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지';
-                      let img = place.imageUrl || (place.googleImg && place.googleImg[0]);
-                      const photo = place.photos && place.photos[0];
-                      if (!img && photo) {
-                        if (typeof photo.getUrl === 'function') {
-                          try { img = photo.getUrl({ maxWidth: 100, maxHeight: 100 }); } catch (_) {}
-                        } else if (typeof photo.getURI === 'function') {
-                          try { img = photo.getURI(); } catch (_) {}
-                        } else if (typeof photo === 'string') {
-                          img = photo;
-                        } else if (photo?.url) {
-                          img = photo.url;
-                        }
+                    <PlaceImage 
+                      imageUrl={
+                        place.imageUrl
+                          || (place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : undefined)
+                          || 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'
                       }
-                      return (
-                        <PlaceImage 
-                          imageUrl={img || fallback}
-                          isBookmarked={true}
-                          onBookmarkClick={(e) => {
-                            e.stopPropagation();
-                            toggleBookmark(place);
-                          }}
-                        />
-                      );
-                    })()}
+                      isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
+                      onBookmarkClick={(e) => {
+                        e.stopPropagation();
+                        // REST 항목은 bookmarkId만 있을 수 있으므로 스토어가 식별자 판단
+                        toggleBookmark(place, planId);
+                      }}
+                    />
                   </div>
                 </div>
               ))}

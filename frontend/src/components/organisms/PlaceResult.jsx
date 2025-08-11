@@ -6,7 +6,7 @@ import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
-const PlaceResult = ({ places, onBookmarkClick, onPlaceClick }) => {
+const PlaceResult = ({ places, onBookmarkClick, onPlaceClick, showBookmarkIcon = true }) => {
   const searchResults = useSearchStore((state) => state.searchResults);
   const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
   const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
@@ -80,6 +80,7 @@ const PlaceResult = ({ places, onBookmarkClick, onPlaceClick }) => {
               <PlaceImage
                 imageUrl={imageUrl}
                 isBookmarked={place.isBookmarked}
+                showBookmark={false}
                 onBookmarkClick={(e) => {
                   e.stopPropagation();
                   onBookmarkClick?.(place);

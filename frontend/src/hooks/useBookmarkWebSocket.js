@@ -152,7 +152,7 @@ export default function useBookmarkWebSocket({ planId, onMessage, headers = {}, 
   }, []);
 
   const sendDelete = useCallback((bookmarkId) => {
-    sendMessage('DELETE', { bookmarkId });
+    sendMessage('DELETE', { bookmarkId : bookmarkId });
   }, [sendMessage]);
 
   return { sendMessage, sendCreate, sendDelete };

@@ -503,11 +503,8 @@ const PlanPage = () => {
         cursor: draggedBlock ? 'grabbing' : 'default'
       }}
     >
-        <SideBar 
-          onDailyPlanModalToggle={handleDailyPlanModalToggle} 
-          planId={planId}
-        />
-        <WhiteBoard />
+        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
+        <WhiteBoard planId = {Number(planId)}/>
         {/* <EditToolBar /> */}
         {isMapVisible && (
           <MapContainer>

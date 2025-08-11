@@ -13,7 +13,7 @@ public class DayPlaceResponseDTO {
     private Long dayPlaceId;
     private Integer indexOrder;
     private String memo;
-    private Long whiteBoardObjectId;
+
     private Long placeId;
     private String googlePlaceId;
     private String placeName;

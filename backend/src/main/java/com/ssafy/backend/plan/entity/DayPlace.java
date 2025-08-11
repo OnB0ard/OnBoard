@@ -1,15 +1,11 @@
 package com.ssafy.backend.plan.entity;
 
-import com.ssafy.backend.user.entity.UserPlan;
-import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
+import com.ssafy.backend.place.entity.Place;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalTime;
-import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -27,9 +23,9 @@ public class DayPlace {
     @JoinColumn(name = "day_schedule_id")
     private DaySchedule daySchedule;
 
-    @ManyToOne(fetch = FetchType.LAZY,optional = true)
-    @JoinColumn(name = "white_board_object_id",nullable = true)
-    private WhiteBoardObject whiteBoardObject;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "place_id")
+    private Place place;
 
     @Column(name = "index_order")
     private Integer indexOrder;

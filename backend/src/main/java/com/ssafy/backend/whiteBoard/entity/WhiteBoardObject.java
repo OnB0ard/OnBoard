@@ -54,7 +54,4 @@ public class WhiteBoardObject extends DateEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plan_id")
     private Plan plan;
-
-    @OneToMany(mappedBy = "whiteBoardObject")
-    private List<DayPlace> dayPlaces;
 }

@@ -89,16 +89,15 @@ public class DayScheduleService {
                                 .dayPlaceId(dp.getDayPlaceId())
                                 .indexOrder(dp.getIndexOrder())
                                 .memo(dp.getMemo())
-                                .whiteBoardObjectId(dp.getWhiteBoardObject().getWhiteBoardObjectId())
-                                .placeId(dp.getWhiteBoardObject().getPlace().getPlaceId())
-                                .googlePlaceId(dp.getWhiteBoardObject().getPlace().getGooglePlaceId())
-                                .placeName(dp.getWhiteBoardObject().getPlace().getPlaceName())
-                                .latitude(dp.getWhiteBoardObject().getPlace().getLatitude())
-                                .longitude(dp.getWhiteBoardObject().getPlace().getLongitude())
-                                .address(dp.getWhiteBoardObject().getPlace().getAddress())
-                                .rating(dp.getWhiteBoardObject().getPlace().getRating())
-                                .ratingCount(dp.getWhiteBoardObject().getPlace().getRatingCount())
-                                .imageUrl(dp.getWhiteBoardObject().getPlace().getImageUrl())
+                                .placeId(dp.getPlace().getPlaceId())
+                                .googlePlaceId(dp.getPlace().getGooglePlaceId())
+                                .placeName(dp.getPlace().getPlaceName())
+                                .latitude(dp.getPlace().getLatitude())
+                                .longitude(dp.getPlace().getLongitude())
+                                .address(dp.getPlace().getAddress())
+                                .rating(dp.getPlace().getRating())
+                                .ratingCount(dp.getPlace().getRatingCount())
+                                .imageUrl(dp.getPlace().getImageUrl())
                                 .build(), Collectors.toList())
                 ));
 
@@ -139,16 +138,15 @@ public class DayScheduleService {
                         .dayPlaceId(dp.getDayPlaceId())
                         .indexOrder(dp.getIndexOrder())
                         .memo(dp.getMemo())
-                        .whiteBoardObjectId(dp.getWhiteBoardObject().getWhiteBoardObjectId())
-                        .placeId(dp.getWhiteBoardObject().getPlace().getPlaceId())
-                        .googlePlaceId(dp.getWhiteBoardObject().getPlace().getGooglePlaceId())
-                        .placeName(dp.getWhiteBoardObject().getPlace().getPlaceName())
-                        .latitude(dp.getWhiteBoardObject().getPlace().getLatitude())
-                        .longitude(dp.getWhiteBoardObject().getPlace().getLongitude())
-                        .address(dp.getWhiteBoardObject().getPlace().getAddress())
-                        .rating(dp.getWhiteBoardObject().getPlace().getRating())
-                        .ratingCount(dp.getWhiteBoardObject().getPlace().getRatingCount())
-                        .imageUrl(dp.getWhiteBoardObject().getPlace().getImageUrl())
+                        .placeId(dp.getPlace().getPlaceId())
+                        .googlePlaceId(dp.getPlace().getGooglePlaceId())
+                        .placeName(dp.getPlace().getPlaceName())
+                        .latitude(dp.getPlace().getLatitude())
+                        .longitude(dp.getPlace().getLongitude())
+                        .address(dp.getPlace().getAddress())
+                        .rating(dp.getPlace().getRating())
+                        .ratingCount(dp.getPlace().getRatingCount())
+                        .imageUrl(dp.getPlace().getImageUrl())
                         .build()
                 )
                 .sorted(Comparator.comparing(DayPlaceResponseDTO::getIndexOrder))
@@ -245,7 +243,7 @@ public class DayScheduleService {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByIdForUpdate(dayScheduleId);
+        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
         if(daySchedule == null) {
             throw new DayScheduleNotExistException("존재하지 않는 일정입니다.");
         }

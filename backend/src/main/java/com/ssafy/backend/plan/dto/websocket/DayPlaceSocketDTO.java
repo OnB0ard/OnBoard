@@ -18,15 +18,16 @@ public class DayPlaceSocketDTO {
 
     private Long dayScheduleId;
     private Long modifiedDayScheduleId;
+    private Long placeId;
+
     private Integer indexOrder;
     private Integer modifiedIndexOrder;
 
-    private Long whiteBoardObjectId;
     private String memo;
 
     public CreateDayPlaceRequestDTO toCreateDayPlaceRequestDTO() {
         return CreateDayPlaceRequestDTO.builder()
-                .whiteBoardObjectId(whiteBoardObjectId)
+                .placeId(placeId)
                 .indexOrder(indexOrder)
                 .build();
     }

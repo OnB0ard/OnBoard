@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 @Builder
 public class CreateDayPlaceRequestDTO {
-    private Long whiteBoardObjectId;
+    private Long placeId;
     private Integer indexOrder;
 }

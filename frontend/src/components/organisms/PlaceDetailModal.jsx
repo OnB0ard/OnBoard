@@ -1,5 +1,6 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { usePlaceDetailsStore, useBookmarkStore } from '../../store/mapStore';
+import useDailyPlanStore from '@/store/useDailyPlanStore';
 import StarRating from '../atoms/StarRating';
 import './PlaceDetailModal.css'; // 이전 CSS 파일을 그대로 사용합니다.
 
@@ -10,7 +11,9 @@ const PlaceDetailModal = () => {
   const placeDetailPosition = usePlaceDetailsStore((state) => state.placeDetailPosition);
   const closePlaceDetailModal = usePlaceDetailsStore((state) => state.closePlaceDetailModal);
   const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
+  const loadBookmarks = useBookmarkStore((state) => state.loadBookmarks);
   const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
+  const planId = useDailyPlanStore((state) => state.planId || state.currentPlanId);
   
   const modalRef = useRef(null);
 
@@ -18,6 +21,13 @@ const PlaceDetailModal = () => {
 
   // 2. 북마크 상태 확인 로직 유지
   const isPlaceBookmarked = isBookmarked(place?.googlePlaceId);
+
+  // 모달이 열릴 때 서버 북마크 동기화 (중복 호출 방지: planId 있을 때만)
+  useEffect(() => {
+    if (isPlaceDetailModalOpen && planId && loadBookmarks) {
+      loadBookmarks(planId);
+    }
+  }, [isPlaceDetailModalOpen, planId, loadBookmarks]);
 
   // 3. useMemo를 사용한 위치 계산 최적화 유지
   const safePositionStyle = useMemo(() => {
@@ -55,7 +65,7 @@ const PlaceDetailModal = () => {
 
   const handleToggleBookmark = () => {
     if (place) {
-      toggleBookmark(place);
+      toggleBookmark(place, planId);
     }
   };
 

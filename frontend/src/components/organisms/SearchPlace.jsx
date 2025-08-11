@@ -5,16 +5,20 @@ import PlaceResult from "./PlaceResult";
 import Bookmark from "./Bookmark";
 import PlaceDetailModal from "./PlaceDetailModal";
 import { useSearchStore, useBookmarkStore, usePlaceDetailsStore } from "../../store/mapStore";
+import useDailyPlanStore from "@/store/useDailyPlanStore";
+import { useParams } from "react-router-dom";
 import "./SearchPlace.css";
 
 const SearchPlace = ({ isOpen, onClose }) => {
   const popupRef = useRef(null);
 
   // Bookmark store functionality
-  const { toggleBookmark, isBookmarked, setActivePlanId } = useBookmarkStore();
-  // 북마크 변경 시 즉시 UI 반영을 위해 목록에도 구독해 리렌더 트리거
-  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
-  
+  const { toggleBookmark, isBookmarked, loadBookmarks } = useBookmarkStore();
+  const planIdFromStore = useDailyPlanStore((state) => state.planId || state.currentPlanId);
+  const params = useParams();
+  const planIdFromParams = params?.planId || params?.id;
+  const effectivePlanId = planIdFromStore || planIdFromParams || new URLSearchParams(window.location.search).get('planId');
+
   // Search store functionality
   const { 
     searchPlacesByQuery,
@@ -139,12 +143,37 @@ const SearchPlace = ({ isOpen, onClose }) => {
               <PlaceResult 
                 places={searchResults.map(place => ({
                   ...place,
-                  isBookmarked: isBookmarked(place.place_id)
+                  isBookmarked: isBookmarked(place.googlePlaceId || place.place_id)
                 }))}
                 onPlaceClick={handlePlaceClick}
-                onBookmarkClick={(place) => {
-                  console.log("북마크 토글:", place);
-                  toggleBookmark(place);
+                onBookmarkClick={async (place) => {
+                  try {
+                    if (!effectivePlanId) {
+                      console.warn('planId가 없어 북마크를 처리할 수 없습니다. 먼저 여행 계획을 선택하세요.');
+                      alert('여행 계획을 먼저 선택해주세요. (planId 없음)');
+                      return;
+                    }
+                    const placeId = place.place_id || place.id || place.googlePlaceId;
+                    if (!placeId) return;
+                    // 세부정보 먼저 가져오기 (모달은 열지 않음)
+                    let processed = await usePlaceDetailsStore.getState().handlePlaceSelection(placeId, false);
+                    // placeConstructor 미초기화 등으로 실패 시 레거시 getDetails로 재시도
+                    if (!processed) {
+                      try {
+                        processed = await usePlaceDetailsStore.getState()._fetchAndProcessPlaceDetails(placeId);
+                      } catch (_) {
+                        processed = null;
+                      }
+                    }
+                    if (!processed) return; // 최종 실패 시 중단
+                    await toggleBookmark(processed, effectivePlanId);
+                    // 필요 시 목록 동기화
+                    if (effectivePlanId && loadBookmarks) {
+                      loadBookmarks(effectivePlanId);
+                    }
+                  } catch (e) {
+                    console.error('검색 결과 북마크 처리 실패:', e);
+                  }
                 }}
                 onDragStart={(e, place) => {
                   console.log("드래그 시작:", place.name);

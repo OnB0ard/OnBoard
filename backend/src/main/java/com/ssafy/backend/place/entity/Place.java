@@ -40,7 +40,7 @@ public class Place extends DateEntity {
     @Column(name = "place_url")
     private String placeUrl;
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", length = 2048)
     private String imageUrl;
 
     @Column(name = "site_url")

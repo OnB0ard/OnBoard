@@ -694,11 +694,20 @@ const WhiteBoard = ({ planId }) => {
               );
             }
 
+            const omitNil = (obj) =>
+            Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null));
+
             switch (type) {
               case 'arrow': return <Arrow key={id} {...commonProps} {...rest} />;
-              case 'circle': 
-                console.log('[RENDER CIRCLE]', shape);
-                return <Circle key={id} {...rest} {...commonProps}/>;
+              case 'circle': {
+                // rest에서 null/undefined 제거
+                const clean = omitNil(rest);
+                // 혹시라도 남아있다면 방어적으로 width/height 제거
+                delete clean.width;
+                delete clean.height;
+
+                // 기본값은 뒤에서 덮어쓰기 (stroke, fill 등)
+                return <Circle key={id} {...clean} {...commonProps} />;}
               case 'rect':   return <Rect   key={id} {...commonProps} {...rest} />;
               default:       return null;
             }

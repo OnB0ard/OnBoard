@@ -2,7 +2,7 @@ package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
-import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
+import com.ssafy.backend.plan.dto.request.UserIdRequestDTO;
 import com.ssafy.backend.plan.dto.response.PlanParticipantUserListResponseDTO;
 import com.ssafy.backend.plan.dto.response.UserInformationResponseDTO;
 import com.ssafy.backend.plan.service.PlanParticipantService;
@@ -25,13 +25,13 @@ public class PlanParticipantController {
     }
 
     @PostMapping("/{planId}/approve")
-    public CommonResponse<SuccessResponseDTO> approveRequest(@PathVariable("planId") Long planId, @RequestBody AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.approveRequest(planId, acceptOrDenyUserRequestDTO, jwtUserInfo)), HttpStatus.OK);
+    public CommonResponse<SuccessResponseDTO> approveRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.approveRequest(planId, userIdRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
 
     @PostMapping("/{planId}/deny")
-    public CommonResponse<SuccessResponseDTO> denyRequest(@PathVariable("planId") Long planId, @RequestBody AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.denyRequest(planId, acceptOrDenyUserRequestDTO, jwtUserInfo)), HttpStatus.OK);
+    public CommonResponse<SuccessResponseDTO> denyRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.denyRequest(planId, userIdRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
 
     @GetMapping("/{planId}/userList")
@@ -40,8 +40,8 @@ public class PlanParticipantController {
     }
 
     @PostMapping("/{planId}/delegate")
-    public CommonResponse<SuccessResponseDTO> delegateRequest(@PathVariable("planId") Long planId, @RequestBody AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.delegateRequest(planId, acceptOrDenyUserRequestDTO, jwtUserInfo)), HttpStatus.OK);
+    public CommonResponse<SuccessResponseDTO> delegateRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.delegateRequest(planId, userIdRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
 
     @GetMapping("/{planId}/userStatus")
@@ -50,8 +50,8 @@ public class PlanParticipantController {
     }
 
     @PostMapping("/{planId}/resign")
-    public CommonResponse<SuccessResponseDTO> resignRequest(@PathVariable("planId") Long planId, @RequestBody AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.resignRequest(planId, acceptOrDenyUserRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
+    public CommonResponse<SuccessResponseDTO> resignRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.resignRequest(planId, userIdRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
     }
 
 }

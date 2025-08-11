@@ -1,6 +1,7 @@
 // 이 파일은 백엔드 측에서 참여자 목록 데이터 받아와서 적용시킬 수 있는 파일
 
 import { useRef, useEffect } from "react";
+
 import { createPortal } from "react-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
 import { Check, X } from "lucide-react";
@@ -14,7 +15,9 @@ import "./ViewParticipantModal.css";
 // myName: 현재 로그인한 사용자 이름
 // hostName: 방장 닉네임(카드 기준)
 // onRequestConfirm: 상위에서 확인 모달을 띄우기 위한 콜백
-const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm }) => {
+// hideManageActions: 방장 위임/강퇴 버튼 숨김 여부 (마이페이지 카드에서 사용)
+const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm, hideManageActions = false }) => {
+
   const modalRef = useRef(null);
   const {
     creator,
@@ -167,7 +170,7 @@ const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm }) => 
                 </button>
               </>
             )} 
-            {isCreator && p.status !== 'CREATOR' && p.userStatus === 'APPROVED' && (
+            {isCreator && p.status !== 'CREATOR' && p.userStatus === 'APPROVED' && !hideManageActions && (
               <>
               <button
                 className="ml-1 p-1 rounded-full hover:bg-red-200 text-red-500 transition"

@@ -311,6 +311,7 @@ const MyPage = () => {
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
                               hideDropdown={true}
+                              hideManageActions={true}
                             />
                           </div>
                         ))}
@@ -377,6 +378,7 @@ const MyPage = () => {
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
                               hideDropdown={true}
+                              hideManageActions={true}
                             />
                           </div>
                         ))}

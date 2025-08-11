@@ -1,13 +1,55 @@
 import React, { useRef, useEffect } from 'react';
-import useMapStore from '../../store/useMapStore';
+import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
+import { useStompBookmark } from '../../hooks/useStompBookmark';
 import './BookmarkModal.css';
 
-const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 } }) => {
+const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 }, planId }) => {
   const modalRef = useRef(null);
-  const { bookmarkedPlaces } = useMapStore();
+  const { bookmarkedPlaces, toggleBookmark, clearAllBookmarks, setActivePlanId } = useBookmarkStore();
+  // 현재 방(planId)에 맞춰 스토어 활성 플랜 설정
+  useEffect(() => {
+    if (planId) setActivePlanId(planId);
+  }, [planId, setActivePlanId]);
   const [isDragging, setIsDragging] = React.useState(false);
+
+  // WebSocket 연결 설정 (북마크 실시간 동기화)
+  const { sendMessage, connectionStatus, myUuid } = useStompBookmark({
+    planId,
+    onMessage: (msg) => {
+      const { type, payload, uuid } = msg;
+
+      console.log('실시간 북마크 업데이트 수신:', msg);
+
+      // 내가 보낸 메시지는 무시 (로컬에 이미 반영됨)
+      if (uuid === myUuid) return;
+
+      switch (type) {
+        case 'BOOKMARK_ADDED':
+          console.log('북마크 추가 수신:', payload.place);
+          toggleBookmark(payload.place, planId);
+          break;
+        case 'BOOKMARK_REMOVED': {
+          console.log('북마크 제거 수신:', payload.placeId);
+          // placeId로 북마크를 찾아서 제거
+          const placeToRemove = bookmarkedPlaces.find(p => (p.googlePlaceId || p.place_id) === payload.placeId);
+          if (placeToRemove) {
+            toggleBookmark(placeToRemove, planId);
+          }
+          break;
+        }
+        case 'BOOKMARK_UPDATED':
+          console.log('북마크 업데이트 수신:', payload.bookmarks);
+          // 전체 북마크 목록 업데이트
+          clearAllBookmarks(planId);
+          payload.bookmarks.forEach(place => toggleBookmark(place, planId));
+          break;
+        default:
+          console.warn('알 수 없는 북마크 메시지 타입:', type);
+      }
+    }
+  });
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -127,7 +169,9 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
         }}
       >
         <div className="bookmark-modal-header">
-          <h3>북마크된 장소</h3>
+          <div className="header-content">
+            <h3>북마크된 장소</h3>
+          </div>
           <button 
             onClick={handleCloseBookmarkModal} 
             className="close-button"
@@ -173,11 +217,20 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
                   {/* 오른쪽: 이미지 */}
                   <div className="bookmark-item-image">
                     <PlaceImage 
-                      imageUrl={place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
+                      imageUrl={(place.photos && place.photos[0] && (typeof place.photos[0].getUrl === 'function' ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : (place.photos[0].url || place.photos[0]))) || place.imageUrl || (place.googleImg && place.googleImg[0]) || 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
-                        // 북마크 토글 기능은 여기서는 비활성화
+                        // 북마크 토글 및 WebSocket 알림
+                        const isCurrentlyBookmarked = bookmarkedPlaces.some(p => (p.googlePlaceId || p.place_id) === place.place_id);
+                        toggleBookmark(place, planId);
+                        
+                        // WebSocket으로 북마크 변경 알림
+                        if (isCurrentlyBookmarked) {
+                          sendMessage('BOOKMARK_REMOVED', { placeId: place.place_id });
+                        } else {
+                          sendMessage('BOOKMARK_ADDED', { place: place });
+                        }
                       }}
                     />
                   </div>

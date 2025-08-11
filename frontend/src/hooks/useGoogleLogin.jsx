@@ -41,7 +41,7 @@ export const useGoogleLogin = () => {
               googleEmail: data.googleEmail,
               profileImage: data.profileImage,
               accessToken: data.accessToken,
-              refreshToken: data.refreshToken,
+              // refreshToken: data.refreshToken,
             });
 
             // ✅ apiClient에 토큰 getter 설정

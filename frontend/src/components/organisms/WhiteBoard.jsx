@@ -110,7 +110,6 @@ const WhiteBoard = ({ planId }) => {
     accessToken,
     onMessage: (msg) => {
       // 서버 브로드캐스트는 { action, whiteBoardObjectId, type, x,y,... } 형태
-      console.log('[WS IN]', JSON.stringify(msg, null, 2));
       const { action } = msg || {};
 
       // (예외) MODIFY_LINE 응답은 CreateLineRequestDTO 그대로라 action이 없을 수 있음
@@ -181,6 +180,8 @@ const WhiteBoard = ({ planId }) => {
         }
 
         case 'CREATE': {
+          console.log('[WS IN]', JSON.stringify(msg, null, 2));
+
           // 서버가 생성 완료 후 내려준 도형을 store에 추가
           const id = String(msg.whiteBoardObjectId);
           const type = (msg.type || '').toLowerCase();
@@ -197,6 +198,8 @@ const WhiteBoard = ({ planId }) => {
             points: msg.points ?? null,
             text: type === 'text' ? (msg.text ?? '') : null,
           });
+          console.log('[ADD SHAPE]', { id, type, radius: msg.radius, x: msg.x, y: msg.y });
+
           return;
         }
 
@@ -453,6 +456,7 @@ const WhiteBoard = ({ planId }) => {
         shapeProps = { x: start.x, y: start.y, points: [0, 0, dx, dy] };
         break;
       case 'circle':
+
         shapeProps = {
           x: (start.x + end.x) / 2,
           y: (start.y + end.y) / 2,
@@ -692,7 +696,9 @@ const WhiteBoard = ({ planId }) => {
 
             switch (type) {
               case 'arrow': return <Arrow key={id} {...commonProps} {...rest} />;
-              case 'circle': return <Circle key={id} {...commonProps} {...rest} />;
+              case 'circle': 
+                console.log('[RENDER CIRCLE]', shape);
+                return <Circle key={id} {...commonProps} {...rest} />;
               case 'rect':   return <Rect   key={id} {...commonProps} {...rest} />;
               default:       return null;
             }

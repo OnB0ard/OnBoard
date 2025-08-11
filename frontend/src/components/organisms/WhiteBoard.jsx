@@ -1,32 +1,74 @@
-import React, { useRef, useEffect } from 'react';
+// src/components/whiteboard/WhiteBoard.jsx
+import React, { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Line, Arrow, Circle, Rect, Text, Transformer } from 'react-konva';
-import { Html } from 'react-konva-utils';
 import { useBoardStore } from '../../store/useBoardStore';
 import EditToolBar from './EditToolBar';
+import { Cursor } from "../atoms/Cursor";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useStompWebSocket } from "@/hooks/useStompWebSocket";
 
-const simplifyPoints = (points, tolerance = 3) => {
-  if (points.length <= 4) return points;
-  const simplified = [points[0], points[1]];
-  for (let i = 2; i < points.length - 1; i += 2) {
-    const prevX = simplified[simplified.length - 2];
-    const prevY = simplified[simplified.length - 1];
-    const currX = points[i];
-    const currY = points[i + 1];
-    const dx = currX - prevX;
-    const dy = currY - prevY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > tolerance) simplified.push(currX, currY);
-  }
-  return simplified;
+// 렌더링 기본값(화면 표시용; 서버 DTO 기본값과는 분리)
+const RENDER_DEFAULTS = {
+  stroke: '#222',
+  strokeWidth: 2,
+  fill: null,
+  textColor: '#222',
 };
 
-const WhiteBoard = () => {
+// leading + trailing, 마지막 호출 보장. cancel 지원
+const throttle = (fn, wait = 60) => {
+  let t = null, last = 0, lastArgs = null;
+  const throttled = (...args) => {
+    const now = Date.now();
+    const remain = wait - (now - last);
+    lastArgs = args;
+    if (remain <= 0) {
+      last = now;
+      fn(...args);
+    } else if (!t) {
+      t = setTimeout(() => {
+        last = Date.now();
+        t = null;
+        fn(...lastArgs);
+      }, remain);
+    }
+  };
+  throttled.cancel = () => { if (t) { clearTimeout(t); t = null; } };
+  return throttled;
+};
+
+const renderCursors = (users, myUuid) => {
+  return Object.entries(users).map(([uuid, user]) => {
+    if (uuid === myUuid) return null;
+    const state = user.state;
+    if (!state || state.x == null || state.y == null) return null;
+    return <Cursor key={uuid} userId={uuid} point={[state.x, state.y]} />;
+  });
+};
+
+const omitNil = (obj) =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null));
+
+const WhiteBoard = ({ planId }) => {
   const stageRef = useRef();
+  const layerRef = useRef(null);
   const trRef = useRef();
   const startPosRef = useRef(null);
   const isDrawing = useRef(false);
+
+  // eraser
   const isErasing = useRef(false);
-  const erasedIds = useRef(new Set());
+  const erasedIdsRef = useRef(new Set());
+
+  // temp patches (MOVE 미리보기)
+  const tempShapePatchesRef = useRef({});
+  const rafRef = useRef(null);
+
+  // 현재 그리고 있는 임시 라인 id
+  const tempLineIdRef = useRef(null);
+
+  const [myUuid, setMyUuid] = useState(null);
+  const [usersMap, setUsersMap] = useState({});
 
   const {
     shapes,
@@ -35,55 +77,280 @@ const WhiteBoard = () => {
     isEditingTextId,
     shapeType,
     color,
-    addShape,
-    updateShapeTransform,
-    updateText,
-    printText,
-    setShapeType,
-    setColor,
-    setSelectedId,
-    setIsEditingTextId,
-    addLine,
+    addShapeFromSocket,
     updateLastLinePoints,
     updateLastLinePointsTemp,
-    undo,
-    redo,
+    addLine,
+    updateShapeFieldsCommit,
+    setSelectedId,
+    setShapeType,
+    setColor,
     removeShapeById,
-    updateShapesAndSave,
   } = useBoardStore();
 
   const internalShapeType = shapeType === 'cursor' ? 'select' : shapeType;
+  const accessToken = useAuthStore(s => s.accessToken);
 
+  // 서버로 보낼 CREATE payload
+  const buildCreatePayload = (type, props = {}) => ({
+    type,
+    x: props.x ?? 0,
+    y: props.y ?? 0,
+    scaleX: props.scaleX ?? 1,
+    scaleY: props.scaleY ?? 1,
+    rotation: props.rotation ?? 0,
+    stroke: props.stroke ?? color ?? null,
+    fill: props.fill ?? null,
+    radius: props.radius ?? null,
+    width: props.width ?? null,
+    height: props.height ?? null,
+    points: props.points ?? null,
+    text: type === 'TEXT' ? (props.text ?? 'Double click to edit') : null
+  });
+
+  const { sendMessage } = useStompWebSocket({
+    planId: 71,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
+    accessToken,
+    onMessage: (msg) => {
+      const { action } = msg || {};
+
+      // (라인 확정) 서버가 라인 저장 후 브로드캐스트: action 없음 + points 있음
+      if (!action && Array.isArray(msg?.points)) {
+        // temp 라인 있으면 제거
+        if (tempLineIdRef.current) {
+          removeShapeById(tempLineIdRef.current);
+          tempLineIdRef.current = null;
+        }
+        const lineId = msg.whiteBoardObjectId ?? Date.now();
+        addLine({
+          id: `line-${lineId}`,
+          type: 'pen',
+          points: msg.points || [],
+          stroke: msg.stroke || color,
+          strokeWidth: 3,
+          tension: 0.5,
+          lineCap: 'round',
+          lineJoin: 'round',
+        });
+        return;
+      }
+
+      switch (action) {
+        case 'DELETE': {
+          const rid = String(msg.whiteBoardObjectId);
+          removeShapeById(rid);
+          removeShapeById(`line-${rid}`);
+          return;
+        }
+        case 'MOVE': {
+          if (msg.type === 'PEN' && Array.isArray(msg.points)) {
+            // 현재 정책: 그리는 동안은 로컬 전용이므로 무시
+            return;
+          }
+          const id = String(msg.whiteBoardObjectId || '');
+          if (!id) return;
+          tempShapePatchesRef.current[id] = {
+            ...(tempShapePatchesRef.current[id] || {}),
+            x: msg.x,
+            y: msg.y,
+            scaleX: msg.scaleX,
+            scaleY: msg.scaleY,
+            rotation: msg.rotation,
+            text: msg.text,
+          };
+          return;
+        }
+        case 'MODIFY': {
+          const id = String(msg.whiteBoardObjectId);
+          const type = (msg.type || '').toLowerCase();
+          updateShapeFieldsCommit(id, {
+            type,
+            x: msg.x, y: msg.y,
+            scaleX: msg.scaleX, scaleY: msg.scaleY, rotation: msg.rotation,
+            text: msg.text ?? null,
+            points: msg.points ?? null,
+            stroke: msg.stroke ?? null,
+            fill: msg.fill ?? null,
+            radius: msg.radius ?? null,
+            width: msg.width ?? null,
+            height: msg.height ?? null,
+          });
+          delete tempShapePatchesRef.current[id];
+          return;
+        }
+        case 'CREATE': {
+          const id = String(msg.whiteBoardObjectId);
+          const type = (msg.type || '').toLowerCase();
+
+          // 타입별 안전 정리
+          const base = {
+            id,
+            type,
+            x: msg.x, y: msg.y,
+            scaleX: msg.scaleX ?? 1,
+            scaleY: msg.scaleY ?? 1,
+            rotation: msg.rotation ?? 0,
+            stroke: msg.stroke ?? undefined,
+            fill: msg.fill ?? undefined,
+            text: type === 'text' ? (msg.text ?? '') : undefined,
+          };
+          if (type === 'circle') {
+            base.radius = msg.radius;
+          } else if (type === 'rect' || type === 'arrow') {
+            base.width = msg.width ?? undefined;
+            base.height = msg.height ?? undefined;
+            base.points = Array.isArray(msg.points) ? msg.points : undefined;
+          }
+
+          addShapeFromSocket(omitNil(base));
+          return;
+        }
+        default:
+          return;
+      }
+    },
+  });
+
+  // 송신 스로틀 (MOVE 프레임 전송용) — 펜에선 사용 안 함
+  const throttled = useRef({
+    moveShape: null,
+    updateShape: null,
+  });
+
+  useEffect(() => {
+    throttled.current.moveShape   = throttle((payload) => sendMessage('MOVE', payload), 60);
+    throttled.current.updateShape = throttle((payload) => sendMessage('MOVE', payload), 60);
+    return () => {
+      throttled.current.moveShape?.cancel?.();
+      throttled.current.updateShape?.cancel?.();
+    };
+  }, [sendMessage, planId]);
+
+  // Transformer 선택 유지
   useEffect(() => {
     if (internalShapeType !== 'select') {
       trRef.current?.nodes([]);
       return;
     }
-    const shapeNode = stageRef.current.findOne(`#${selectedId}`);
-    if (trRef.current && shapeNode) {
-      trRef.current.nodes([shapeNode]);
+    const node = stageRef.current?.findOne(`#${selectedId}`);
+    if (trRef.current && node) {
+      trRef.current.nodes([node]);
       trRef.current.getLayer().batchDraw();
     } else {
-      trRef.current.nodes([]);
+      trRef.current?.nodes([]);
     }
   }, [selectedId, isEditingTextId, internalShapeType]);
 
+  // RAF 루프: tempShapePatchesRef를 실제 Konva 노드에 보간 적용
   useEffect(() => {
-    if (shapeType === 'undo') {
-      undo();
-      setShapeType('select');
-    } else if (shapeType === 'redo') {
-      redo();
-      setShapeType('select');
+    const tick = () => {
+      const stage = stageRef.current;
+      const layer = layerRef.current;
+      if (!stage || !layer) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const patches = tempShapePatchesRef.current;
+      const ids = Object.keys(patches);
+      if (ids.length) {
+        ids.forEach((id) => {
+          const patch = patches[id];
+          const node = stage.findOne(`#${id}`);
+          if (!node) return;
+
+          const lerp = (cur, target, a = 0.2) => cur + (target - cur) * a;
+          const attrs = {};
+          if (patch.x != null)        attrs.x        = lerp(node.x(),        patch.x);
+          if (patch.y != null)        attrs.y        = lerp(node.y(),        patch.y);
+          if (patch.scaleX != null)   attrs.scaleX   = lerp(node.scaleX(),   patch.scaleX);
+          if (patch.scaleY != null)   attrs.scaleY   = lerp(node.scaleY(),   patch.scaleY);
+          if (patch.rotation != null) attrs.rotation = lerp(node.rotation(), patch.rotation);
+          if (patch.text != null)     attrs.text     = patch.text;
+
+          node.setAttrs(attrs);
+        });
+
+        layer.batchDraw();
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  // ★ 포인터 위치에서 닿은 노드를 찾아 서버 DELETE + 로컬 제거
+  const eraseAtPointer = (pointer) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const allIds = [
+      ...shapes.map(s => s.id),
+      ...lines.map(l => l.id),
+    ];
+
+    for (const id of allIds) {
+      if (erasedIdsRef.current.has(id)) continue;
+      const node = stage.findOne(`#${id}`);
+      if (!node) continue;
+      const hit = node.intersects(pointer);
+      if (!hit) continue;
+
+      if (typeof id === 'string' && id.startsWith('pen-')) {
+        erasedIdsRef.current.add(id);
+        removeShapeById(id);
+        continue;
+      }
+
+      let serverId = id;
+      if (typeof id === 'string' && id.startsWith('line-')) {
+        const n = id.slice(5);
+        if (/^\d+$/.test(n)) serverId = n;
+        else {
+          erasedIdsRef.current.add(id);
+          removeShapeById(id);
+          continue;
+        }
+      }
+
+      erasedIdsRef.current.add(id);
+      removeShapeById(id);
+      sendMessage('DELETE', { whiteBoardObjectId: serverId });
     }
-  }, [shapeType]);
+  };
 
   const handleMouseDown = (e) => {
-    const pos = stageRef.current.getPointerPosition();
+    const pos = stageRef.current?.getPointerPosition();
+    if (!pos) return;
+
+    if (e.target === stageRef.current) {
+      setSelectedId(null);
+    }
+
+    const drawable = ['arrow', 'circle', 'rect', 'text', 'pen'];
+    if (drawable.includes(internalShapeType)) {
+      startPosRef.current = pos;
+    }
+
+    // ERASER 시작
+    if (internalShapeType === 'eraser') {
+      isErasing.current = true;
+      erasedIdsRef.current.clear();
+      eraseAtPointer(pos);
+      return;
+    }
+
+    // PEN: 로컬 임시 시작(서버 전송 X)
     if (internalShapeType === 'pen') {
       isDrawing.current = true;
+      const tempId = `line-tmp-${Date.now()}`;
+      tempLineIdRef.current = tempId;
+
       const newLine = {
-        id: `line-${Date.now()}`,
+        id: tempId,
         type: 'pen',
         points: [pos.x, pos.y],
         stroke: color,
@@ -93,236 +360,319 @@ const WhiteBoard = () => {
         lineJoin: 'round'
       };
       addLine(newLine);
-      return;
-    }
-
-    if (e.target === stageRef.current) {
-      setSelectedId(null);
-    }
-    startPosRef.current = pos;
-
-    if (internalShapeType === 'eraser') {
-      isErasing.current = true;
     }
   };
 
-  useEffect(() => {
-    const handleWindowMouseMove = (e) => {
-      if (!stageRef.current) return;
-      const stage = stageRef.current;
-      const rect = stage.container().getBoundingClientRect();
-      const pointer = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
+  const handleMouseMove = () => {
+    // ERASER: 이동 중 지속 삭제
+    if (internalShapeType === 'eraser' && isErasing.current) {
+      const pos = stageRef.current?.getPointerPosition();
+      if (pos) eraseAtPointer(pos);
+      return;
+    }
 
-      if (shapeType === 'pen' && isDrawing.current) {
-        const lastLine = lines[lines.length - 1];
-        if (!lastLine) return;
-        const updatedPoints = [...lastLine.points, pointer.x, pointer.y];
-        updateLastLinePointsTemp(updatedPoints);
-      }
+    // PEN: 로컬 임시 라인 업데이트 (서버 전송 없음)
+    if (!isDrawing.current || internalShapeType !== 'pen') return;
+    const pos = stageRef.current?.getPointerPosition();
+    if (!pos) return;
 
-      if (shapeType === 'eraser' && isErasing.current) {
-        const allIds = [...shapes.map(s => s.id), ...lines.map(l => l.id)];
-        allIds.forEach(id => {
-          if (erasedIds.current.has(id)) return;
-          const node = stage.findOne(`#${id}`);
-          if (node && node.intersects(pointer)) {
-            erasedIds.current.add(id);
-            removeShapeById(id);
-          }
+    const currentLines = [...lines];
+    const lastLine = currentLines[currentLines.length - 1];
+    if (!lastLine) return;
+
+    const newPoints = [...lastLine.points, pos.x, pos.y];
+    updateLastLinePointsTemp(newPoints);
+  };
+
+  const handleMouseUp = () => {
+    // ERASER 종료
+    if (internalShapeType === 'eraser') {
+      isErasing.current = false;
+      erasedIdsRef.current.clear();
+      return;
+    }
+
+    // PEN 종료: 서버에만 최종 저장 요청 보내고, 서버 응답 오면 temp 교체
+    if (internalShapeType === 'pen') {
+      isDrawing.current = false;
+      const currentLines = [...lines];
+      const lastLine = currentLines[currentLines.length - 1];
+      if (lastLine) {
+        // 최종 포인트 확정(로컬 history 저장은 굳이 안 해도 됨. 서버 저장본으로 교체될 예정)
+        updateLastLinePoints(lastLine.points);
+
+        // 최종 저장 요청 (서버에서 저장 후 브로드캐스트 → onMessage에서 temp 삭제 + 확정 라인 추가)
+        sendMessage('MODIFY_LINE', {
+          x: lastLine.points[0],
+          y: lastLine.points[1],
+          points: lastLine.points,
+          stroke: lastLine.stroke
         });
       }
-    };
+      return;
+    }
 
-    const handleWindowMouseUp = (e) => {
-      if (!stageRef.current) return;
-      const stage = stageRef.current;
-      const rect = stage.container().getBoundingClientRect();
-      const pointer = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-
-      if (shapeType === 'pen' && isDrawing.current) {
-        isDrawing.current = false;
-        const lastLine = lines[lines.length - 1];
-        if (!lastLine) return;
-        const simplified = simplifyPoints(lastLine.points);
-        updateLastLinePoints(simplified);  
-        // console.log('Final Pen JSON:', JSON.stringify({ ...lastLine, points: simplified }, null, 2));
-
-        return;
-      }
-
-      if (shapeType === 'eraser') {
-        isErasing.current = false;
-        erasedIds.current.clear();
-        return;
-      }
-
-      const end = pointer;
-      const start = startPosRef.current;
-      if (!start || !end || internalShapeType === 'select') return;
-
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
-      const id = `${Date.now()}`;
-      const newShape =
-        internalShapeType === 'arrow'
-          ? {
-              id,
-              type: 'arrow',
-              x: start.x,
-              y: start.y,
-              points: [0, 0, dx, dy],
-              stroke: color,
-              fill: color,
-              strokeWidth: 2,
-              scaleX: 1,
-              scaleY: 1,
-              rotation: 0
-            }
-          : internalShapeType === 'circle'
-          ? {
-              id,
-              type: 'circle',
-              x: (start.x + end.x) / 2,
-              y: (start.y + end.y) / 2,
-              radius: Math.sqrt(dx ** 2 + dy ** 2) / 2,
-              stroke: color,
-              fill: 'transparent',
-              strokeWidth: 2,
-              scaleX: 1,
-              scaleY: 1,
-              rotation: 0
-            }
-          : internalShapeType === 'rect'
-          ? {
-              id,
-              type: 'rect',
-              x: Math.min(start.x, end.x),
-              y: Math.min(start.y, end.y),
-              width: Math.abs(dx),
-              height: Math.abs(dy),
-              stroke: color,
-              fill: 'transparent',
-              strokeWidth: 2,
-              scaleX: 1,
-              scaleY: 1,
-              rotation: 0
-            }
-          : {
-              id,
-              type: 'text',
-              x: start.x,
-              y: start.y,
-              text: 'Double click to edit',
-              fill: color,
-              fontSize: 20,
-              fontFamily: 'Arial',
-              scaleX: 1,
-              scaleY: 1,
-              rotation: 0
-            };
-
-      updateShapesAndSave([...shapes, newShape]);
-      console.log('New Shape JSON:', JSON.stringify(newShape, null, 2));
+    if (!startPosRef.current || internalShapeType === 'select' || internalShapeType === 'eraser') {
       startPosRef.current = null;
+      return;
+    }
+
+    const end = stageRef.current?.getPointerPosition();
+    const start = startPosRef.current;
+    if (!end || !start) {
+      startPosRef.current = null;
+      return;
+    }
+
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (internalShapeType !== 'text' && dist < 3) {
+      startPosRef.current = null;
+      return;
+    }
+
+    let shapeProps = {};
+    switch (internalShapeType) {
+      case 'arrow':
+        shapeProps = { x: start.x, y: start.y, points: [0, 0, dx, dy] };
+        break;
+      case 'circle':
+        shapeProps = {
+          x: (start.x + end.x) / 2,
+          y: (start.y + end.y) / 2,
+          radius: Math.sqrt(dx ** 2 + dy ** 2) / 2
+        };
+        break;
+      case 'rect':
+        shapeProps = {
+          x: Math.min(start.x, end.x),
+          y: Math.min(start.y, end.y),
+          width: Math.abs(dx),
+          height: Math.abs(dy)
+        };
+        break;
+      case 'text':
+        shapeProps = { x: start.x, y: start.y };
+        break;
+      default:
+        break;
+    }
+
+    const dto = buildCreatePayload(internalShapeType.toUpperCase(), shapeProps);
+    sendMessage('CREATE', dto);
+
+    startPosRef.current = null;
+  };
+
+  // 텍스트 편집 오버레이
+  const beginEditText = (shape) => {
+    const stage = stageRef.current;
+    const layer = stage.findOne('Layer');
+    const pos = stage.container().getBoundingClientRect();
+
+    const ta = document.createElement('textarea');
+    ta.value = shape.text || '';
+    ta.style.position = 'absolute';
+    ta.style.top = `${pos.top + shape.y}px`;
+    ta.style.left = `${pos.left + shape.x}px`;
+    ta.style.transformOrigin = 'left top';
+    ta.style.padding = '2px 4px';
+    ta.style.border = '1px solid #ccc';
+    ta.style.outline = 'none';
+    ta.style.font = '16px sans-serif';
+    ta.style.background = 'white';
+    ta.style.zIndex = 9999;
+    ta.rows = 1;
+
+    const finish = (commit) => {
+      if (commit) {
+        const newText = ta.value;
+        updateShapeFieldsCommit(shape.id, {
+          type: shape.type,
+          x: shape.x,
+          y: shape.y,
+          points: null,
+          scaleX: shape.scaleX ?? 1,
+          scaleY: shape.scaleY ?? 1,
+          rotation: shape.rotation ?? 0,
+          text: newText
+        });
+        sendMessage('MODIFY', {
+          whiteBoardObjectId: shape.id,
+          type: (shape.type || '').toUpperCase(),
+          x: shape.x,
+          y: shape.y,
+          points: null,
+          scaleX: shape.scaleX ?? 1,
+          scaleY: shape.scaleY ?? 1,
+          rotation: shape.rotation ?? 0,
+          text: newText
+        });
+
+        delete tempShapePatchesRef.current[shape.id];
+      }
+      document.body.removeChild(ta);
+      layer.getStage().container().focus();
     };
 
-    // 전역 이벤트 등록
-    // 기존 <Stage> 내부에서 이벤트 추가시 Stage 외부 (ex.Map)에선 이벤트 발생 X
-    window.addEventListener('mousemove', handleWindowMouseMove);
-    window.addEventListener('mouseup', handleWindowMouseUp);
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        finish(true);
+      } else if (e.key === 'Escape') {
+        finish(false);
+      }
+    });
+    ta.addEventListener('blur', () => finish(true));
 
-    // 컴포넌트 unmount시 이벤트 제거
-    // useEffect 내부 return : 클린업 함수
-    return () => {
-      window.removeEventListener('mousemove', handleWindowMouseMove);
-      window.removeEventListener('mouseup', handleWindowMouseUp);
-    };
-  }, [shapeType, shapes, lines]);
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+  };
 
   return (
     <>
-      <EditToolBar shapeType={shapeType} setShapeType={setShapeType} color={color} setColor={setColor} />
+      <EditToolBar
+        shapeType={shapeType}
+        setShapeType={setShapeType}
+        color={color}
+        setColor={setColor}
+      />
+
       <Stage
         width={window.innerWidth}
         height={window.innerHeight}
-        // width={1920}
-        // height={1080}
         onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
         ref={stageRef}
         style={{ position: 'absolute', zIndex: 0 }}
       >
-        <Layer>
-          {lines.map((line) => <Line key={line.id} {...line} />)}
+        <Layer ref={layerRef}>
           {shapes.map((shape) => {
             const { id, type, ...rest } = shape;
             const isSelectable = internalShapeType === 'select';
+
+            const vStroke      = shape.stroke ?? RENDER_DEFAULTS.stroke;
+            const vStrokeWidth = shape.strokeWidth ?? RENDER_DEFAULTS.strokeWidth;
+            const vFill = type === 'text'
+              ? (shape.fill ?? color ?? RENDER_DEFAULTS.textColor)
+              : (shape.fill ?? RENDER_DEFAULTS.fill);
+
             const commonProps = {
               id,
               draggable: isSelectable,
               onClick: () => setSelectedId(id),
-              onTransformEnd: (e) => {
+              stroke: vStroke,
+              strokeWidth: vStrokeWidth,
+              fill: vFill,
+              onDragMove: (e) => {
+                if (!isSelectable) return;
+                const x = e.target.x();
+                const y = e.target.y();
+                tempShapePatchesRef.current[id] = {
+                  ...(tempShapePatchesRef.current[id] || {}),
+                  x, y,
+                };
+                throttled.current.moveShape({
+                  whiteBoardObjectId: id,
+                  x, y
+                });
+              },
+              onDragEnd: (e) => {
+                if (!isSelectable) return;
+                const x = e.target.x();
+                const y = e.target.y();
+                updateShapeFieldsCommit(id, {
+                  type,
+                  x, y,
+                  points: null,
+                  text: type === 'text' ? shape.text ?? '' : null
+                });
+                sendMessage('MODIFY', {
+                  whiteBoardObjectId: id,
+                  type: (type || '').toUpperCase(),
+                  x, y,
+                  points: null,
+                  text: type === 'text' ? shape.text ?? '' : null
+                });
+                delete tempShapePatchesRef.current[id];
+              },
+              onTransform: (e) => {
+                if (!isSelectable) return;
                 const node = e.target;
-                const updated = {
+                const patch = {
                   x: node.x(),
                   y: node.y(),
                   scaleX: node.scaleX(),
                   scaleY: node.scaleY(),
-                  rotation: node.rotation()
+                  rotation: node.rotation(),
                 };
-                updateShapeTransform(id, updated);
-                console.log('Transformed Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
+                tempShapePatchesRef.current[id] = {
+                  ...(tempShapePatchesRef.current[id] || {}),
+                  ...patch,
+                };
+                throttled.current.updateShape({
+                  whiteBoardObjectId: id,
+                  type: (type || '').toUpperCase(),
+                  ...patch
+                });
               },
-              onDragEnd: (e) => {
-                const updated = { x: e.target.x(), y: e.target.y() };
-                updateShapeTransform(id, updated);
-                console.log('Dragged Shape JSON:', JSON.stringify({ ...shape, ...updated }, null, 2));
+              onTransformEnd: (e) => {
+                if (!isSelectable) return;
+                const node = e.target;
+                const patch = {
+                  x: node.x(),
+                  y: node.y(),
+                  scaleX: node.scaleX(),
+                  scaleY: node.scaleY(),
+                  rotation: node.rotation(),
+                  points: null,
+                  text: type === 'text' ? shape.text ?? '' : null
+                };
+                updateShapeFieldsCommit(id, { id, type, ...patch });
+                sendMessage('MODIFY', {
+                  whiteBoardObjectId: id,
+                  type: (type || '').toUpperCase(),
+                  ...patch
+                });
+                delete tempShapePatchesRef.current[id];
               }
             };
 
+            if (type === 'text') {
+              return (
+                <Text
+                  key={id}
+                  {...commonProps}
+                  {...rest}
+                  onDblClick={() => beginEditText(shape)}
+                />
+              );
+            }
+
             switch (type) {
               case 'arrow': return <Arrow key={id} {...commonProps} {...rest} />;
-              case 'circle': return <Circle key={id} {...commonProps} {...rest} />;
-              case 'rect': return <Rect key={id} {...commonProps} {...rest} />;
-              case 'text':
-                return (
-                  <React.Fragment key={id}>
-                    <Text {...commonProps} {...rest} onDblClick={() => setIsEditingTextId(id)} visible={isEditingTextId !== id} />
-                    {isEditingTextId === id && (
-                      <Html>
-                        <textarea
-                          defaultValue={shape.text}
-                          style={{ position: 'absolute', top: shape.y, left: shape.x }}
-                          onBlur={(e) => {
-                            setIsEditingTextId(null);
-                            printText(id);
-                          }}
-                          onChange={(e) => updateText(id, e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              const cleanedText = e.target.value.replace(/\n$/, '');
-                              updateText(id, cleanedText);
-                              setIsEditingTextId(null);
-                              printText(id);
-                            }
-                          }}
-                        />
-                      </Html>
-                    )}
-                  </React.Fragment>
-                );
-              default: return null;
+              case 'circle': {
+                const clean = omitNil(rest);
+                delete clean.width;
+                delete clean.height;
+                return <Circle key={id} {...clean} {...commonProps} />;
+              }
+              case 'rect':   return <Rect key={id} {...commonProps} {...rest} />;
+              default:       return null;
             }
           })}
+
+          {/* 라인: 히트 감도 개선 */}
+          {lines.map(line => <Line key={line.id} {...line} hitStrokeWidth={16} />)}
           <Transformer ref={trRef} />
         </Layer>
       </Stage>
+
+      {renderCursors(usersMap, myUuid)}
     </>
   );
 };

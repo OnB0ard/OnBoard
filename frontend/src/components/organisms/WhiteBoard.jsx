@@ -113,12 +113,12 @@ const WhiteBoard = ({ planId }) => {
     wsUrl: 'https://i13a504.p.ssafy.io/ws',
     accessToken,
     onMessage: (msg) => {
-      const { action } = msg || {};
-      console.log(msg);
+      const { action, points } = msg || {};
+      console.log("msg : " + msg);
      // 라인 확정: (A) action 없음 + points 있음  OR  (B) action === 'MODIFY_LINE'
       const isLineCommit =
-        ( !action && Array.isArray(msg?.points) ) ||
-        ( action === 'MODIFY_LINE' && Array.isArray(msg?.points) );
+        ( !action && Array.isArray(points) ) ||
+        ( action === 'MODIFY_LINE' && Array.isArray(points) );
 
       if (isLineCommit) {
         // 1) 내가 그리고 있던 temp 라인 제거

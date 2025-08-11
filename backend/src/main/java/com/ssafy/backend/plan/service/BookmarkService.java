@@ -76,7 +76,7 @@ public class BookmarkService {
         return place.getPlaceId();
     }
 
-    public BookmarkListResponseDTO showBookmark(Long planId, Long userId) {
+    public BookmarkListResponseDTO getBookmarkList(Long planId, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 

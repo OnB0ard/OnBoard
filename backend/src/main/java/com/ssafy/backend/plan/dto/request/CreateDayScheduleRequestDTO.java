@@ -7,4 +7,5 @@ import lombok.Getter;
 @Builder
 public class CreateDayScheduleRequestDTO {
     private String title;
+    private Integer dayOrder;
 }

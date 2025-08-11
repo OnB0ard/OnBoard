@@ -48,9 +48,15 @@ const useBookmarkStore = create(
         try {
           const res = await getPlanBookmark(effectivePlanId);
           // 서버 응답 형태 유연 처리: body 또는 data 직접
-          const list = (res && (res.body || res.data || res)) ?? [];
-          // 배열만 저장
-          const normalized = Array.isArray(list) ? list : (Array.isArray(list.items) ? list.items : []);
+          const container = (res && (res.body || res.data || res)) ?? [];
+          // 다양한 컨테이너 형태 지원: [] | {items: []} | {bookmarkList: []}
+          const normalized = Array.isArray(container)
+            ? container
+            : (Array.isArray(container.items)
+                ? container.items
+                : (Array.isArray(container.bookmarkList)
+                    ? container.bookmarkList
+                    : []));
           console.log('[bookmark] loadBookmarks normalized len:', normalized.length);
           set({ bookmarkedPlaces: normalized });
         } catch (err) {
@@ -149,26 +155,43 @@ const useBookmarkStore = create(
         }
       },
 
-      removeBookmark: async (googlePlaceId, planId) => {
+      removeBookmark: async (identifier, planId) => {
         const effectivePlanId = get()._resolvePlanId(planId);
-        console.debug('[bookmark] removeBookmark effectivePlanId:', effectivePlanId, 'googlePlaceId:', googlePlaceId);
-        if (!googlePlaceId || !effectivePlanId) return;
+        console.debug('[bookmark] removeBookmark effectivePlanId:', effectivePlanId, 'identifier:', identifier);
+        if (!identifier || !effectivePlanId) return;
         try {
           const { bookmarkedPlaces } = get();
-          const target = bookmarkedPlaces.find(p => (p.googlePlaceId || p.place_id) === googlePlaceId);
-          const bookmarkId = target?.bookmarkId || target?.id || target?.placeId; // 서버 필드 호환
+          // identifier가 숫자이면 bookmarkId로 간주, 문자열이면 googlePlaceId로 간주
+          const isIdNumber = typeof identifier === 'number';
+          let target, bookmarkId;
+          if (isIdNumber) {
+            target = bookmarkedPlaces.find(p => (p.bookmarkId || p.id || p.placeId) === identifier);
+            bookmarkId = identifier;
+          } else {
+            target = bookmarkedPlaces.find(p => (p.googlePlaceId || p.place_id) === identifier);
+            bookmarkId = target?.bookmarkId || target?.id || target?.placeId; // 서버 필드 호환
+          }
+
           const { _wsSenders } = get();
           if (_wsSenders.sendDelete && bookmarkId) {
             // WS 전송 + 낙관적 제거
             console.log('[bookmark] removeBookmark via WS. bookmarkId:', bookmarkId);
-            set({ bookmarkedPlaces: bookmarkedPlaces.filter(p => (p.googlePlaceId || p.place_id) !== googlePlaceId) });
+            set({
+              bookmarkedPlaces: bookmarkedPlaces.filter(p =>
+                isIdNumber ? ((p.bookmarkId || p.id || p.placeId) !== bookmarkId) : ((p.googlePlaceId || p.place_id) !== identifier)
+              ),
+            });
             _wsSenders.sendDelete(bookmarkId);
           } else if (bookmarkId) {
             console.warn('[bookmark] removeBookmark skipped: WS sender unavailable');
           } else {
             // 식별자 없으면 로컬 제거만 수행
             console.log('[bookmark] removeBookmark local-only. no bookmarkId found');
-            set({ bookmarkedPlaces: bookmarkedPlaces.filter(p => (p.googlePlaceId || p.place_id) !== googlePlaceId) });
+            set({
+              bookmarkedPlaces: bookmarkedPlaces.filter(p =>
+                isIdNumber ? ((p.bookmarkId || p.id || p.placeId) !== identifier) : ((p.googlePlaceId || p.place_id) !== identifier)
+              ),
+            });
           }
         } catch (err) {
           console.error('북마크 삭제 실패:', err);
@@ -205,15 +228,19 @@ const useBookmarkStore = create(
           }
         }
 
-        if (!normalized || !normalized.googlePlaceId) {
-          console.error('Invalid place object for bookmark:', place);
+        // googlePlaceId가 없더라도 bookmarkId만 있으면 삭제(토글 해제) 동작 가능
+        if (!normalized || (!normalized.googlePlaceId && !normalized.bookmarkId)) {
+          console.error('Invalid place object for bookmark: missing googlePlaceId and bookmarkId', place);
           return;
         }
         const { isBookmarked, addBookmark, removeBookmark } = get();
-        const bookmarked = isBookmarked(normalized.googlePlaceId);
+        // REST로 받은 항목의 경우 bookmarkId만 있고 googlePlaceId가 없을 수 있어 객체 자체로 판정
+        const bookmarked = isBookmarked(normalized);
         console.log('[bookmark] toggle -> currently', bookmarked ? 'bookmarked' : 'not bookmarked');
         if (bookmarked) {
-          await removeBookmark(normalized.googlePlaceId, effectivePlanId);
+          // bookmarkId가 있으면 그것으로 삭제, 없으면 googlePlaceId로 삭제
+          const identifier = normalized.bookmarkId ?? normalized.googlePlaceId;
+          await removeBookmark(identifier, effectivePlanId);
           console.log(`🔖 북마크 제거: ${normalized.placeName || normalized.name}`);
         } else {
           await addBookmark(normalized, effectivePlanId);
@@ -221,24 +248,97 @@ const useBookmarkStore = create(
         }
       },
       
-      isBookmarked: (googlePlaceId) => {
+      isBookmarked: (candidate) => {
         const { bookmarkedPlaces } = get();
-        return bookmarkedPlaces.some(p => (p.googlePlaceId || p.place_id) === googlePlaceId);
-      },
+        if (!candidate) return false;
 
-      getBookmarkedPlaces: (planId = null) => get()._getListForPlan(planId),
+        // candidate가 객체이면 다양한 키로 비교, 아니면 식별자(googlePlaceId)로 간주
+        let candBookmarkId = null;
+        let candGoogleId = null;
+        let candName = '';
+        let candAddr = '';
+        let candLat = null;
+        let candLng = null;
 
-      clearAllBookmarks: (planId = null) => {
-        get()._setListForPlan(planId, []);
+        if (typeof candidate === 'object') {
+          candBookmarkId = candidate.bookmarkId ?? candidate.id ?? candidate.placeId ?? null;
+          candGoogleId = candidate.googlePlaceId ?? candidate.place_id ?? null;
+          candName = (candidate.placeName || candidate.name || '').trim().toLowerCase();
+          candAddr = (candidate.address || candidate.formatted_address || '').trim().toLowerCase();
+          // 좌표 추출: 다양한 소스 대응
+          try {
+            if (typeof candidate.latitude === 'number' && typeof candidate.longitude === 'number') {
+              candLat = candidate.latitude; candLng = candidate.longitude;
+            } else if (candidate.location && typeof candidate.location.lat === 'number' && typeof candidate.location.lng === 'number') {
+              candLat = candidate.location.lat; candLng = candidate.location.lng;
+            } else if (candidate.geometry?.location) {
+              const gl = candidate.geometry.location;
+              // Google Maps 객체일 수 있음: 함수 호출 형태 지원
+              const latVal = typeof gl.lat === 'function' ? gl.lat() : gl.lat;
+              const lngVal = typeof gl.lng === 'function' ? gl.lng() : gl.lng;
+              if (typeof latVal === 'number' && typeof lngVal === 'number') { candLat = latVal; candLng = lngVal; }
+            }
+          } catch (e) {
+            // 좌표 파싱 실패는 무시
+          }
+        } else {
+          candGoogleId = candidate;
+        }
+
+        // 좌표 근접성 비교 함수 (약 ~11m 이내)
+        const near = (a, b) => {
+          if (!a || !b) return false;
+          const { lat: latA, lng: lngA } = a;
+          const { lat: latB, lng: lngB } = b;
+          if (typeof latA !== 'number' || typeof lngA !== 'number' || typeof latB !== 'number' || typeof lngB !== 'number') return false;
+          const eps = 1e-4; // ~0.0001 deg
+          return Math.abs(latA - latB) < eps && Math.abs(lngA - lngB) < eps;
+        };
+
+        return bookmarkedPlaces.some((p) => {
+          const pBookmarkId = p.bookmarkId ?? p.id ?? p.placeId ?? null;
+          if (candBookmarkId && pBookmarkId && pBookmarkId === candBookmarkId) return true;
+
+          const pGoogleId = p.googlePlaceId ?? p.place_id ?? null;
+          if (candGoogleId && pGoogleId && pGoogleId === candGoogleId) return true;
+
+          // 좌표가 양쪽에 존재하면 근접성으로 판정 (googlePlaceId가 없을 때 보조 지표)
+          try {
+            const pLat = typeof p.latitude === 'number' ? p.latitude : null;
+            const pLng = typeof p.longitude === 'number' ? p.longitude : null;
+            if (candLat != null && candLng != null && pLat != null && pLng != null) {
+              if (near({ lat: candLat, lng: candLng }, { lat: pLat, lng: pLng })) return true;
+            }
+          } catch (e) {
+            // 좌표 근접 비교 중 예외는 무시하되, 디버깅을 위해 로깅
+            console.debug('[bookmark] proximity compare failed:', e);
+          }
+
+          // googlePlaceId가 없을 때 이름/주소로 비교 (대소문자/공백 차이 무시)
+          if (!candGoogleId) {
+            const pName = (p.placeName || p.name || '').trim().toLowerCase();
+            const pAddr = (p.address || p.formatted_address || '').trim().toLowerCase();
+            if (candName && pName && candName === pName) {
+              // 이름이 같으면 주소 일치 여부와 관계없이 북마크로 간주
+              // (백엔드 응답에 googlePlaceId가 없어도 모달 반영을 보장)
+              return true;
+            }
+          }
+          return false;
+        });
       },
+      
+      getBookmarkedPlaces: () => {
+        return get().bookmarkedPlaces;
+      },
+      
+      clearAllBookmarks: () => {
+        set({ bookmarkedPlaces: [] });
+      }
     }),
     {
-      name: 'map-bookmarks',
-      partialize: (state) => ({
-        activePlanId: state.activePlanId,
-        bookmarkedByPlan: state.bookmarkedByPlan,
-        bookmarkedPlaces: state.bookmarkedPlaces,
-      }),
+      name: 'map-bookmarks', // localStorage에 저장될 키 이름
+      partialize: (state) => ({ bookmarkedPlaces: state.bookmarkedPlaces }),
     }
   )
 );

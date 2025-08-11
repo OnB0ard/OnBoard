@@ -113,11 +113,8 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
-                        if (place.googlePlaceId) {
-                          toggleBookmark(place, planId);
-                        } else {
-                          console.warn('[Bookmark] REST 항목은 googlePlaceId가 없어 즉시 토글 불가:', place);
-                        }
+                        // REST 항목은 bookmarkId만 있을 수 있으므로 스토어가 식별자 판단
+                        toggleBookmark(place, planId);
                       }}
                     />
                   </div>

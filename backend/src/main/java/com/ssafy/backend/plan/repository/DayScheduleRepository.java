@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DayScheduleRepository extends JpaRepository<DaySchedule,Long>, DayScheduleQueryRepository {
-
+    // dayScheduleService CREATE에서 사용
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT COALESCE(MAX(d.dayOrder), 0) FROM DaySchedule d WHERE d.plan = :plan")
     Integer findMaxDayOrderByPlan(Plan plan);

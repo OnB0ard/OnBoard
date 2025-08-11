@@ -20,6 +20,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   pointer-events: auto;
+  left: 120px;
 }
 
 .bookmark-modal-header {
@@ -40,7 +41,7 @@
 
 
 .bookmark-modal-header h3 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
   margin: 0;

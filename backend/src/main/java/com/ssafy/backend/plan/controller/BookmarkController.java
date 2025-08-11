@@ -1,7 +1,7 @@
 package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
-import com.ssafy.backend.plan.dto.response.BookmarkListResponseDTO;
+import com.ssafy.backend.plan.dto.response.GetBookmarkListResponseDTO;
 import com.ssafy.backend.plan.service.BookmarkService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ public class BookmarkController {
     private final BookmarkService bookmarkService;
 
     @GetMapping("")
-    public CommonResponse<BookmarkListResponseDTO> getBookmarkList(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+    public CommonResponse<GetBookmarkListResponseDTO> getBookmarkList(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(bookmarkService.getBookmarkList(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
 }

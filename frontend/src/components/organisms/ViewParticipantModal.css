@@ -1,0 +1,110 @@
+/* Participant Action Confirmation Modal (styled similar to AccessControlModal) */
+
+.participant-action-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2.5px);
+  -webkit-backdrop-filter: blur(2.5px);
+  animation: participant-fadeIn 0.2s ease-out;
+}
+
+@keyframes participant-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.participant-action-modal {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  width: 100%;
+  max-width: 400px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Poppins', sans-serif;
+  animation: participant-slideIn 0.3s ease-out;
+  transform-origin: center;
+}
+
+@keyframes participant-slideIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.participant-action-modal__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  background: linear-gradient(135deg, #E1EAFD 0%, #B8D4F0 100%);
+  color: #2C5282;
+  border-radius: 12px 12px 0 0;
+}
+
+.participant-action-modal__icon {
+  width: 48px;
+  height: 48px;
+  background-color: rgba(44, 82, 130, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: #2C5282;
+}
+
+.participant-action-modal__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #2C5282;
+}
+
+.participant-action-modal__content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.participant-action-modal__message {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.participant-action-modal__footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  justify-content: center;
+}
+
+/* Danger variant (e.g., Deny participant) — match logout modal colors */
+.participant-action-modal--danger .participant-action-modal__header {
+  background: linear-gradient(135deg, #FDE2E2 0%, #F8B4B4 100%);
+  color: #DC2626;
+}
+
+.participant-action-modal--danger .participant-action-modal__icon {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #DC2626;
+}
+
+.participant-action-modal--danger .participant-action-modal__title {
+  color: #DC2626;
+}
+
+@media (max-width: 480px) {
+  .participant-action-modal { max-width: 90vw; margin: 0 1rem; }
+  .participant-action-modal__header { padding: 1.5rem 1rem 1rem 1rem; }
+  .participant-action-modal__content { padding: 1rem; }
+  .participant-action-modal__footer { padding: 0 1rem 1rem 1rem; flex-direction: column; }
+}

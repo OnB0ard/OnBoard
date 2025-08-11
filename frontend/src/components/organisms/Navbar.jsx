@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './Navbar.css';
 import {Button} from "@/components/ui/button"
 import {useGoogleLogin} from "@/hooks/useGoogleLogin"
@@ -12,6 +13,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [landingActiveIndex, setLandingActiveIndex] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const isLandingPage = location.pathname === '/';
   const isFirstSection = isLandingPage && landingActiveIndex === 0;
   const handleGoogleLogin = useGoogleLogin();
@@ -19,6 +21,23 @@ const Navbar = () => {
   // 로그인 상태 관리
   const { accessToken, clearAuth } = useAuthStore();
   const isLoggedIn = !!accessToken;
+
+  // 스크롤 이벤트 처리
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 10); // 10px 이상 스크롤하면 배경 변경
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    
+    // 초기 스크롤 위치 확인
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   // Landing 페이지의 섹션 변경을 감지
   useEffect(() => {
@@ -58,21 +77,43 @@ const Navbar = () => {
   const handleLogoutCancel = () => {
     setShowLogoutModal(false);
   };
+
+  // 네비게이션 바 클래스 결정
+  const getNavbarClass = () => {
+    if (isLandingPage && isFirstSection && !isScrolled) {
+      return 'Header landing-page';
+    } else if (isScrolled) {
+      return 'Header scrolled';
+    } else {
+      return 'Header';
+    }
+  };
+
+  // 텍스트 클래스 결정
+  const getTextClass = () => {
+    if (isLandingPage && isFirstSection && !isScrolled) {
+      return 'landing-text';
+    } else if (isScrolled) {
+      return 'scrolled-text';
+    } else {
+      return '';
+    }
+  };
   
   return (
-    <div className={`Header ${isFirstSection ? 'landing-page' : ''}`}>
+    <div className={getNavbarClass()}>
       <div className="left">
         <Link to="/">
-          <div className={`home ${isFirstSection ? 'landing-text' : ''}`}>OnBoard</div>
+          <div className={`home ${getTextClass()}`}>OnBoard</div>
         </Link>
       </div>
       <div className="center" />
       <div className="right">
         <Link to="/test">
-          <Button className={`temp ${isFirstSection ? 'landing-text' : ''}`} variant="link">TEST</Button>          
+          <Button className={`temp ${getTextClass()}`} variant="link">TEST</Button>          
         </Link>
         <Button 
-          className={`temp ${isFirstSection ? 'landing-text' : ''}`} 
+          className={`temp ${getTextClass()}`} 
           variant="link"
           onClick={() => {
             if (isLoggedIn) {
@@ -88,7 +129,7 @@ const Navbar = () => {
           Plan
         </Button>
         <Button 
-          className={`temp ${isFirstSection ? 'landing-text' : ''}`} 
+          className={`temp ${getTextClass()}`} 
           variant="link"
           onClick={() => {
             if (isLoggedIn) {
@@ -105,7 +146,7 @@ const Navbar = () => {
         </Button>
         {isLoggedIn ? (
           <Button 
-            className={`temp ${isFirstSection ? 'landing-text' : ''}`} 
+            className={`temp ${getTextClass()}`} 
             variant="link" 
             onClick={handleLogout}
           >
@@ -113,7 +154,7 @@ const Navbar = () => {
           </Button>
         ) : (
           <Button 
-            className={`temp ${isFirstSection ? 'landing-text' : ''}`} 
+            className={`temp ${getTextClass()}`} 
             variant="link" 
             onClick={handleGoogleLogin}
           >
@@ -123,7 +164,7 @@ const Navbar = () => {
       </div>
 
       {/* 로그아웃 확인 모달 */}
-      {showLogoutModal && (
+      {showLogoutModal && createPortal(
         <div className="logout-modal__backdrop">
           <div className="logout-modal">
             <div className="logout-modal__header">
@@ -157,7 +198,8 @@ const Navbar = () => {
               </CustomButton>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -185,3 +185,71 @@
     flex-direction: column;
   }
 }
+
+
+.planlist-searchbar {
+  margin-top: 2rem;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.planlist-searchbar .search-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  transition: all 0.3s ease;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.planlist-searchbar .search-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.planlist-searchbar .search-container:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(107, 114, 128, 0.15);
+}
+
+/* 검색바 내부 스타일 개선 */
+.planlist-searchbar input {
+  transition: all 0.3s ease;
+}
+
+.planlist-searchbar input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* 검색 아이콘 스타일 */
+.planlist-searchbar .search-icon {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.planlist-searchbar .search-icon:hover {
+  transform: scale(1.1);
+  color: #3b82f6;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .planlist-searchbar {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .planlist-searchbar .search-container {
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .planlist-searchbar .search-container {
+    max-width: 95%;
+  }
+}

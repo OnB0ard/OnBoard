@@ -225,18 +225,20 @@ const useBookmarkStore = create(
         const { bookmarkedPlaces } = get();
         return bookmarkedPlaces.some(p => (p.googlePlaceId || p.place_id) === googlePlaceId);
       },
-      
-      getBookmarkedPlaces: () => {
-        return get().bookmarkedPlaces;
+
+      getBookmarkedPlaces: (planId = null) => get()._getListForPlan(planId),
+
+      clearAllBookmarks: (planId = null) => {
+        get()._setListForPlan(planId, []);
       },
-      
-      clearAllBookmarks: () => {
-        set({ bookmarkedPlaces: [] });
-      }
     }),
     {
-      name: 'map-bookmarks', // localStorage에 저장될 키 이름
-      partialize: (state) => ({ bookmarkedPlaces: state.bookmarkedPlaces }),
+      name: 'map-bookmarks',
+      partialize: (state) => ({
+        activePlanId: state.activePlanId,
+        bookmarkedByPlan: state.bookmarkedByPlan,
+        bookmarkedPlaces: state.bookmarkedPlaces,
+      }),
     }
   )
 );

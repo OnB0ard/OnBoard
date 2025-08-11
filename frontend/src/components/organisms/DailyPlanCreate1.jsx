@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import DailyScheduleBlock from './DailyScheduleBlock';
 import BookmarkModal from './BookmarkModal';
@@ -6,12 +6,16 @@ import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';
 import { useDayMarkersStore } from '../../store/mapStore';
+import { savePlanSchedule, getPlanSchedule } from '../../apis/planSchedule';
+import { useStompSchedule } from '../../hooks/useStompSchedule';
 import './DailyPlanCreate1.css';
 
 const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
   const modalRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const autoScrollIntervalRef = useRef(null);
+  const lastLoadedPlanIdRef = useRef(null);
+  const saveCacheTimeoutRef = useRef(null);
   
   // Zustand 스토어에서 상태와 액션들 가져오기
   const {
@@ -35,6 +39,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     
     // 액션
     setPlanId,
+    setDailyPlans,
     addDailyPlan,
     removeDailyPlan,
     updateDayTitle,
@@ -63,20 +68,257 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     setMemoModalOpen,
     selectedPlace,
     setSelectedPlace,
-    toggleDayMarkersOnMap,
-    clearDayMarkersFromMap
+    toggleDayMarkersOnMap
   } = useDailyPlanStore();
 
   // 지도 스토어에서 일차별 마커 액션들 가져오기
   const { setDayMarkers, clearDayMarkers } = useDayMarkersStore();
+  // WebSocket 연결 설정 (화이트보드와 동일한 구조)
+  const { sendMessage, connectionStatus, myUuid } = useStompSchedule({
+    planId,
+    onMessage: (msg) => {
+      const { type, payload, uuid } = msg;
 
-  // planId가 변경될 때 스토어에 설정
-  useEffect(() => {
-    if (planId) {
-      setPlanId(planId);
-      console.log('📋 planId 설정됨:', planId);
+      console.log('실시간 일정 업데이트 수신:', msg);
+
+      // 내가 보낸 메시지는 무시 (로컬에 이미 반영됨)
+      if (uuid === myUuid) return;
+
+      switch (type) {
+        case 'PLAN_UPDATED':
+          console.log('전체 일정 업데이트 수신');
+          break;
+        case 'PLACE_ADDED':
+          addPlaceToDay(payload.dayIndex, payload.place, payload.insertIndex);
+          break;
+        case 'PLACE_REMOVED':
+          removePlace(payload.dayIndex, payload.placeIndex);
+          break;
+        case 'PLACE_MOVED':
+          reorderPlaces(
+            payload.fromDayIndex,
+            payload.fromPlaceIndex,
+            payload.toDayIndex,
+            payload.toPlaceIndex
+          );
+          break;
+        case 'DAY_ADDED':
+          addDailyPlan();
+          break;
+        case 'DAY_REMOVED':
+          removeDailyPlan(payload.dayId);
+          break;
+        case 'DAY_REORDERED':
+          reorderDailyPlans(payload.fromIndex, payload.toIndex);
+          break;
+        default:
+          console.warn('알 수 없는 메시지 타입:', type);
+      }
     }
+  });
+
+
+
+  // planId가 "실제로 변경될 때만" 초기화/로드 수행
+  useEffect(() => {
+    if (!planId) return;
+    if (lastLoadedPlanIdRef.current === planId) {
+      // 같은 방이면 재초기화/재로드 금지
+      return;
+    }
+    setPlanId(planId);
+    console.log('📋 planId 변경 감지 및 로드:', planId);
+    clearDayMarkers();
+    // 1) 로컬 캐시 우선 로드
+    try {
+      const cached = localStorage.getItem(`plan-schedules:${planId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setDailyPlans(parsed);
+          console.log('🗂️ 로컬 캐시 일정 로드 완료');
+        }
+      }
+    } catch (e) {
+      console.warn('로컬 캐시 로드 실패:', e);
+    }
+    // 2) 서버 일정 불러오기 (새 방에서만)
+    loadPlanSchedule(/*isPlanChange*/ true);
+    lastLoadedPlanIdRef.current = planId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId, setPlanId]);
+
+  // 기존 일정 불러오기 함수
+  const loadPlanSchedule = async (isPlanChange = false) => {
+    try {
+      console.log('📅 기존 일정 불러오기 시작:', planId);
+      // 이미 로컬에 일정이 있고 동일 방이라면 로드를 생략하여 플리커/초기화 방지
+      if (!isPlanChange && dailyPlans && dailyPlans.length > 0) {
+        console.log('⏭️ 로컬 일정이 있어 서버 로드를 건너뜀');
+        return;
+      }
+      const scheduleData = await getPlanSchedule(planId);
+      
+    if (scheduleData && Array.isArray(scheduleData.schedules) && scheduleData.schedules.length > 0) {
+        // 백엔드 데이터를 프론트엔드 형식으로 변환
+        const convertedPlans = scheduleData.schedules.map((schedule, index) => ({
+          id: Date.now() + index,
+          title: schedule.title || `${schedule.day}일차`,
+                     places: schedule.places.map((place, placeIndex) => {
+             // 서버에서 받은 장소 데이터 로깅
+             console.log(`🔍 서버에서 받은 장소 ${placeIndex}:`, {
+               name: place.placeName,
+               imageUrl: place.imageUrl,
+               googleImg: place.googleImg,
+               photos: place.photos,
+               originalData: place
+             });
+             
+             // 이미지 URL 처리 - 다양한 소스에서 가져오기
+             let imageUrl = place.imageUrl;
+             
+             // 1. googleImg 배열 확인
+             if (!imageUrl && place.googleImg && Array.isArray(place.googleImg) && place.googleImg[0]) {
+               imageUrl = place.googleImg[0];
+               console.log(`📸 googleImg에서 이미지 URL 찾음:`, imageUrl);
+             }
+             
+             // 2. photos 배열 확인
+             if (!imageUrl && place.photos && Array.isArray(place.photos) && place.photos[0]) {
+               const photo = place.photos[0];
+               if (typeof photo.getUrl === 'function') {
+                 try {
+                   imageUrl = photo.getUrl({ maxWidth: 100, maxHeight: 100 });
+                   console.log(`📸 photos.getUrl()에서 이미지 URL 찾음:`, imageUrl);
+                 } catch (error) {
+                   console.warn('Photo getUrl 오류:', error);
+                 }
+               } else if (typeof photo.getURI === 'function') {
+                 try {
+                   imageUrl = photo.getURI();
+                   console.log(`📸 photos.getURI()에서 이미지 URL 찾음:`, imageUrl);
+                 } catch (error) {
+                   console.warn('Photo getURI 오류:', error);
+                 }
+               } else if (typeof photo === 'string') {
+                 imageUrl = photo;
+                 console.log(`📸 photos 문자열에서 이미지 URL 찾음:`, imageUrl);
+               } else if (photo && (photo.url || photo.src || photo.imageUrl)) {
+                 imageUrl = photo.url || photo.src || photo.imageUrl;
+                 console.log(`📸 photos 객체에서 이미지 URL 찾음:`, imageUrl);
+               }
+             }
+             
+             // 3. originalData에서도 확인
+             if (!imageUrl && place.originalData) {
+               const original = place.originalData;
+               if (original.imageUrl) {
+                 imageUrl = original.imageUrl;
+                 console.log(`📸 originalData.imageUrl에서 이미지 URL 찾음:`, imageUrl);
+               } else if (original.googleImg && Array.isArray(original.googleImg) && original.googleImg[0]) {
+                 imageUrl = original.googleImg[0];
+                 console.log(`📸 originalData.googleImg에서 이미지 URL 찾음:`, imageUrl);
+               } else if (original.photos && Array.isArray(original.photos) && original.photos[0]) {
+                 const photo = original.photos[0];
+                 if (typeof photo === 'string') {
+                   imageUrl = photo;
+                   console.log(`📸 originalData.photos 문자열에서 이미지 URL 찾음:`, imageUrl);
+                 } else if (photo && (photo.url || photo.src || photo.imageUrl)) {
+                   imageUrl = photo.url || photo.src || photo.imageUrl;
+                   console.log(`📸 originalData.photos 객체에서 이미지 URL 찾음:`, imageUrl);
+                 }
+               }
+             }
+             
+             console.log(`🎯 최종 이미지 URL:`, imageUrl);
+            
+            return {
+              id: `${place.googlePlaceId}-${Date.now()}-${placeIndex}`,
+              name: place.placeName,
+              address: place.address,
+              latitude: place.latitude,
+              longitude: place.longitude,
+              rating: place.rating,
+              ratingCount: place.ratingCount,
+              imageUrl: imageUrl,
+              phoneNumber: place.phoneNumber,
+              placeUrl: place.placeUrl,
+              siteUrl: place.siteUrl,
+              primaryCategory: place.category,
+              memo: place.memo || '',
+              originalData: place
+            };
+          })
+        }));
+        
+        // 스토어에 일정 설정
+        setDailyPlans(convertedPlans);
+        console.log('✅ 기존 일정 불러오기 완료:', convertedPlans);
+        // 서버 일정 도착 시 캐시 갱신
+        try {
+          localStorage.setItem(`plan-schedules:${planId}`, JSON.stringify(convertedPlans));
+        } catch (e) {
+          console.warn('서버 일정 캐시 저장 실패:', e);
+        }
+    } else if (isPlanChange) {
+      // 방이 바뀐 경우에만 빈 일정으로 초기화
+      // setDailyPlans([]);
+      // console.log('ℹ️ 해당 방에 저장된 일정 없음. 빈 일정으로 초기화');
+    } else {
+      console.log('ℹ️ 서버 일정 없음이지만 동일 방이므로 현재 로컬 상태 유지');
+    }
+    } catch (error) {
+      console.error('❌ 기존 일정 불러오기 실패:', error);
+      // 에러가 발생해도 빈 일정으로 시작
+    }
+  };
+
+  // 일정 자동 저장 함수
+  const autoSavePlanSchedule = async () => {
+    try {
+      if (dailyPlans.length > 0) {
+        console.log('💾 일정 자동 저장 시작');
+        await savePlanSchedule(planId, dailyPlans);
+        console.log('✅ 일정 자동 저장 완료');
+        
+        // WebSocket으로도 전체 일정 업데이트 알림
+        sendMessage('PLAN_SAVED', {
+          planId,
+          dailyPlans
+        });
+      }
+    } catch (error) {
+      console.error('❌ 일정 자동 저장 실패:', error);
+    }
+  };
+
+  // 일정이 변경될 때마다 자동 저장 (디바운스 적용)
+  useEffect(() => {
+    if (!planId || dailyPlans.length === 0) return;
+    
+    const saveTimeout = setTimeout(() => {
+      autoSavePlanSchedule();
+    }, 2000); // 2초 후 저장
+    
+    return () => clearTimeout(saveTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyPlans, planId]);
+
+  // 로컬 캐시에 항상 최신 일정 저장 (가벼운 디바운스)
+  useEffect(() => {
+    if (!planId) return;
+    if (saveCacheTimeoutRef.current) clearTimeout(saveCacheTimeoutRef.current);
+    saveCacheTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(`plan-schedules:${planId}`, JSON.stringify(dailyPlans));
+      } catch (e) {
+        console.warn('캐시 저장 실패:', e);
+      }
+    }, 400);
+    return () => {
+      if (saveCacheTimeoutRef.current) clearTimeout(saveCacheTimeoutRef.current);
+    };
+  }, [dailyPlans, planId]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -260,6 +502,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         });
         
         reorderDailyPlans(draggedDayIndex, targetIndex);
+        
+        // WebSocket으로 일정 순서 변경 알림
+        sendMessage('DAY_REORDERED', {
+          fromIndex: draggedDayIndex,
+          toIndex: targetIndex
+        });
+        
         clearDragState();
         return;
       }
@@ -491,6 +740,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       // 지정된 위치에 장소 추가
       addPlaceToDay(targetDayIndex, dragData.place, insertIndex);
       
+      // WebSocket으로 장소 추가 알림
+      sendMessage('PLACE_ADDED', {
+        dayIndex: targetDayIndex,
+        place: dragData.place,
+        insertIndex
+      });
+      
       // 북마크 모달은 열어둠 (연속 추가를 위해)
       
       return;
@@ -510,13 +766,6 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         insertIndex = targetPlaceIndex + 1;
       }
       
-      console.log('🎯 페이지 PlaceBlock 삽입:', {
-        place: dragData.place.placeName || dragData.place.name,
-        dayIndex: targetDayIndex,
-        insertIndex,
-        position: dropPosition
-      });
-      
       // PlaceBlock 데이터를 DailyPlaceBlock 형식으로 변환
       const placeData = dragData.place;
       const normalizedPlace = {
@@ -535,6 +784,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       // 지정된 위치에 장소 추가
       addPlaceToDay(targetDayIndex, normalizedPlace, insertIndex);
       
+      // WebSocket으로 장소 추가 알림
+      sendMessage('PLACE_ADDED', {
+        dayIndex: targetDayIndex,
+        place: normalizedPlace,
+        insertIndex
+      });
+      
       return;
     }
 
@@ -546,37 +802,39 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
 
     const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
   
-  // 드롭 위치에 따른 인덱스 조정
-  const target = e.currentTarget;
-  const dropPosition = target.getAttribute('data-drop-position');
-  let finalTargetPlaceIndex = targetPlaceIndex;
-  
-  // 하단에 드롭하는 경우 인덱스를 1 증가
-  if (dropPosition === 'bottom') {
-    finalTargetPlaceIndex = targetPlaceIndex + 1;
-  }
-  
-  console.log('✅ 장소 이동 준비:', { 
-    from: { day: sourceDayIndex, place: sourcePlaceIndex }, 
-    to: { day: targetDayIndex, place: targetPlaceIndex },
-    position: dropPosition,
-    finalIndex: finalTargetPlaceIndex
-  });
-  
-  if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
-    console.log('❌ 같은 위치로 드롭 - 취소');
-    handlePlaceDragEnd(e);
-    return;
-  }
+    // 드롭 위치에 따른 인덱스 조정
+    const target = e.currentTarget;
+    const dropPosition = target.getAttribute('data-drop-position');
+    let finalTargetPlaceIndex = targetPlaceIndex;
+    
+    // 하단에 드롭하는 경우 인덱스를 1 증가
+    if (dropPosition === 'bottom') {
+      finalTargetPlaceIndex = targetPlaceIndex + 1;
+    }
+    
+    if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
+      console.log('❌ 같은 위치로 드롭 - 취소');
+      handlePlaceDragEnd(e);
+      return;
+    }
 
-  console.log('🔄 장소 위치 이동 실행 시작!');
-  
-  try {
-    reorderPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, finalTargetPlaceIndex);
-    console.log('✅ 장소 이동 성공!');
-  } catch (error) {
-    console.error('❌ 장소 이동 오류:', error);
-  }
+    console.log('🔄 장소 위치 이동 실행 시작!');
+    
+    try {
+      reorderPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, finalTargetPlaceIndex);
+      
+      // WebSocket으로 장소 이동 알림
+      sendMessage('PLACE_MOVED', {
+        fromDayIndex: sourceDayIndex,
+        fromPlaceIndex: sourcePlaceIndex,
+        toDayIndex: targetDayIndex,
+        toPlaceIndex: finalTargetPlaceIndex
+      });
+      
+      console.log('✅ 장소 이동 성공!');
+    } catch (error) {
+      console.error('❌ 장소 이동 오류:', error);
+    }
 
     handlePlaceDragEnd(e);
   };
@@ -746,6 +1004,22 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const placeIndex = dailyPlans[dayIndex]?.places.findIndex(p => p.id === place.id);
     if (dayIndex !== -1 && placeIndex !== -1) {
       updatePlaceMemo(dayIndex, placeIndex, memo);
+      
+      // WebSocket으로 메모 업데이트 알림
+      sendMessage('PLAN_UPDATED', {
+        plans: dailyPlans.map((day, idx) => 
+          idx === dayIndex 
+            ? { 
+                ...day, 
+                places: day.places.map((p, pIdx) => 
+                  pIdx === placeIndex 
+                    ? { ...p, memo }
+                    : p
+                )
+              }
+            : day
+        )
+      });
     }
     closeMemoModal();
   };
@@ -812,11 +1086,20 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             onDragEnd={handleDayDragEnd}
             onDragLeave={handleDayDragLeave}
             onUpdateTitle={updateDayTitle}
-            onRemoveDay={removeDailyPlan}
+            onRemoveDay={(dayId) => {
+              removeDailyPlan(dayId);
+              // WebSocket으로 일정 삭제 알림
+              sendMessage('DAY_REMOVED', { dayId });
+            }}
             onAddPlaceClick={handleAddPlaceClick}
             onDayClick={handleDayClick}
             places={day.places || []}
-            onRemovePlace={removePlace}
+            onRemovePlace={(dayIndex, placeIndex) => {
+              const placeId = dailyPlans[dayIndex].places[placeIndex].id;
+              removePlace(dayIndex, placeIndex);
+              // WebSocket으로 장소 제거 알림
+              sendMessage('PLACE_REMOVED', { dayIndex, placeId });
+            }}
             onUpdatePlaceMemo={updatePlaceMemo}
             onOpenMemoModal={handleOpenMemoModal}
             dragState={{
@@ -838,21 +1121,29 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           />
         ))}
           
-          <Button className="add-day-button" onClick={addDailyPlan}>
+          <Button 
+            className="add-day-button" 
+            onClick={() => {
+              const newDay = addDailyPlan();
+                      // WebSocket으로 일정 추가 알림
+        sendMessage('DAY_ADDED', { day: newDay });
+            }}
+          >
             + 일정 추가
           </Button>
         </div>
       </div>
       
-      {showBookmarkModal && (
-        <BookmarkModal
-          isOpen={showBookmarkModal}
-          onClose={closeBookmarkModal}
-          bookmarkedPlaces={bookmarkedPlaces}
-          onPlaceSelect={addPlaceFromBookmark}
-          position={bookmarkModalPosition}
-        />
-      )}
+             {showBookmarkModal && (
+         <BookmarkModal
+           isOpen={showBookmarkModal}
+           onClose={closeBookmarkModal}
+           bookmarkedPlaces={bookmarkedPlaces}
+           onPlaceSelect={addPlaceFromBookmark}
+           position={bookmarkModalPosition}
+           planId={planId}
+         />
+       )}
 
       {showMemoModal && (
         <PlanMemoModal

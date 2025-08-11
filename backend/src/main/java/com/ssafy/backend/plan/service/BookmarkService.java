@@ -38,10 +38,8 @@ public class BookmarkService {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }
@@ -122,10 +120,8 @@ public class BookmarkService {
         User user = validateUserExistence(userId);
         Bookmark bookmark = validateBookmarkExistence(bookmarkId);
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
         }

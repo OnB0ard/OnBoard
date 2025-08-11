@@ -6,6 +6,8 @@ import EditToolBar from './EditToolBar';
 import { Cursor } from "../atoms/Cursor";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useStompWebSocket } from "@/hooks/useStompWebSocket";
+import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
+import { useParams } from "react-router-dom";
 
 // 렌더링 기본값(화면 표시용; 서버 DTO 기본값과는 분리)
 const RENDER_DEFAULTS = {
@@ -46,10 +48,67 @@ const renderCursors = (users, myUuid) => {
   });
 };
 
+//객체에서 null 또는 undefined 값을 가진 속성을 제거
 const omitNil = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null));
 
-const WhiteBoard = ({ planId }) => {
+// 서버 다이어그램 -> 로컬 store 형태로 정규화
+const normalizeDiagrams = (list = []) => {
+  const shapes = [];
+  const lines = [];
+  for (const d of list) {
+    const id = String(d.whiteBoardObjectId ?? d.id ?? Date.now());
+    const type = (d.type || '').toLowerCase(); // "CIRCLE" -> "circle"
+
+    if (type === 'pen' || type === 'line') {
+      // 선은 lines로
+      lines.push({
+        id: `line-${id}`,
+        type: 'pen',
+        points: Array.isArray(d.points) ? d.points : [],
+        stroke: d.stroke ?? '#000000',
+        strokeWidth: 3,
+        tension: 0.5,
+        lineCap: 'round',
+        lineJoin: 'round',
+      });
+      continue;
+    }
+
+    // 공통 도형 속성
+    const base = {
+      id,
+      type,                       // 'circle' | 'rect' | 'arrow' | 'text' ...
+      x: d.x ?? 0,
+      y: d.y ?? 0,
+      scaleX: d.scaleX ?? 1,
+      scaleY: d.scaleY ?? 1,
+      rotation: d.rotation ?? 0,
+      stroke: d.stroke ?? undefined,
+      fill: d.fill ?? undefined,
+    };
+
+    // 타입별 보강
+    if (type === 'text') base.text = d.text ?? '';
+    if (type === 'circle') base.radius = d.radius ?? 0;
+    if (type === 'rect') {
+      base.width = d.width ?? 0;
+      base.height = d.height ?? 0;
+    }
+    if (type === 'arrow') {
+      if (Array.isArray(d.points)) base.points = d.points;
+      else base.points = [0, 0, (d.width ?? 0), (d.height ?? 0)];
+    }
+
+    shapes.push(base);
+  }
+  return { shapes, lines };
+};
+
+const WhiteBoard = ({ planId: planIdProp }) => {
+  const params = useParams();
+  const planId = planIdProp ?? params.planId;
+
   const stageRef = useRef();
   const layerRef = useRef(null);
   const trRef = useRef();
@@ -86,7 +145,22 @@ const WhiteBoard = ({ planId }) => {
     setShapeType,
     setColor,
     removeShapeById,
+    replaceAllFromServer,
   } = useBoardStore();
+
+  // 초기 로드: planId로 서버 데이터 가져와 store에 초기화(히스토리 포함)
+  useEffect(() => {
+    if (!planId) return;
+    (async () => {
+      try {
+        const { whiteBoardDiagrams } = await getWhiteBoardObjects(planId);
+        const { shapes: initShapes, lines: initLines } = normalizeDiagrams(whiteBoardDiagrams);
+        replaceAllFromServer(initShapes, initLines);
+      } catch (err) {
+        console.error("화이트보드 초기 로드 실패:", err);
+      }
+    })();
+  }, [planId, replaceAllFromServer]);
 
   const internalShapeType = shapeType === 'cursor' ? 'select' : shapeType;
   const accessToken = useAuthStore(s => s.accessToken);
@@ -109,16 +183,16 @@ const WhiteBoard = ({ planId }) => {
   });
 
   const { sendMessage } = useStompWebSocket({
-    planId: 71,
+    planId,
     wsUrl: 'https://i13a504.p.ssafy.io/ws',
     accessToken,
+
     onMessage: (msg) => {
       const { action, points } = msg || {};
-      console.log("msg : " + msg);
-     // 라인 확정: (A) action 없음 + points 있음  OR  (B) action === 'MODIFY_LINE'
+      // 라인 확정: (A) action 없음 + points 있음  OR  (B) action === 'MODIFY_LINE'
       const isLineCommit =
-        ( !action && Array.isArray(points) ) ||
-        ( action === 'MODIFY_LINE' && Array.isArray(points) );
+        (!action && Array.isArray(points)) ||
+        (action === 'MODIFY_LINE' && Array.isArray(points));
 
       if (isLineCommit) {
         // 1) 내가 그리고 있던 temp 라인 제거
@@ -403,10 +477,7 @@ const WhiteBoard = ({ planId }) => {
       const currentLines = [...lines];
       const lastLine = currentLines[currentLines.length - 1];
       if (lastLine) {
-        // 최종 포인트 확정(로컬 history 저장은 굳이 안 해도 됨. 서버 저장본으로 교체될 예정)
         updateLastLinePoints(lastLine.points);
-
-        // 최종 저장 요청 (서버에서 저장 후 브로드캐스트 → onMessage에서 temp 삭제 + 확정 라인 추가)
         sendMessage('MODIFY_LINE', {
           x: lastLine.points[0],
           y: lastLine.points[1],

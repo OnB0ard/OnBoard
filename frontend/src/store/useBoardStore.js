@@ -39,6 +39,16 @@ export const useBoardStore = create((set, get) => ({
     });
   },
 
+    // 서버에서 처음 불러온 상태로 보드를 초기화(히스토리도 리셋)
+  replaceAllFromServer: (newShapes, newLines) => {
+    set({
+      shapes: newShapes,
+      lines: newLines,
+      shapesHistory: [newShapes],
+      linesHistory: [newLines],
+      historyStep: 0,
+    });
+  },
 
   updateShapesAndSave: (newShapes) => {
     const lines = get().lines;

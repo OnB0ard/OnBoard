@@ -11,6 +11,7 @@ import AccessControlModal from '../organisms/AccessControlModal';
 import { useMapCoreStore, usePlaceBlocksStore, usePlaceDetailsStore, useDayMarkersStore } from '../../store/mapStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useParticipantStore } from '../../store/usePlanUserStore';
+import { useStompPlaceBlock } from '../../hooks/useStompPlaceBlock';
 
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -124,7 +125,11 @@ const PlanPage = () => {
     lastMapPosition,
     mapInstance,
   } = useMapCoreStore();
-  
+  const {
+    dayMarkers,
+    showDayMarkers,
+    clearDayMarkers,
+  } = useDayMarkersStore();
   const {
     placeBlocks,
     addPlaceBlock,
@@ -132,13 +137,40 @@ const PlanPage = () => {
     updatePlaceBlockPosition,
     fetchDetailsAndAddBlock,
     hidePlaceBlockMarkers,
+    setActivePlanId,
   } = usePlaceBlocksStore();
+
+  // PlaceBlock WebSocket 연결
+  const { sendMessage: sendPlaceBlockMessage, connectionStatus: placeBlockConnectionStatus, myUuid } = useStompPlaceBlock({
+    planId,
+    onMessage: (msg) => {
+      const { type, payload, uuid } = msg;
+
+      console.log('실시간 PlaceBlock 업데이트 수신:', msg);
+
+      // 내가 보낸 메시지는 무시 (로컬에 이미 반영됨)
+      if (uuid === myUuid) return;
+
+      switch (type) {
+        case 'PLACEBLOCK_ADDED':
+          console.log('PlaceBlock 추가 수신:', payload);
+          addPlaceBlock(payload.place, payload.position, planId);
+          break;
+        case 'PLACEBLOCK_REMOVED':
+          console.log('PlaceBlock 제거 수신:', payload);
+          removePlaceBlock(payload.id, planId);
+          break;
+        case 'PLACEBLOCK_MOVED':
+          console.log('PlaceBlock 이동 수신:', payload);
+          updatePlaceBlockPosition(payload.id, payload.position, planId);
+          break;
+        default:
+          console.warn('알 수 없는 PlaceBlock 메시지 타입:', type);
+      }
+    }
+  });
   
-  const {
-    dayMarkers,
-    showDayMarkers,
-    clearDayMarkers,
-  } = useDayMarkersStore();
+
   const [isSideBarVisible, setIsSideBarVisible] = useState(true);
   const [draggedBlock, setDraggedBlock] = useState(null);
   const [mapCenter, setMapCenter] = useState(null);
@@ -151,6 +183,14 @@ const PlanPage = () => {
   const dragOffsetRef = useRef({ x: 0, y: 0 });
 
   // =================== Effects ===================
+  // planId가 변경될 때 PlaceBlock 스토어에 현재 planId 설정
+  useEffect(() => {
+    if (planId) {
+      setActivePlanId(planId);
+      console.log('🏠 PlaceBlock 스토어에 planId 설정:', planId);
+    }
+  }, [planId, setActivePlanId]);
+
   // 접근 권한 확인
   useEffect(() => {
     const checkAccess = async () => {
@@ -304,7 +344,10 @@ const PlanPage = () => {
 
   // PlaceBlock 삭제
   const handleRemove = (id) => {
-    removePlaceBlock(id);
+    removePlaceBlock(id, planId);
+    
+    // WebSocket으로 PlaceBlock 제거 알림
+    sendPlaceBlockMessage('PLACEBLOCK_REMOVED', { id });
   };
 
   // 마우스 드래그 시작 (화이트보드 내에서 이동)
@@ -326,7 +369,13 @@ const PlanPage = () => {
       if (draggedBlock && !isDailyPlanModalOpen) {
         const newX = e.clientX - dragOffsetRef.current.x;
         const newY = e.clientY - dragOffsetRef.current.y;
-        updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY });
+        updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY }, planId);
+        
+        // WebSocket으로 PlaceBlock 이동 알림
+        sendPlaceBlockMessage('PLACEBLOCK_MOVED', {
+          id: draggedBlock.id,
+          position: { x: newX, y: newY }
+        });
       }
     };
 
@@ -371,7 +420,7 @@ const PlanPage = () => {
         const { placeId } = JSON.parse(placeJson);
         const position = { x: e.clientX, y: e.clientY };
         // placeId와 위치 정보를 전달하여 상세 정보 로딩 및 블록 추가를 요청합니다.
-        fetchDetailsAndAddBlock(placeId, position);
+        fetchDetailsAndAddBlock(placeId, position, planId, sendPlaceBlockMessage);
       }
     } catch (error) {
       console.error('드롭 데이터 파싱 오류:', error);
@@ -381,11 +430,6 @@ const PlanPage = () => {
   // 일정 추가 모달 상태 변경 핸들러
   const handleDailyPlanModalToggle = (isOpen) => {
     setIsDailyPlanModalOpen(isOpen);
-    
-    // 모달이 닫힐 때 일차 마커를 제거하고 PlaceBlock 마커를 복원
-    if (!isOpen) {
-      clearDayMarkers();
-    }
   };
 
   // 접근 제어 조건부 렌더링
@@ -422,7 +466,10 @@ const PlanPage = () => {
         cursor: draggedBlock ? 'grabbing' : 'default'
       }}
     >
-        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
+        <SideBar 
+          onDailyPlanModalToggle={handleDailyPlanModalToggle} 
+          planId={planId}
+        />
         <WhiteBoard />
         {/* <EditToolBar /> */}
         {isMapVisible && (
@@ -472,7 +519,7 @@ const PlanPage = () => {
                   type={marker.type}
                   isTemporary={true}
                   title={`${marker.name} (${marker.dayIndex + 1}일차)`}
-                  color={marker.color} // 마커 색상 전달
+                  color={marker.color}
                 />
               ))}
             </Map>
@@ -495,7 +542,7 @@ const PlanPage = () => {
         >
           <PlaceBlock
             place={block}
-            onRemove={handleRemove}
+            onRemove={(id) => handleRemove(id)}
             onEdit={() => {}}
             onMouseDown={handleMouseDown}
             isDailyPlanModalOpen={isDailyPlanModalOpen}

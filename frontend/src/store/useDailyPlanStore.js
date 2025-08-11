@@ -1,17 +1,21 @@
 import { create } from 'zustand';
 import { updatePlaceOrder } from '../apis/placeOrderUpdate';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 
 const useDailyPlanStore = create(
   devtools(
-    (set, get) => ({
+    persist((set, get) => ({
       // === 기본 상태 ===
       dailyPlans: [],
-      planId: null, // 현재 편집 중인 계획 ID
+      planId: null, // 현재 편집 중인 계획 ID (뷰)
+      // 방별 일정 영속 저장소 (북마크와 동일한 패턴)
+      activePlanId: null,
+      plansByPlanId: {}, // { [planId]: DailyPlan[] }
       
       // === 지도 마커 상태 ===
       selectedDayForMap: null, // 지도에 마커를 표시할 선택된 일차 인덱스
       showDayMarkersOnMap: false, // 지도에 일차 마커 표시 여부
+
       // === 모달 상태 ===
       showBookmarkModal: false,
       selectedDayIndex: null,
@@ -38,95 +42,89 @@ const useDailyPlanStore = create(
       // 일차 드래그 상태
       draggedDayIndex: null,
 
-      // === 일차 관련 액션 ===
-      addDailyPlan: () => set((state) => {
-        const newDay = { 
-          id: Date.now(), 
-          title: `${state.dailyPlans.length + 1}일차`, 
-          places: [] 
-        };
+      // 내부 공통 헬퍼: 활성 플랜의 일정 동시 업데이트
+      _applyToActivePlans: (produceNewPlans) => set((state) => {
+        const key = state.activePlanId || state.planId || 'global';
+        const currentPlans = state.dailyPlans;
+        const newPlans = produceNewPlans(currentPlans, state);
         return {
-          dailyPlans: [...state.dailyPlans, newDay]
+          dailyPlans: newPlans,
+          plansByPlanId: { ...state.plansByPlanId, [key]: newPlans },
         };
       }),
 
-      removeDailyPlan: (dayId) => set((state) => ({
-        dailyPlans: state.dailyPlans.filter(day => day.id !== dayId)
-      })),
+      // === 일차 관련 액션 ===
+      setDailyPlans: (plans) => get()._applyToActivePlans(() => plans),
+      
+      addDailyPlan: () => get()._applyToActivePlans((plans) => {
+        const newDay = {
+          id: Date.now(),
+          title: `${plans.length + 1}일차`,
+          places: [],
+        };
+        return [...plans, newDay];
+      }),
 
-      updateDayTitle: (dayId, newTitle) => set((state) => ({
-        dailyPlans: state.dailyPlans.map(day => 
-          day.id === dayId ? { ...day, title: newTitle } : day
-        )
-      })),
+      removeDailyPlan: (dayId) => get()._applyToActivePlans((plans) => (
+        plans.filter((day) => day.id !== dayId)
+      )),
 
-      reorderDailyPlans: (fromIndex, toIndex) => set((state) => {
-        const newPlans = [...state.dailyPlans];
+      updateDayTitle: (dayId, newTitle) => get()._applyToActivePlans((plans) => (
+        plans.map((day) => (day.id === dayId ? { ...day, title: newTitle } : day))
+      )),
+
+      reorderDailyPlans: (fromIndex, toIndex) => get()._applyToActivePlans((plans) => {
+        const newPlans = [...plans];
         const [draggedItem] = newPlans.splice(fromIndex, 1);
         newPlans.splice(toIndex, 0, draggedItem);
-        return { dailyPlans: newPlans };
+        return newPlans;
       }),
 
       // 일차 위치 교환 (새로운 방식)
-      swapDailyPlans: (fromIndex, toIndex) => set((state) => {
-        if (fromIndex === toIndex) return state;
-        
-        const newPlans = [...state.dailyPlans];
-        
-        // 두 요소의 위치를 교환
+      swapDailyPlans: (fromIndex, toIndex) => get()._applyToActivePlans((plans) => {
+        if (fromIndex === toIndex) return plans;
+        const newPlans = [...plans];
         [newPlans[fromIndex], newPlans[toIndex]] = [newPlans[toIndex], newPlans[fromIndex]];
-        return { dailyPlans: newPlans };
+        return newPlans;
       }),
 
       // === 장소 관련 액션 ===
-      addPlaceToDay: (dayIndex, place, insertIndex = -1) => set((state) => {
+      addPlaceToDay: (dayIndex, place, insertIndex = -1) => get()._applyToActivePlans((plans) => {
         console.log('📝 addPlaceToDay 호출:', { dayIndex, placeName: place.name, insertIndex });
         const normalizedPlace = get().normalizePlaceData(place);
         const newPlace = { ...normalizedPlace, id: `${normalizedPlace.id}-${Date.now()}` };
-        
-        return {
-          dailyPlans: state.dailyPlans.map((day, index) => {
-            if (index === dayIndex) {
-              const newPlaces = [...day.places];
-              
-              // insertIndex가 -1이거나 배열 길이보다 크면 끝에 추가
-              if (insertIndex === -1 || insertIndex >= newPlaces.length) {
-                newPlaces.push(newPlace);
-              } else {
-                // 지정된 인덱스에 삽입
-                newPlaces.splice(insertIndex, 0, newPlace);
-              }
-              
-              return { ...day, places: newPlaces };
-            }
-            return day;
-          })
-        };
+        return plans.map((day, index) => {
+          if (index === dayIndex) {
+            const newPlaces = [...day.places];
+            if (insertIndex === -1 || insertIndex >= newPlaces.length) newPlaces.push(newPlace);
+            else newPlaces.splice(insertIndex, 0, newPlace);
+            return { ...day, places: newPlaces };
+          }
+          return day;
+        });
       }),
 
-      removePlace: (dayIndex, placeIndex) => set((state) => ({
-        dailyPlans: state.dailyPlans.map((day, index) =>
+      removePlace: (dayIndex, placeIndex) => get()._applyToActivePlans((plans) => (
+        plans.map((day, index) =>
           index === dayIndex
             ? { ...day, places: day.places.filter((_, pIndex) => pIndex !== placeIndex) }
             : day
         )
-      })),
+      )),
 
-      updatePlaceMemo: (dayIndex, placeIndex, memo) => set((state) => ({
-        dailyPlans: state.dailyPlans.map((day, index) =>
+      updatePlaceMemo: (dayIndex, placeIndex, memo) => get()._applyToActivePlans((plans) => (
+        plans.map((day, index) =>
           index === dayIndex
             ? {
                 ...day,
-                places: day.places.map((place, pIndex) =>
-                  pIndex === placeIndex ? { ...place, memo } : place
-                )
+                places: day.places.map((place, pIndex) => (pIndex === placeIndex ? { ...place, memo } : place)),
               }
             : day
         )
-      })),
+      )),
 
-      reorderPlaces: (sourceDayIndex, sourcePlaceIndex, targetDayIndex, targetPlaceIndex) => set((state) => {
-        const newPlans = [...state.dailyPlans];
+      reorderPlaces: (sourceDayIndex, sourcePlaceIndex, targetDayIndex, targetPlaceIndex) => get()._applyToActivePlans((plans) => {
+        const newPlans = [...plans];
         const draggedPlace = newPlans[sourceDayIndex].places[sourcePlaceIndex];
         
         // 소스에서 제거
@@ -138,8 +136,7 @@ const useDailyPlanStore = create(
           adjustedTargetIndex -= 1;
         }
         newPlans[targetDayIndex].places.splice(adjustedTargetIndex, 0, draggedPlace);
-        
-        return { dailyPlans: newPlans };
+        return newPlans;
       }),
 
       // 장소 위치 교환 (새로운 방식)
@@ -174,8 +171,9 @@ const useDailyPlanStore = create(
           newPlans[targetDayIndex] = { ...newPlans[targetDayIndex], places: newTargetPlaces };
         }
         
-        // 로컬 상태 업데이트
-        set({ dailyPlans: newPlans });
+        // 로컬 상태 및 플랜별 저장소 업데이트
+        const key = state.activePlanId || state.planId || 'global';
+        set({ dailyPlans: newPlans, plansByPlanId: { ...state.plansByPlanId, [key]: newPlans } });
         
         // API 호출을 위한 데이터 변환
         try {
@@ -206,7 +204,11 @@ const useDailyPlanStore = create(
       },
 
       // === 기본 액션 ===
-      setPlanId: (planId) => set({ planId }),
+      setPlanId: (planId) => set((state) => ({
+        planId,
+        activePlanId: planId,
+        dailyPlans: state.plansByPlanId[planId] || [],
+      })),
       
       // === 지도 마커 액션 ===
       selectDayForMap: (dayIndex) => set({ 
@@ -231,6 +233,7 @@ const useDailyPlanStore = create(
           showDayMarkersOnMap: true 
         };
       }),
+
       
       // === 드래그 앤 드롭 액션 ===
       setDayDragState: (draggedDayIndex) => set({ draggedDayIndex }),
@@ -380,7 +383,6 @@ const useDailyPlanStore = create(
 
       // === 초기화 ===
       resetStore: () => set({
-        dailyPlans: [],
         showBookmarkModal: false,
         selectedDayIndex: null,
         bookmarkModalPosition: { x: 0, y: 0 },
@@ -400,9 +402,10 @@ const useDailyPlanStore = create(
       })
     }),
     {
-      name: 'daily-plan-store',
+      name: 'daily-plan-per-plan',
+      partialize: (state) => ({ plansByPlanId: state.plansByPlanId, activePlanId: state.activePlanId }),
     }
-  )
+  ))
 );
 
 export default useDailyPlanStore;

@@ -7,7 +7,7 @@ import DailyPlanCreate1 from "./DailyPlanCreate1";
 import { useMapCoreStore, useBookmarkStore } from "../../store/mapStore";
 import "./SideBar.css";
 
-const SideBar = ({ onDailyPlanModalToggle }) => {
+const SideBar = ({ onDailyPlanModalToggle, planId }) => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
@@ -114,6 +114,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
         onClose={() => setIsBookmarkModalOpen(false)}
         bookmarkedPlaces={bookmarkedPlaces}
         position={modalPosition}
+        planId={planId}
       />
       </APIProvider>
 
@@ -129,6 +130,7 @@ const SideBar = ({ onDailyPlanModalToggle }) => {
           }
         }}
         bookmarkedPlaces={bookmarkedPlaces}
+        planId={planId}
       />
     </>
   );

@@ -38,12 +38,15 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
   // Bookmark functionality
   const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
   const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
+  const setActivePlanId = useBookmarkStore((state) => state.setActivePlanId);
+  // 북마크 상태 변경 시 즉시 리렌더 트리거
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
 
   // PlaceDetailModal 상태 관리
   const [showPlaceDetail, setShowPlaceDetail] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [placeDetailPosition, setPlaceDetailPosition] = useState({ x: 0, y: 0 });
-    const [isAutocompleteClicked, setIsAutocompleteClicked] = useState(false);
+  const [isAutocompleteClicked, setIsAutocompleteClicked] = useState(false);
   const [searchBarWidth, setSearchBarWidth] = useState(0);
 
 
@@ -60,7 +63,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
 
     // DOM 요소에 직접 접근하기 위한 Ref
   const inputRef = useRef(null); // 검색 입력창 Ref
-    const modalRef = useRef(null); // 모달 컨텐츠 영역 Ref
+  const modalRef = useRef(null); // 모달 컨텐츠 영역 Ref
   const searchBarRef = useRef(null); // 검색창 컨테이너 Ref
 
     // 모달을 닫을 때 호출되는 콜백 함수
@@ -168,6 +171,17 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
     }
   };
 
+  useEffect(() => {
+    // PlanPage에서 열리므로 현재 URL의 planId를 사용할 수 있으면 설정
+    try {
+      const path = window.location.pathname;
+      const match = path.match(/plan\/(\d+|[\w-]+)/i);
+      if (match) setActivePlanId(match[1]);
+    } catch (_) {
+      // ignore
+    }
+  }, [setActivePlanId]);
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -177,11 +191,6 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
         ref={modalRef}
         style={position ? { top: `${position.y}px`, left: `${position.x}px` } : {}}
       >
-        <div className="autocomplete-search-header">
-          <button onClick={handleClose} className="close-button" aria-label="닫기">
-            <Icon type="close" />
-          </button>
-        </div>
 
         <div className="autocomplete-search-container">
           <div className="autocomplete-search-searchbar" ref={searchBarRef}>
@@ -227,7 +236,7 @@ const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
                     isBookmarked: isBookmarked(place.place_id)
                   }))}
                   onPlaceClick={(place) => handlePlaceClick(place)}
-                  onBookmarkClick={toggleBookmark}
+                  onBookmarkClick={(place) => toggleBookmark(place)}
                   onDragStart={(e, place) => {
                     console.log("AutocompleteSearchModal에서 드래그 시작:", place);
                   }}

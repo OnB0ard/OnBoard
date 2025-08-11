@@ -11,7 +11,9 @@ const SearchPlace = ({ isOpen, onClose }) => {
   const popupRef = useRef(null);
 
   // Bookmark store functionality
-  const { toggleBookmark, isBookmarked } = useBookmarkStore();
+  const { toggleBookmark, isBookmarked, setActivePlanId } = useBookmarkStore();
+  // 북마크 변경 시 즉시 UI 반영을 위해 목록에도 구독해 리렌더 트리거
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
   
   // Search store functionality
   const { 
@@ -100,6 +102,17 @@ const SearchPlace = ({ isOpen, onClose }) => {
     setSelectedPlace(place);
     setIsPlaceDetailModalOpen(true);
   };
+
+  // 현재 planId를 URL에서 추출해 활성 플랜 설정 (PlanPage 컨텍스트)
+  useEffect(() => {
+    try {
+      const path = window.location.pathname;
+      const match = path.match(/plan\/(\d+|[\w-]+)/i);
+      if (match) setActivePlanId(match[1]);
+    } catch (e) {
+      // ignore
+    }
+  }, [setActivePlanId]);
 
   if (!isOpen) return null;
 

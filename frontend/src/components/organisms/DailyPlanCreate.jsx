@@ -4,13 +4,102 @@ import DailyPlaceBlock from './DailyPlaceBlock';
 import BookmarkModal from './BookmarkModal';
 import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
+import useStomp from '../../hooks/useStomp';
 import './DailyPlanCreate.css';
 
-const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) => {
+const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
   const [isMounted, setIsMounted] = useState(false);
   const modalRef = useRef(null);
   const [dailyPlans, setDailyPlans] = useState([]);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  
+  // WebSocket 연결 설정
+  const { client, connectionStatus } = useStomp(
+    `/topic/plans/${planId}`,
+    (message) => {
+      console.log('실시간 일정 업데이트 수신:', message);
+      const { type, data } = message;
+      
+      switch (type) {
+        case 'PLAN_UPDATED':
+          setDailyPlans(data.plans);
+          break;
+        case 'PLACE_ADDED':
+          handleRemotePlaceAdded(data);
+          break;
+        case 'PLACE_REMOVED':
+          handleRemotePlaceRemoved(data);
+          break;
+        case 'PLACE_MOVED':
+          handleRemotePlaceMoved(data);
+          break;
+        case 'DAY_ADDED':
+          handleRemoteDayAdded(data);
+          break;
+        case 'DAY_REMOVED':
+          handleRemoteDayRemoved(data);
+          break;
+        default:
+          console.warn('알 수 없는 메시지 타입:', type);
+      }
+    }
+  );
+
+  // 원격 업데이트 처리 함수들
+  const handleRemotePlaceAdded = (data) => {
+    const { dayIndex, place } = data;
+    setDailyPlans(prev => prev.map((day, idx) =>
+      idx === dayIndex
+        ? { ...day, places: [...day.places, place] }
+        : day
+    ));
+  };
+
+  const handleRemotePlaceRemoved = (data) => {
+    const { dayIndex, placeId } = data;
+    setDailyPlans(prev => prev.map((day, idx) =>
+      idx === dayIndex
+        ? { ...day, places: day.places.filter(p => p.id !== placeId) }
+        : day
+    ));
+  };
+
+  const handleRemotePlaceMoved = (data) => {
+    const { fromDayIndex, toDayIndex, placeId, newIndex } = data;
+    setDailyPlans(prev => {
+      const newPlans = [...prev];
+      const fromDay = newPlans[fromDayIndex];
+      const toDay = newPlans[toDayIndex];
+      const placeIndex = fromDay.places.findIndex(p => p.id === placeId);
+      
+      if (placeIndex === -1) return prev;
+      
+      const [place] = fromDay.places.splice(placeIndex, 1);
+      toDay.places.splice(newIndex, 0, place);
+      
+      return newPlans;
+    });
+  };
+
+  const handleRemoteDayAdded = (data) => {
+    const { day } = data;
+    setDailyPlans(prev => [...prev, day]);
+  };
+
+  const handleRemoteDayRemoved = (data) => {
+    const { dayId } = data;
+    setDailyPlans(prev => prev.filter(day => day.id !== dayId));
+  };
+
+  // WebSocket으로 업데이트 전송하는 함수
+  const sendUpdate = (type, data) => {
+    if (client && connectionStatus === 'CONNECTED') {
+      client.publish({
+        destination: `/app/plans/${planId}/update`,
+        body: JSON.stringify({ type, data })
+      });
+    }
+  };
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
   const [draggedPlaceId, setDraggedPlaceId] = useState(null);
   const [draggedFromDay, setDraggedFromDay] = useState(null);
@@ -63,16 +152,29 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
       places: []
     };
     setDailyPlans(prev => [...prev, newDay]);
+    
+    // WebSocket으로 일정 추가 알림
+    sendUpdate('DAY_ADDED', { day: newDay });
   };
 
   const removeDailyPlan = (dayId) => {
     setDailyPlans(prev => prev.filter(day => day.id !== dayId));
+    
+    // WebSocket으로 일정 삭제 알림
+    sendUpdate('DAY_REMOVED', { dayId });
   };
 
   const updateDayTitle = (dayId, newTitle) => {
     setDailyPlans(prev => prev.map(day => 
       day.id === dayId ? { ...day, title: newTitle } : day
     ));
+    
+    // WebSocket으로 일정 제목 변경 알림
+    sendUpdate('PLAN_UPDATED', { 
+      plans: dailyPlans.map(day => 
+        day.id === dayId ? { ...day, title: newTitle } : day
+      )
+    });
   };
 
   const addPlaceFromBookmark = (place) => {
@@ -88,6 +190,13 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
           ? { ...day, places: [...day.places, newPlace] }
           : day
       ));
+
+      // WebSocket으로 장소 추가 알림
+      sendUpdate('PLACE_ADDED', {
+        dayIndex: selectedDayIndex,
+        place: newPlace
+      });
+      
       setShowBookmarkModal(false);
       setSelectedDayIndex(null);
     }
@@ -189,19 +298,26 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
       newPlans[sourceDayIndex].places.splice(sourcePlaceIndex, 1);
       
       // 새로운 위치에 삽입
-      if (sourceDayIndex === targetDayIndex) {
-        // 같은 일정 내에서 순서 변경
-        let adjustedTargetIndex = targetPlaceIndex;
-        if (sourcePlaceIndex < targetPlaceIndex) {
-          adjustedTargetIndex -= 1;
-        }
-        console.log('같은 일정 내 이동:', { from: sourcePlaceIndex, to: adjustedTargetIndex });
-        newPlans[targetDayIndex].places.splice(adjustedTargetIndex, 0, draggedPlace);
-      } else {
-        // 다른 일정으로 이동
-        console.log('다른 일정으로 이동');
-        newPlans[targetDayIndex].places.splice(targetPlaceIndex, 0, draggedPlace);
+      let adjustedTargetIndex = targetPlaceIndex;
+      if (sourceDayIndex === targetDayIndex && sourcePlaceIndex < targetPlaceIndex) {
+        adjustedTargetIndex -= 1;
       }
+      
+      if (sourceDayIndex === targetDayIndex) {
+        console.log('같은 일정 내 이동:', { from: sourcePlaceIndex, to: adjustedTargetIndex });
+      } else {
+        console.log('다른 일정으로 이동');
+      }
+      
+      newPlans[targetDayIndex].places.splice(adjustedTargetIndex, 0, draggedPlace);
+      
+      // WebSocket으로 장소 이동 알림
+      sendUpdate('PLACE_MOVED', {
+        fromDayIndex: sourceDayIndex,
+        toDayIndex: targetDayIndex,
+        placeId: draggedPlace.id,
+        newIndex: adjustedTargetIndex
+      });
       
       return newPlans;
     });
@@ -258,11 +374,19 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
   };
 
   const removePlace = (dayIndex, placeIndex) => {
+    const placeId = dailyPlans[dayIndex].places[placeIndex].id;
+    
     setDailyPlans(prev => prev.map((day, index) => 
       index === dayIndex 
         ? { ...day, places: day.places.filter((_, pIndex) => pIndex !== placeIndex) }
         : day
     ));
+
+    // WebSocket으로 장소 제거 알림
+    sendUpdate('PLACE_REMOVED', {
+      dayIndex,
+      placeId
+    });
   };
 
   const updatePlaceMemo = (dayIndex, placeIndex, memo) => {
@@ -278,6 +402,22 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
           }
         : day
     ));
+
+    // WebSocket으로 전체 일정 업데이트 알림 (메모 변경)
+    sendUpdate('PLAN_UPDATED', {
+      plans: dailyPlans.map((day, index) => 
+        index === dayIndex 
+          ? { 
+              ...day, 
+              places: day.places.map((place, pIndex) => 
+                pIndex === placeIndex 
+                  ? { ...place, memo }
+                  : place
+              )
+            }
+          : day
+      )
+    });
   };
 
   const handleOpenMemoModal = (place, dayTitle, position) => {

@@ -18,9 +18,5 @@ public interface WhiteBoardRepository extends JpaRepository<WhiteBoardObject, Lo
     @Query("SELECT w FROM WhiteBoardObject w LEFT JOIN FETCH w.place WHERE w.plan = :plan")
     List<WhiteBoardObject> findByPlanWithPlace(@Param("plan") Plan plan);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update DayPlace dp set dp.whiteBoardObject = null where dp.whiteBoardObject.whiteBoardObjectId = :wboId")
-    int detachFromWhiteBoardObject(@Param("wboId") Long wboId);
-
     WhiteBoardObject findByWhiteBoardObjectId(Long whiteBoardObjectId);
 }

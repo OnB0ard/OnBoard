@@ -85,6 +85,22 @@ const useSearchStore = create((set, get) => ({
     
     placesService.textSearch(request, (results, status, pagination) => {
       const { isLoadingMore, searchResults: currentResults } = get();
+      // Simple log to inspect result shapes
+      try {
+        const len = Array.isArray(results) ? results.length : null;
+        const sample = Array.isArray(results)
+          ? results.slice(0, 3).map((r) => ({
+              name: r?.name,
+              place_id: r?.place_id,
+              hasPhotos: !!r?.photos?.length,
+              photoHasGetUrl: typeof r?.photos?.[0]?.getUrl === 'function',
+            }))
+          : null;
+        // console.log('[textSearch]', { status, resultsLen: len, sample });
+        console.log(results)
+      } catch (e) {
+        console.log('[textSearch:log-failed]', e);
+      }
       
       if (status === 'OK' && results) {
         const processedResults = results.map(place => {

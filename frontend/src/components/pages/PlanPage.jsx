@@ -12,6 +12,7 @@ import { useMapCoreStore, usePlaceBlocksStore, usePlaceDetailsStore, useDayMarke
 import { useAuthStore } from '../../store/useAuthStore';
 import { useParticipantStore } from '../../store/usePlanUserStore';
 import useBookmarkWebSocket from '../../hooks/useBookmarkWebSocket';
+import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
 
@@ -126,6 +127,40 @@ const PlanPage = () => {
     clearBookmarkWsSenders,
   } = useBookmarkStore();
 
+  // ========== DaySchedule WebSocket 연결 ==========
+  const handleDayScheduleMessage = useCallback((msg) => {
+    // msg: { action, ...payload }
+    console.groupCollapsed('[DaySchedule][RECV]', msg?.action);
+    console.log(msg);
+    console.groupEnd();
+    // TODO: 이곳에서 스토어 업데이트를 연결하세요.
+    // ex)
+    // if (msg.action === 'CREATE') addDaySchedule({ id: msg.dayScheduleId, title: msg.title, dayOrder: msg.dayOrder });
+    // if (msg.action === 'RENAME') renameDaySchedule(msg.dayScheduleId, msg.title);
+    // if (msg.action === 'MOVE')   reorderDayScheduleTemp(msg.dayScheduleId, msg.dayOrder, msg.modifiedDayOrder);
+    // if (msg.action === 'UPDATE_SCHEDULE') reorderDaySchedule(msg.dayScheduleId, msg.dayOrder, msg.modifiedDayOrder);
+    // if (msg.action === 'DELETE') removeDaySchedule(msg.dayScheduleId);
+  }, []);
+
+  const {
+    connected: dayWsConnected,
+    createDay,
+    renameDay,
+    moveDayRealtime,
+    updateSchedule,
+    deleteDay,
+  } = useStompDaySchedule({
+    planId: numericPlanId,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws', // 백엔드 WS 엔드포인트
+    accessToken,
+    onMessage: handleDayScheduleMessage,
+    onSubscribed: () => {
+      // 초기 일차 목록이 필요하면 여기서 REST로 가져오세요.
+      // ex) fetchDaySchedules(numericPlanId)
+      console.log('[DaySchedule] subscribed');
+    },
+  });
+
   // Bookmark WebSocket: subscribe/send for current plan and inject senders to store
   const { sendCreate, sendDelete } = useBookmarkWebSocket({
     planId: numericPlanId,
@@ -164,7 +199,7 @@ const PlanPage = () => {
 
   // PlaceBlock WebSocket 연결 (도메인 훅으로 캡슐화)
   const { sendMessage: sendPlaceBlockMessage, connectionStatus: placeBlockConnectionStatus } = usePlaceBlockSync({
-    planId,
+    planId: numericPlanId,
     accessToken,
     wsUrl: 'https://i13a504.p.ssafy.io/ws',
   });
@@ -195,13 +230,12 @@ const PlanPage = () => {
       loadBookmarks(numericPlanId);
     }
   }, [numericPlanId, loadBookmarks]);
-  // planId가 변경될 때 PlaceBlock 스토어에 현재 planId 설정
+  // planId 변경 시: 활성 plan 설정만 수행 (초기 로드는 WS 이벤트로만 처리)
   useEffect(() => {
-    if (planId) {
-      setActivePlanId(planId);
-      console.log('🏠 PlaceBlock 스토어에 planId 설정:', planId);
-    }
-  }, [planId, setActivePlanId]);
+    if (!numericPlanId) return;
+    setActivePlanId(numericPlanId);
+    console.log('🏠 PlaceBlock 스토어에 planId 설정:', numericPlanId);
+  }, [numericPlanId, setActivePlanId]);
 
   // 접근 권한 확인
   useEffect(() => {
@@ -356,9 +390,9 @@ setModalState({ ...modalState, isOpen: false });
 
 // PlaceBlock 삭제
 const handleRemove = (id) => {
-removePlaceBlock(id, planId);
+removePlaceBlock(id, numericPlanId);
 // WebSocket으로 PlaceBlock 삭제 알림
-const deletePayload = { whiteBoardId: Number(planId), type: 'PLACE', whiteBoardObjectId: id };
+const deletePayload = { whiteBoardId: numericPlanId, type: 'PLACE', whiteBoardObjectId: id };
 console.groupCollapsed('[PlaceBlock][SEND] DELETE');
 console.log('planId:', planId, 'payload:', deletePayload);
 console.groupEnd();
@@ -386,17 +420,17 @@ const handleGlobalMouseMove = (e) => {
 if (draggedBlock && !isDailyPlanModalOpen) {
 const newX = e.clientX - dragOffsetRef.current.x;
 const newY = e.clientY - dragOffsetRef.current.y;
-updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY }, planId);
+updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY }, numericPlanId);
         
 // WebSocket으로 PlaceBlock 이동 알림
 const movePayload = {
-whiteBoardId: Number(planId),
+whiteBoardId: numericPlanId,
 type: 'PLACE',
 whiteBoardObjectId: draggedBlock.id,
 objectInfo: { x: newX, y: newY }
 };
 console.groupCollapsed('[PlaceBlock][SEND] MOVE');
-console.log('planId:', planId, 'payload:', movePayload);
+console.log('planId (numeric):', numericPlanId, 'payload:', movePayload);
 console.groupEnd();
 sendPlaceBlockMessage('MOVE', movePayload);
 // 레거시 호환 전송 (선택):
@@ -445,7 +479,7 @@ setDraggedBlock(null);
         const { placeId } = JSON.parse(placeJson);
         const position = { x: e.clientX, y: e.clientY };
         // placeId와 위치 정보를 전달하여 상세 정보 로딩 및 블록 추가를 요청합니다.
-        fetchDetailsAndAddBlock(placeId, position, planId, sendPlaceBlockMessage);
+        fetchDetailsAndAddBlock(placeId, position, numericPlanId, sendPlaceBlockMessage);
       }
     } catch (error) {
       console.error('드롭 데이터 파싱 오류:', error);
@@ -491,7 +525,7 @@ setDraggedBlock(null);
         cursor: draggedBlock ? 'grabbing' : 'default'
       }}
     >
-        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
+        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} planId={Number(planId)} />
         <WhiteBoard planId = {Number(planId)}/>
         {/* <EditToolBar /> */}
         {isMapVisible && (

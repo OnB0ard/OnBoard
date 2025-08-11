@@ -1,14 +1,27 @@
-// src/hooks/useStompWebSocket.js
+// src/hooks/useStompDaySchedule.js
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-export const useStompWebSocket = ({
+/**
+ * DaySchedule 전용 STOMP 훅
+ * - 구독: /topic/daySchedule/{planId}
+ * - 발행: /app/daySchedule/{planId}
+ * - 메시지 포맷: { action, ...payload }
+ *
+ * 액션 목록 (백엔드 컨트롤러 기준):
+ *   CREATE: { title, dayOrder }
+ *   RENAME: { dayScheduleId, title }
+ *   MOVE: { dayScheduleId, dayOrder, modifiedDayOrder }   // 실시간 이동(저장 없음)
+ *   UPDATE_SCHEDULE: { dayScheduleId, dayOrder, modifiedDayOrder }
+ *   DELETE: { dayScheduleId }
+ */
+export const useStompDaySchedule = ({
   planId,
   wsUrl,
-  onMessage,
   accessToken,
-  onSubscribed,   // ← 새로 추가: 구독 완료 시 호출
+  onMessage,
+  onSubscribed,
 }) => {
   const clientRef = useRef(null);
   const subRef = useRef(null);
@@ -16,7 +29,7 @@ export const useStompWebSocket = ({
   const onMessageRef = useRef(onMessage);
   const onSubscribedRef = useRef(onSubscribed);
   const planIdRef = useRef(planId);
-  const tokenRef = useRef(accessToken); 
+  const tokenRef = useRef(accessToken);
   const outboxRef = useRef([]);
   const [connected, setConnected] = useState(false);
 
@@ -25,6 +38,7 @@ export const useStompWebSocket = ({
   useEffect(() => { planIdRef.current = planId; }, [planId]);
   useEffect(() => { tokenRef.current = accessToken; }, [accessToken]);
 
+  // 클라이언트 초기화
   useEffect(() => {
     if (clientRef.current) return;
     const base = wsUrl || `${location.protocol}//${location.host}/ws`;
@@ -35,12 +49,11 @@ export const useStompWebSocket = ({
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       debug: (str) => console.log('[STOMP raw]', str),
-
       onConnect: (frame) => {
         connectedRef.current = true;
         setConnected(true);
-        console.log('[WS] connected. frame headers:', frame?.headers);
-        // pending publish flush
+        console.log('[WS-DaySchedule] connected', frame?.headers);
+        // 보류된 publish 전송
         if (outboxRef.current.length) {
           outboxRef.current.forEach((p) => client.publish(p));
           outboxRef.current = [];
@@ -53,34 +66,34 @@ export const useStompWebSocket = ({
       onWebSocketClose: (e) => {
         connectedRef.current = false;
         setConnected(false);
-        console.warn('[WS] closed:', e?.code, e?.reason);
+        console.warn('[WS-DaySchedule] closed:', e?.code, e?.reason);
       },
       onStompError: (frame) => {
-        console.error('[STOMP] Error:', frame.headers?.message);
-        console.error('[STOMP] Details:', frame.body);
+        console.error('[STOMP-DaySchedule] Error:', frame.headers?.message);
+        console.error('[STOMP-DaySchedule] Details:', frame.body);
       },
       onWebSocketError: (e) => {
-        console.error('[WS] Error:', e?.message || e);
+        console.error('[WS-DaySchedule] Error:', e?.message || e);
       },
     });
 
     clientRef.current = client;
 
     return () => {
-      try { subRef.current?.unsubscribe(); } catch {}
+      try { subRef.current?.unsubscribe(); } catch (e) { console.debug('[WS-DaySchedule] unsubscribe cleanup error', e); }
       subRef.current = null;
       if (clientRef.current?.active) clientRef.current.deactivate();
       clientRef.current = null;
     };
   }, [wsUrl]);
 
-  // 토큰 준비되면 activate / 토큰 없으면 비활성화
+  // 토큰 준비되면 활성화
   useEffect(() => {
     const client = clientRef.current;
     if (!client) return;
 
     if (!tokenRef.current || tokenRef.current.length < 10) {
-      console.warn('[WS] token missing -> keep disconnected');
+      console.warn('[WS-DaySchedule] token missing -> keep disconnected');
       if (client.active) client.deactivate();
       return;
     }
@@ -91,76 +104,75 @@ export const useStompWebSocket = ({
     client.activate();
   }, [accessToken]);
 
-  // 연결 + planId 준비시 구독/재구독
+  // 구독/재구독
   useEffect(() => {
     const client = clientRef.current;
     if (!client || !connectedRef.current) return;
 
     if (planIdRef.current == null) {
-      console.warn('[WS] planId missing -> skip subscribe');
+      console.warn('[WS-DaySchedule] planId missing -> skip subscribe');
       return;
     }
 
-    // 기존 구독 해제 후 새 토픽 구독
-    try { subRef.current?.unsubscribe(); } catch {}
+    try { subRef.current?.unsubscribe(); } catch (e) { console.debug('[WS-DaySchedule] previous unsubscribe error', e); }
     subRef.current = client.subscribe(
-      `/topic/whiteboard/${planIdRef.current}`,
+      `/topic/daySchedule/${planIdRef.current}`,
       (msg) => {
         try {
-          // 일부 브로커/프록시에서 \u0000(널문자) 끝에 붙는 경우가 있어 안전 파싱
-          const raw = typeof msg.body === 'string'
-            ? msg.body.replace('\u0000+$', '')
-            : msg.body;
+          const raw = typeof msg.body === 'string' ? msg.body.replace('\u0000+$', '') : msg.body;
           const body = JSON.parse(raw);
           onMessageRef.current?.(body);
         } catch (e) {
-          console.error('[STOMP] JSON parse error:', e, 'raw:', msg?.body);
+          console.error('[STOMP-DaySchedule] JSON parse error:', e, 'raw:', msg?.body);
         }
       }
     );
-    console.log('[WS] SUBSCRIBE -> /topic/whiteboard/' + planIdRef.current);
+    console.log('[WS-DaySchedule] SUBSCRIBE -> /topic/daySchedule/' + planIdRef.current);
 
-    // 구독 완료 콜백 (여기서 초기 GET을 트리거 하도록 WhiteBoard에서 사용)
     onSubscribedRef.current?.(planIdRef.current);
 
     return () => {
-      try { subRef.current?.unsubscribe(); } catch {}
+      try { subRef.current?.unsubscribe(); } catch (e) { console.debug('[WS-DaySchedule] unsubscribe error', e); }
       subRef.current = null;
     };
-  }, [connected, planId]); // planId 바뀌면 재구독
+  }, [connected, planId]);
 
-  const sendMessage = (action, payload = {}) => {
+  const publish = (action, payload = {}) => {
     const client = clientRef.current;
 
     if (planIdRef.current == null) {
-      console.warn('[WS] send skipped: missing planId');
+      console.warn('[WS-DaySchedule] send skipped: missing planId');
       return;
     }
 
-    const destination = `/app/whiteboard/${planIdRef.current}`;
+    const destination = `/app/daySchedule/${planIdRef.current}`;
     const publishPayload = {
       destination,
       body: JSON.stringify({ action, ...payload }),
       headers: { 'content-type': 'application/json' },
     };
 
-    try {
-      const parsed = { action, ...payload };
-      // 전송 로그: 목적지 planId와 body 내 whiteBoardId 동시 확인
-      console.groupCollapsed('[WS][SEND]');
-      console.log('destination:', destination);
-      if (parsed && typeof parsed === 'object') {
-        console.log('body.action:', parsed.action);
-        console.log('body.whiteBoardId:', parsed.whiteBoardId);
-      }
-      console.groupEnd();
-    } catch (_) {
-      // ignore logging errors
-    }
-
     if (client && client.connected) client.publish(publishPayload);
     else outboxRef.current.push(publishPayload);
   };
 
-  return { sendMessage, connected };
+  // 액션별 헬퍼
+  const sendMessage = (type, payload = {}) => publish(type, payload);
+  const createDay = ({ title, dayOrder }) => publish('CREATE', { title, dayOrder });
+  const renameDay = ({ dayScheduleId, title }) => publish('RENAME', { dayScheduleId, title });
+  const moveDayRealtime = ({ dayScheduleId, dayOrder, modifiedDayOrder }) =>
+    publish('MOVE', { dayScheduleId, dayOrder, modifiedDayOrder });
+  const updateSchedule = ({ dayScheduleId, dayOrder, modifiedDayOrder }) =>
+    publish('UPDATE_SCHEDULE', { dayScheduleId, dayOrder, modifiedDayOrder });
+  const deleteDay = ({ dayScheduleId }) => publish('DELETE', { dayScheduleId });
+
+  return {
+    connected,
+    sendMessage,
+    createDay,
+    renameDay,
+    moveDayRealtime,
+    updateSchedule,
+    deleteDay,
+  };
 };

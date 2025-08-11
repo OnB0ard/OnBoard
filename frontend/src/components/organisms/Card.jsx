@@ -22,6 +22,7 @@ const Card = ({
   onShowLeaveModal,
   hideDropdown = false,
   onRequestConfirm,
+  hideManageActions = false,
 }) => {
   const {
     participantOpenId,
@@ -249,6 +250,7 @@ const Card = ({
                       isOpen={isParticipantOpen}
                       onClose={() => toggleParticipantPopover(id)}
                       onRequestConfirm={onRequestConfirm}
+                      hideManageActions={hideManageActions}
                     />
                   </Popover.Content>
                 </Popover.Portal>

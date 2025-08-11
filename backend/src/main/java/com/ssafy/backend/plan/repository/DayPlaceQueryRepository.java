@@ -12,5 +12,7 @@ public interface DayPlaceQueryRepository {
 
     // planId 와 내부 ScheduleId로 한 날짜의 여행지를 조회 가능
     List<DayPlace> getDayScheduleByDayScheduleIdAndPlanId(Long dayScheduleId, Long planId);
+
+
     DayPlace findByPlanIdAndDayScheduleIdAndDayPlaceId(Long planId, Long dayScheduleId, Long dayPlaceId);
 }

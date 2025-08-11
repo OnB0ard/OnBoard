@@ -3,6 +3,7 @@ package com.ssafy.backend.plan.service;
 import com.ssafy.backend.plan.dto.request.CreateDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateSchedulePositionRequestDTO;
+import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayPlaceResponseDTO;
 import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
@@ -39,7 +40,7 @@ public class DayScheduleService {
     private final DayPlaceRepository dayPlaceRepository;
 
     @Transactional
-    public Long createDaySchedule(Long planId, CreateDayScheduleRequestDTO createDayScheduleRequestDTO, Long userId) {
+    public CreateDayScheduleResponseDTO createDaySchedule(Long planId, CreateDayScheduleRequestDTO createDayScheduleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = planRepository.findByIdForUpdate(planId);
 
@@ -62,7 +63,11 @@ public class DayScheduleService {
 
         dayScheduleRepository.save(daySchedule);
 
-        return daySchedule.getDayScheduleId();
+        return CreateDayScheduleResponseDTO.builder()
+                .dayScheduleId(daySchedule.getDayScheduleId())
+                .title(daySchedule.getTitle())
+                .dayOrder(daySchedule.getDayOrder())
+                .build();
     }
 
     public PlanScheduleResponseDTO getPlanSchedule(Long planId, Long userId) {

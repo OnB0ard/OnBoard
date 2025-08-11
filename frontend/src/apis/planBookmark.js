@@ -9,6 +9,8 @@ import apiClient from './apiClient';
 export const addPlanBookmark = async (planId, placeData) => {
   try {
     const response = await apiClient.post(`/plan/${planId}/bookmark`, {
+      action : "CREATE",
+
       googlePlaceId : placeData.googlePlaceId,
       placeName : placeData.placeName,
       latitude : placeData.latitude,
@@ -51,7 +53,7 @@ export const getPlanBookmark = async (planId) => {
  */
 export const removePlanBookmark = async (planId, bookmarkId) => {
   try {
-    const response = await apiClient.delete(`/plan/${planId}/bookmark/${bookmarkId}`);
+    const response = await apiClient.delete(`/plan/${planId}/bookmark/${bookmarkId}`, {action : "DELETE", bookmarkId : bookmarkId});
     return response.data;
   } catch (error) {
     console.error(`여행 계획(ID: ${planId}) 북마크 삭제 실패:`, error);

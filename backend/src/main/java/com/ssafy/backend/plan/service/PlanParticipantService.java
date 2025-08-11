@@ -1,7 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.common.util.S3Util;
-import com.ssafy.backend.plan.dto.request.AcceptOrDenyUserRequestDTO;
+import com.ssafy.backend.plan.dto.request.UserIdRequestDTO;
 import com.ssafy.backend.plan.dto.response.UserInformationResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
@@ -60,10 +60,10 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean approveRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, JwtUserInfo jwtUserInfo) {
+    public boolean approveRequest(Long planId, UserIdRequestDTO userIdRequestDTO, JwtUserInfo jwtUserInfo) {
 
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
+        User user = validateUserExistence(userIdRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
 
         if(!userPlanRepository.existsByPlanAndUser(plan, creator)) {
@@ -77,7 +77,7 @@ public class PlanParticipantService {
         } // else if 작성 안하고, 생성자라고 생각 함
 
         User applicant = new User();
-        applicant.setUserId(acceptOrDenyUserRequestDTO.getUserId());
+        applicant.setUserId(userIdRequestDTO.getUserId());
         if(!userPlanRepository.existsByUser(applicant)){
             throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
@@ -94,10 +94,10 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean denyRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, JwtUserInfo jwtUserInfo) {
+    public boolean denyRequest(Long planId, UserIdRequestDTO userIdRequestDTO, JwtUserInfo jwtUserInfo) {
 
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
+        User user = validateUserExistence(userIdRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
 
         if(!userPlanRepository.existsByPlanAndUser(plan, creator)) {
@@ -110,7 +110,7 @@ public class PlanParticipantService {
         } // else if 작성 안하고, 생성자라고 생각 함
 
         User applicant = new User();
-        applicant.setUserId(acceptOrDenyUserRequestDTO.getUserId());
+        applicant.setUserId(userIdRequestDTO.getUserId());
         if(!userPlanRepository.existsByUser(applicant)){
             throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
@@ -178,10 +178,10 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean delegateRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, JwtUserInfo jwtUserInfo) {
+    public boolean delegateRequest(Long planId, UserIdRequestDTO userIdRequestDTO, JwtUserInfo jwtUserInfo) {
         Plan plan = validatePlanExistence(planId);
         User delegator = validateUserExistence(jwtUserInfo.getUserId());
-        User user = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
+        User user = validateUserExistence(userIdRequestDTO.getUserId());
 
         if (!userPlanRepository.existsByPlanAndUser(plan, delegator)) {
             throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
@@ -220,7 +220,7 @@ public class PlanParticipantService {
     }
 
     @Transactional
-    public boolean resignRequest(Long planId, AcceptOrDenyUserRequestDTO acceptOrDenyUserRequestDTO, Long userId) {
+    public boolean resignRequest(Long planId, UserIdRequestDTO userIdRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
 
@@ -233,7 +233,7 @@ public class PlanParticipantService {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
         }
 
-        User goodbyeUser = validateUserExistence(acceptOrDenyUserRequestDTO.getUserId());
+        User goodbyeUser = validateUserExistence(userIdRequestDTO.getUserId());
         UserPlan goodbyeUserPlan = userPlanRepository.findByPlanAndUser(plan, goodbyeUser)
                 .orElseThrow(() -> new NotInThisRoomException("이 방의 참여자가 아닙니다."));
         userPlanRepository.delete(goodbyeUserPlan);

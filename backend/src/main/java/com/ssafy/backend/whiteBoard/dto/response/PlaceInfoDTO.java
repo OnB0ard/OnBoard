@@ -13,5 +13,6 @@ public class PlaceInfoDTO {
     private Double longitude;
     private String address;
     private Double rating;
-    private String googleImg;
+    private String imageUrl;
+    private String category;
 }

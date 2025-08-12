@@ -1,9 +1,5 @@
-<<<<<<< frontend/src/components/pages/PlanPage.jsx
-
-=======
 import React, { useState, useEffect, useRef, useCallback, useMemo , useLayoutEffect} from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
->>>>>>> frontend/src/components/pages/PlanPage.jsx
 import { APIProvider, useMapsLibrary, Map, useMap } from '@vis.gl/react-google-maps';
 import CustomMarker from '../atoms/CustomMarker';
 import SideBar from '../organisms/SideBar';

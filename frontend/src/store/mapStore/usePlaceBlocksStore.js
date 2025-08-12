@@ -141,6 +141,8 @@ const usePlaceBlocksStore = create(
             const wp = d?.whiteBoardPlace || d?.place || {};
             const place = {
               id,
+              // DB PK를 보존하여 이후 드래그 드롭에서 정확한 placeId를 사용할 수 있도록 함
+              placeId: wp.placeId ?? null,
               googlePlaceId: wp.googlePlaceId ?? wp.placeId ?? null,
               placeName: wp.placeName ?? wp.name ?? 'Unknown Place',
               address: wp.address ?? null,
@@ -191,6 +193,8 @@ const usePlaceBlocksStore = create(
               const objectInfo = { x: position.x, y: position.y };
               // placeDetails는 usePlaceDetailsStore의 processedPlace 형태
               const whiteBoardPlace = {
+                // 서버 에코가 placeId를 포함하도록 전송에 포함 (백엔드가 무시해도 무방)
+                placeId: Number.isFinite(Number(placeId)) ? Number(placeId) : undefined,
                 googlePlaceId: placeDetails.googlePlaceId ?? placeId,
                 placeName: placeDetails.placeName,
                 latitude: placeDetails.latitude,

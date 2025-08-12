@@ -7,16 +7,19 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
+  /* 버튼을 통한 크기 변경을 허용하기 위한 폭 제약 */
   min-width: 300px;
   max-width: 330px;
-  /* 화면을 넘지 않도록: 뷰포트 높이 - 상단 오프셋 (고정 높이로 지정) */
-  height: calc(100vh - 80px);
+  /* 내용에 따라 자동으로 커지되, 최대 높이에서 고정 */
+  height: auto;
+  min-height: 120px;
+  max-height: 500px;
   display: flex;
   flex-direction: column;
   animation: slideInFromSidebar 0.3s ease-out;
   will-change: transform, opacity;
   /* 자식에서만 스크롤이 발생하도록 넘침 숨김 */
-  overflow: hidden;
+  overflow: auto;
 }
 
 @keyframes slideInFromSidebar {

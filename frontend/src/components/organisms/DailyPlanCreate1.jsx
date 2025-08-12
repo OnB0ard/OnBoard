@@ -171,29 +171,52 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         switch (action) {
           case 'CREATE': {
             const { dayScheduleId, dayPlaceId, placeId, indexOrder } = payload || {};
-            if (dayScheduleId == null || dayPlaceId == null || placeId == null) break;
+            if (dayScheduleId == null || dayPlaceId == null) break;
             // 1-based -> 0-based
             const insertIndex = Math.max(0, (indexOrder || 1) - 1);
-            // 상세 조회 후 삽입
-            try {
-              const detail = await getPlaceDetail(placeId);
+            // 서버 페이로드에 상세가 포함되면 즉시 사용, 없으면 상세 조회로 폴백
+            const hasInlineDetail = typeof payload.placeName === 'string' && payload.latitude != null && payload.longitude != null;
+            if (hasInlineDetail) {
               const placeObj = {
                 id: dayPlaceId,
-                name: detail.placeName,
-                address: detail.address,
-                rating: detail.rating,
-                ratingCount: detail.ratingCount,
-                imageUrl: detail.imageUrl,
-                latitude: detail.latitude,
-                longitude: detail.longitude,
-                primaryCategory: detail.category,
-                originalData: detail,
-                placeId, // 원본 placeId 보관
+                name: payload.placeName,
+                displayName: payload.placeName,
+                address: payload.address,
+                formatted_address: payload.address,
+                rating: payload.rating,
+                ratingCount: typeof payload.ratingCount === 'number' ? payload.ratingCount : 0,
+                imageUrl: payload.imageUrl || '',
+                latitude: payload.latitude,
+                longitude: payload.longitude,
+                primaryCategory: payload.category,
                 memo: payload.memo || '',
+                placeId: placeId ?? payload.placeId,
+                googlePlaceId: payload.googlePlaceId,
               };
               insertPlaceByServer(dayScheduleId, insertIndex, placeObj);
-            } catch (e) {
-              console.error('[DayPlace][CREATE] place detail fetch failed', e);
+            } else if (placeId != null) {
+              try {
+                const detail = await getPlaceDetail(placeId);
+                const placeObj = {
+                  id: dayPlaceId,
+                  name: detail.placeName,
+                  displayName: detail.placeName,
+                  address: detail.address,
+                  formatted_address: detail.address,
+                  rating: detail.rating,
+                  ratingCount: typeof detail.ratingCount === 'number' ? detail.ratingCount : 0,
+                  imageUrl: detail.imageUrl || '',
+                  latitude: detail.latitude,
+                  longitude: detail.longitude,
+                  primaryCategory: detail.category,
+                  memo: payload?.memo || '',
+                  placeId: placeId,
+                  googlePlaceId: detail.googlePlaceId,
+                };
+                insertPlaceByServer(dayScheduleId, insertIndex, placeObj);
+              } catch (e) {
+                console.warn('place detail fetch failed, skip insert', e);
+              }
             }
             break;
           }
@@ -749,26 +772,17 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       if (dropPosition === 'bottom') {
         insertIndex = targetPlaceIndex + 1;
       }
-      
-      // PlaceBlock 데이터를 DailyPlaceBlock 형식으로 변환
-      const placeData = dragData.place;
-      const normalizedPlace = {
-        id: placeData.id,
-        name: placeData.placeName || placeData.name,
-        address: placeData.address,
-        rating: placeData.rating,
-        ratingCount: placeData.ratingCount,
-        imageUrl: placeData.googleImg && placeData.googleImg[0],
-        latitude: placeData.latitude || placeData.lat,
-        longitude: placeData.longitude || placeData.lng,
-        primaryCategory: placeData.primaryCategory,
-        originalData: placeData
-      };
-      
+
+      // 페이지 PlaceBlock에서 온 placeId를 우선 사용하고 숫자로 검증하여 전송
       const dayScheduleId = dailyPlans[targetDayIndex]?.id;
       if (dayScheduleId != null) {
-        const placeId = normalizedPlace.id || normalizedPlace.placeId || normalizedPlace.googlePlaceId;
-        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e3) { console.warn('createPlace send failed', e3); }
+        const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id ?? dragData.place.googlePlaceId;
+        const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+        if (!placeId || Number.isNaN(placeId)) {
+          console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId, from: 'page-place' });
+          return;
+        }
+        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
       }
       
       return;
@@ -782,16 +796,21 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
 
     const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
   
-    // 드롭 위치에 따른 인덱스 조정
+    // 드롭 위치에 따른 1-based 목적지 순서 계산 (안전 클램핑 포함)
     const target = e.currentTarget;
     const dropPosition = target.getAttribute('data-drop-position');
-    let finalTargetPlaceIndex = targetPlaceIndex;
+    const toCount = dailyPlans?.[targetDayIndex]?.places?.length || 0;
+    // 기본 1-based 계산: top= i+1, bottom= i+2
+    let modifiedOrder1b = (dropPosition === 'bottom') ? (targetPlaceIndex + 2) : (targetPlaceIndex + 1);
     
-    // 하단에 드롭하는 경우 인덱스를 1 증가
-    if (dropPosition === 'bottom') {
-      finalTargetPlaceIndex = targetPlaceIndex + 1;
-    }
+    // 동일 일차 이동이면 최대값은 현재 개수(toCount),
+    // 다른 일차로 이동이면 드롭 후 개수가 1 증가하므로 최대값은 toCount + 1
+    const withinSameDay = (dailyPlans?.[sourceDayIndex]?.id === dailyPlans?.[targetDayIndex]?.id);
+    const maxOrder = withinSameDay ? toCount : (toCount + 1);
+    modifiedOrder1b = Math.max(1, Math.min(modifiedOrder1b, maxOrder));
     
+    // 같은 위치로의 이동 취소 체크 (0-based로 역변환 후 비교)
+    const finalTargetPlaceIndex = Math.max(0, modifiedOrder1b - 1);
     if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
       console.log('❌ 같은 위치로 드롭 - 취소');
       handlePlaceDragEnd(e);
@@ -805,9 +824,9 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     if (fromDayId == null || toDayId == null || dayPlaceId == null) {
       console.warn('skip move: missing ids');
     } else if (fromDayId === toDayId) {
-      try { updateInner({ dayScheduleId: fromDayId, dayPlaceId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: finalTargetPlaceIndex + 1 }); } catch (e4) { console.warn('updateInner send failed', e4); }
+      try { updateInner({ dayScheduleId: fromDayId, dayPlaceId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b }); } catch (e4) { console.warn('updateInner send failed', e4); }
     } else {
-      try { updateOuter({ dayScheduleId: fromDayId, dayPlaceId, modifiedDayScheduleId: toDayId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: finalTargetPlaceIndex + 1 }); } catch (e5) { console.warn('updateOuter send failed', e5); }
+      try { updateOuter({ dayScheduleId: fromDayId, dayPlaceId, modifiedDayScheduleId: toDayId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b }); } catch (e5) { console.warn('updateOuter send failed', e5); }
     }
 
     handlePlaceDragEnd(e);
@@ -910,12 +929,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     e.currentTarget.classList.remove('drop-zone-active');
     
     try {
-      // 1. 북마크 장소 (application/json) 처리
+      // 1. 북마크/기존 장소 (application/json) 처리
       let dragDataStr = e.dataTransfer.getData('application/json');
       
       if (dragDataStr) {
         const dragData = JSON.parse(dragDataStr);
         
+        // 1-1) 북마크 추가
         if (dragData.type === 'bookmark-place' && dragData.place) {
           console.log('📌 북마크 장소 드롭:', {
             place: dragData.place.name,
@@ -933,6 +953,40 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         console.warn('❌ dayScheduleId/placeId 누락 - 생성 취소');
       }
           // 북마크 모달은 열어둠 (연속 추가를 위해)
+          return;
+        }
+        
+        // 1-2) 기존 장소 이동 (same/other day 모두 처리)
+        if (dragData.type === 'place') {
+          const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
+          const fromDayId = dailyPlans?.[sourceDayIndex]?.id;
+          const toDayId = dailyPlans?.[dayIndex]?.id;
+          const dayPlaceId = dailyPlans?.[sourceDayIndex]?.places?.[sourcePlaceIndex]?.id;
+          if (fromDayId == null || toDayId == null || dayPlaceId == null) {
+            console.warn('drop-zone move skip: missing ids');
+            return;
+          }
+          const toCount = dailyPlans?.[dayIndex]?.places?.length || 0;
+          const withinSameDay = fromDayId === toDayId;
+          // 드롭 존 insertIndex는 0..toCount, 1-based는 +1
+          let modifiedOrder1b = (insertIndex ?? 0) + 1;
+          const maxOrder = withinSameDay ? toCount : (toCount + 1);
+          modifiedOrder1b = Math.max(1, Math.min(modifiedOrder1b, maxOrder));
+          const finalTargetIdx0b = Math.max(0, modifiedOrder1b - 1);
+          // 동일 일차에서 동일 위치면 취소
+          if (withinSameDay && sourcePlaceIndex === finalTargetIdx0b) {
+            console.log('drop-zone same position within day - cancel');
+            return;
+          }
+          try {
+            if (withinSameDay) {
+              updateInner({ dayScheduleId: fromDayId, dayPlaceId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b });
+            } else {
+              updateOuter({ dayScheduleId: fromDayId, dayPlaceId, modifiedDayScheduleId: toDayId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b });
+            }
+          } catch (errMove) {
+            console.warn('place move via drop-zone failed', errMove);
+          }
           return;
         }
       }
@@ -955,6 +1009,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           const placeData = dragData.place;
           const normalizedPlace = {
             id: placeData.id,
+            placeId: placeData.placeId ?? placeData.place_id ?? undefined,
             name: placeData.placeName || placeData.name,
             address: placeData.address,
             rating: placeData.rating,

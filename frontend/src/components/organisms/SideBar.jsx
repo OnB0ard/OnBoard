@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import Icon from "../atoms/Icon";
 import AutocompleteSearchModal from "./AutocompleteSearchModal";
 import Bookmark from "./Bookmark";
 import DailyPlanCreate1 from "./DailyPlanCreate1";
 
-import { useMapCoreStore, useBookmarkStore } from "../../store/mapStore";
+import { useMapCoreStore, useBookmarkStore, usePlaceDetailsStore } from "../../store/mapStore";
+import useDailyPlanStore from "../../store/useDailyPlanStore";
+import { getScheduleList } from "@/apis/scheduleList";
 import "./SideBar.css";
 
 const SideBar = ({ onDailyPlanModalToggle, planId }) => {
@@ -17,6 +19,10 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
   const setIsMapVisible = useMapCoreStore((state) => state.setIsMapVisible);
 
   const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
+  const openPlaceDetailByPlaceId = usePlaceDetailsStore((s) => s.openPlaceDetailByPlaceId);
+  const openPlaceDetailFromCandidate = usePlaceDetailsStore((s) => s.openPlaceDetailFromCandidate);
+  const setDailyPlans = useDailyPlanStore((s) => s.setDailyPlans);
+  const loadedPlanIdRef = useRef(null);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -30,6 +36,20 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       onDailyPlanModalToggle(false);
     }
     setIsDailyPlanModalOpen(false);
+  };
+
+  const handleBookmarkPlaceClick = async (place) => {
+    try {
+      // 다양한 키 케이스 지원
+      const pid = place.placeId || place.googlePlaceId || place.place_id || place.id;
+      if (pid) {
+        await openPlaceDetailByPlaceId(pid, true, 'center');
+      } else {
+        await openPlaceDetailFromCandidate(place, true, 'center');
+      }
+    } catch (err) {
+      console.error('[SideBar] open detail from bookmark failed:', err);
+    }
   };
 
   const handleBookmarkClick = (e) => {
@@ -60,6 +80,47 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
   const handleMapClick = () => {
     setIsMapVisible(!isMapVisible);
   };
+
+  // 일정 모달을 처음 열 때 해당 planId의 전체 일정을 1회 로드
+  useEffect(() => {
+    const shouldLoad = isDailyPlanModalOpen && planId != null && loadedPlanIdRef.current !== planId;
+    if (!shouldLoad) return;
+    (async () => {
+      try {
+        console.log('[SideBar] Fetch schedule list for planId', planId);
+        const res = await getScheduleList(planId);
+        const planSchedule = res?.body?.planSchedule || [];
+        const mapped = [...planSchedule]
+          .sort((a, b) => (a.dayOrder || 0) - (b.dayOrder || 0))
+          .map((d) => ({
+            id: d.dayScheduleId,
+            title: d.title,
+            places: (Array.isArray(d.daySchedule) ? d.daySchedule : [])
+              .sort((a, b) => (a.indexOrder || 0) - (b.indexOrder || 0))
+              .map((p) => ({
+                id: p.dayPlaceId,
+                name: p.placeName,
+                displayName: p.placeName,
+                address: p.address,
+                formatted_address: p.address,
+                latitude: p.latitude,
+                longitude: p.longitude,
+                rating: p.rating,
+                ratingCount: p.ratingCount,
+                imageUrl: p.imageUrl,
+                memo: p.memo || '',
+                placeId: p.placeId,
+                googlePlaceId: p.googlePlaceId,
+                indexOrder: p.indexOrder,
+              })),
+          }));
+        setDailyPlans(mapped);
+        loadedPlanIdRef.current = planId;
+      } catch (e) {
+        console.error('[SideBar] Failed to load schedule list:', e);
+      }
+    })();
+  }, [isDailyPlanModalOpen, planId, setDailyPlans]);
 
   return (
     <>
@@ -113,6 +174,7 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       <Bookmark 
         isOpen={isBookmarkModalOpen} 
         onClose={() => setIsBookmarkModalOpen(false)}
+        onPlaceClick={handleBookmarkPlaceClick}
         bookmarkedPlaces={bookmarkedPlaces}
         position={modalPosition}
         planId={planId}

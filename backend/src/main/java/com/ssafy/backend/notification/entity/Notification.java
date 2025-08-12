@@ -33,7 +33,6 @@ public class Notification extends DateEntity {
     @Column(name = "plan_img_url", length = 1024)
     private String userImgUrl;
 
-
     public void setReadTrue() {
         this.isRead = true;
     }

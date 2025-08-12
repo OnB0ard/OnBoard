@@ -883,8 +883,14 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     if (dayScheduleId == null) return;
     const idx = insertIndex === -1 ? (dailyPlans[selectedDayIndex]?.places?.length || 0) : insertIndex;
     const indexOrder = idx + 1; // 1-based
-    // place.id 는 원본 placeId 이어야 함
-    try { createPlace({ dayScheduleId, placeId: place.id || place.placeId || place.googlePlaceId, indexOrder }); } catch (e) { console.warn('createPlace send failed', e); }
+    // 북마크에서 넘어오는 다양한 키를 안전하게 정규화 (숫자 변환 포함)
+    const rawPlaceId = place.placeId ?? place.id ?? place.place_id ?? place.googlePlaceId;
+    const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+    if (!placeId || Number.isNaN(placeId)) {
+      console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId, place });
+      return;
+    }
+    try { createPlace({ dayScheduleId, placeId, indexOrder }); } catch (e) { console.warn('createPlace send failed', e); }
     closeBookmarkModal();
   };
 

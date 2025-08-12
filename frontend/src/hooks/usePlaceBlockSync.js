@@ -25,16 +25,18 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
 
   const onMessage = useMemo(() => (msg) => {
     try {
-      const { type, payload } = msg || {};
-      const action = (type || '').toUpperCase();
+      // 서버가 { action, ...fields } 또는 { type, payload } 두 형식을 보낼 수 있어 표준화
+      const { type, payload, action: topAction } = msg || {};
+      const action = (topAction || type || '').toUpperCase();
+      const payloadNorm = payload ?? msg; // payload가 없으면 전체 메시지를 payload로 간주
       switch (action) {
         case 'CREATE_PLACE': {
-          const { type: payloadType, objectInfo, whiteBoardPlace, whiteBoardObjectId, id } = payload || {};
-          if (payloadType !== 'PLACE') break;
+          const { type: payloadType, objectInfo, whiteBoardPlace, whiteBoardObjectId, placeId } = payloadNorm || {};
+          if (payloadType && payloadType !== 'PLACE') break;
           if (!objectInfo || !whiteBoardPlace) break;
           const position = { x: objectInfo.x, y: objectInfo.y };
           const place = {
-            id: whiteBoardObjectId ?? id,
+            placeId: placeId,
             googlePlaceId: whiteBoardPlace.googlePlaceId,
             placeName: whiteBoardPlace.placeName,
             address: whiteBoardPlace.address,
@@ -57,12 +59,12 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
             console.log('payload:', payload);
             console.groupEnd();
           } catch (_) { void 0; }
-          const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payload || {};
+          const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payloadNorm || {};
           if (payloadType && payloadType !== 'PLACE') break;
           const targetId = whiteBoardObjectId ?? id;
           if (!targetId) break;
-          const x = (objectInfo && objectInfo.x != null) ? objectInfo.x : payload?.x;
-          const y = (objectInfo && objectInfo.y != null) ? objectInfo.y : payload?.y;
+          const x = (objectInfo && objectInfo.x != null) ? objectInfo.x : payloadNorm?.x;
+          const y = (objectInfo && objectInfo.y != null) ? objectInfo.y : payloadNorm?.y;
           if (typeof x === 'number' && typeof y === 'number') {
             updatePlaceBlockPosition(targetId, { x, y }, planId);
           }
@@ -74,13 +76,13 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
             console.log('payload:', payload);
             console.groupEnd();
           } catch (_) { void 0; }
-          const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payload || {};
+          const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payloadNorm || {};
           if (payloadType && payloadType !== 'PLACE') break;
           const targetId = whiteBoardObjectId ?? id;
           if (!targetId) break;
           // 최종 커밋: 좌표 갱신
-          const x = (objectInfo && objectInfo.x != null) ? objectInfo.x : payload?.x;
-          const y = (objectInfo && objectInfo.y != null) ? objectInfo.y : payload?.y;
+          const x = (objectInfo && objectInfo.x != null) ? objectInfo.x : payloadNorm?.x;
+          const y = (objectInfo && objectInfo.y != null) ? objectInfo.y : payloadNorm?.y;
           if (typeof x === 'number' && typeof y === 'number') {
             updatePlaceBlockPosition(targetId, { x, y }, planId);
           }
@@ -93,7 +95,7 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
             console.log('payload:', payload);
             console.groupEnd();
           } catch (_) { void 0; }
-          const { type: payloadType, whiteBoardObjectId, id } = payload || {};
+          const { type: payloadType, whiteBoardObjectId, id } = payloadNorm || {};
           if (payloadType && payloadType !== 'PLACE') break;
           const targetId = whiteBoardObjectId ?? id;
           if (!targetId) break;

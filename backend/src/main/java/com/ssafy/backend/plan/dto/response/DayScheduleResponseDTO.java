@@ -16,5 +16,5 @@ public class DayScheduleResponseDTO {
     private Long dayScheduleId;
     private Integer dayOrder;
     private String title;
-    List<DayPlaceResponseDTO> daySchedule;
+    private List<DayPlaceResponseDTO> daySchedule;
 }

@@ -1,10 +1,7 @@
 package com.ssafy.backend.whiteBoard.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.ssafy.backend.whiteBoard.dto.request.CreateDiagramRequestDTO;
-import com.ssafy.backend.whiteBoard.dto.request.CreateLineRequestDTO;
-import com.ssafy.backend.whiteBoard.dto.request.CreateTravelRequestDTO;
-import com.ssafy.backend.whiteBoard.dto.request.ModifyWhiteBoardObjectRequestDTO;
+import com.ssafy.backend.whiteBoard.dto.request.*;
 import com.ssafy.backend.whiteBoard.dto.websocket.WhiteBoardSocketDTO;
 import com.ssafy.backend.whiteBoard.service.WhiteBoardService;
 import lombok.RequiredArgsConstructor;
@@ -57,8 +54,9 @@ public class WhiteBoardSocketController {
             case "CREATE_PLACE":
                 // 장소 기반 도형 생성 → 저장된 도형으로 응답 whiteBoardSocketDTO 구성
                 CreateTravelRequestDTO createTravelDTO = whiteBoardSocketDTO.toCreateTravelRequestDTO();
-                Long travelId = whiteBoardService.createTravel(planId, createTravelDTO, userId);
-                whiteBoardSocketDTO.setWhiteBoardObjectId(travelId);
+                CreateTravelResult result  = whiteBoardService.createTravel(planId, createTravelDTO, userId);
+                whiteBoardSocketDTO.setWhiteBoardObjectId(result.getWhiteBoardObjectId());
+                whiteBoardSocketDTO.setPlaceId(result.getPlaceId());
                 messagingTemplate.convertAndSend("/topic/whiteboard/" + planId, whiteBoardSocketDTO);
                 break;
 

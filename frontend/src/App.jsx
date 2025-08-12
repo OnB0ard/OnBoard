@@ -8,7 +8,7 @@ import PlanPage from './components/pages/PlanPage'
 import MyPage from "./components/pages/MyPage"
 import PrivateRoute from './router/PrivateRoute'
 import PlanAccessRoute from './router/PlanAccessRoute'
-
+import NotFound from './components/pages/NotFound'
 
 function App() {
 
@@ -26,10 +26,12 @@ function App() {
         <Route element={<PlanAccessRoute />}>
           <Route path="/plan/:planId" element={<PlanPage />} />
         </Route>
-        {/* <Route path="/temp" element={<Temp/>} /> */}
+        <Route path="*" element={<NotFound />} />
+        <Route path="/not-found" element={<NotFound />} />
       </Routes>
     </>
   )
 }
 
 export default App
+// 

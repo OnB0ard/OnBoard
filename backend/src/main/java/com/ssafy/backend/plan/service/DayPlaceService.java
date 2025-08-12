@@ -1,6 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.place.entity.Place;
+import com.ssafy.backend.place.exception.PlaceNotExistException;
 import com.ssafy.backend.place.repository.PlaceRepository;
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameMemoRequestDTO;
@@ -47,20 +48,21 @@ public class DayPlaceService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
+        // LOCK
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
         if (!daySchedule.getPlan().getPlanId().equals(planId)) {
             throw new DayScheduleNotExistException("존재하지 않거나 해당 플랜에 속하지 않는 일정입니다.");
         }
 
-        // TODO : placeID 잇는지 확인 및 영속성 확인, 익셉션 고치기
-        Place place = placeRepository.findById(createDayPlaceRequestDTO.getPlaceId()).orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
+        Place place = placeRepository.findById(createDayPlaceRequestDTO.getPlaceId())
+                .orElseThrow(() -> new PlaceNotExistException("존재하지 않는 여행지 입력값입니다."));
 
         List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
         dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));
 
         int insertIndex = createDayPlaceRequestDTO.getIndexOrder();
 
-        if (insertIndex <= 0 || insertIndex > dayPlaces.size()) {
+        if (insertIndex <= 0 || insertIndex > dayPlaces.size() + 1) {
             throw new InvalidIndexOrderException("잘못된 위치 입력값 입니다.");
         }
 
@@ -78,7 +80,6 @@ public class DayPlaceService {
                 .build();
 
         dayPlaceRepository.save(dayPlace);
-
         return dayPlace.getDayPlaceId();
     }
 

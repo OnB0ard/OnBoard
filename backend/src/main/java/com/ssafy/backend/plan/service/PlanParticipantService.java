@@ -35,25 +35,22 @@ public class PlanParticipantService {
 
     @Transactional
     public boolean joinRequest(Long planId, JwtUserInfo jwtUserInfo) {
-
-        UserPlan userPlan = new UserPlan();
-
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(jwtUserInfo.getUserId());
 
-        if(userPlanRepository.existsByPlanAndUser(plan, user)) {
-            userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
-            if (userPlan.getUserStatus() == UserStatus.PENDING) {
-                throw new UserPlanExistException("이미 승인 대기 중입니다.");
-            } else if (userPlan.getUserStatus() == UserStatus.APPROVED) {
-                throw new UserPlanExistException("이미 여행의 구성원입니다.");
-            }
-        }
+        userPlanRepository.findUserStatusByUserAndPlan(user, plan)
+                .ifPresent(status -> {
+                    throw new UserPlanExistException(
+                            status == UserStatus.PENDING ? "이미 승인 대기 중입니다." : "이미 여행의 구성원입니다."
+                    );
+                });
 
-        userPlan.setUser(user);
-        userPlan.setPlan(plan);
-        userPlan.setUserType(UserType.USER);
-        userPlan.setUserStatus(UserStatus.PENDING);
+        UserPlan userPlan = UserPlan.builder()
+                .user(user)
+                .plan(plan)
+                .userType(UserType.USER)
+                .userStatus(UserStatus.PENDING)
+                .build();
 
         userPlanRepository.save(userPlan);
         return true;
@@ -61,83 +58,59 @@ public class PlanParticipantService {
 
     @Transactional
     public boolean approveRequest(Long planId, UserIdRequestDTO userIdRequestDTO, JwtUserInfo jwtUserInfo) {
-
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(userIdRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
+        User applicant = validateUserExistence(userIdRequestDTO.getUserId());
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, creator)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan creatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, creator);
-
-        if(creatorPlan.getUserType() == UserType.USER) {
-            // 대기자(PENDING)도 구분해서 넣어야 해? 그럴 필요까지 없다고 생각해서 안나눔
+        UserPlan creatorPlan = userPlanRepository.findByPlanAndUser(plan, creator)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (creatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
-        } // else if 작성 안하고, 생성자라고 생각 함
-
-        User applicant = new User();
-        applicant.setUserId(userIdRequestDTO.getUserId());
-        if(!userPlanRepository.existsByUser(applicant)){
-            throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, applicant)) {
-            throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
+        UserPlan applicantPlan = userPlanRepository.findByPlanAndUser(plan, applicant)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방에 참여 신청한 적이 없습니다."));
+        if (applicantPlan.getUserStatus() == UserStatus.APPROVED) {
+            throw new NotApplicantException("이미 방에 참여된 사용자입니다.");
         }
 
-        UserPlan applicantPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, applicant);
         applicantPlan.setUserStatus(UserStatus.APPROVED);
-        userPlanRepository.save(applicantPlan);
-
         return true;
     }
 
     @Transactional
     public boolean denyRequest(Long planId, UserIdRequestDTO userIdRequestDTO, JwtUserInfo jwtUserInfo) {
-
         Plan plan = validatePlanExistence(planId);
-        User user = validateUserExistence(userIdRequestDTO.getUserId());
         User creator = validateUserExistence(jwtUserInfo.getUserId());
+        User applicant = validateUserExistence(userIdRequestDTO.getUserId());
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, creator)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan creatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, creator);
-
-        if(creatorPlan.getUserType() == UserType.USER) {
+        UserPlan creatorPlan = userPlanRepository.findByPlanAndUser(plan, creator)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (creatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
-        } // else if 작성 안하고, 생성자라고 생각 함
-
-        User applicant = new User();
-        applicant.setUserId(userIdRequestDTO.getUserId());
-        if(!userPlanRepository.existsByUser(applicant)){
-            throw new UserNotExistException("이 사용자는 존재하지 않습니다.");
         }
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, applicant)) {
-            throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
+        UserPlan applicantPlan = userPlanRepository.findByPlanAndUser(plan, applicant)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방에 참여 신청한 적이 없습니다."));
+        if (applicantPlan.getUserStatus() == UserStatus.APPROVED) {
+            throw new NotApplicantException("이미 방에 참여된 사용자입니다.");
         }
 
-        userPlanRepository.deleteUserPlanByPlanAndUser(plan, applicant);
+        userPlanRepository.deleteByPlanAndUser(plan, applicant);
         return true;
     }
 
     public PlanParticipantUserListResponseDTO getUserList(Long planId, JwtUserInfo jwtUserInfo) {
-
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(jwtUserInfo.getUserId());
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
-        if(userPlan.getUserStatus().equals(UserStatus.PENDING)) {
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-
-        List<UserPlan> userPlanList = userPlanRepository.findAllUserPlanByPlan(plan);
+        List<UserPlan> userPlanList = userPlanRepository.findAllWithUserByPlan(plan);
         List<ParticipantResponseDTO> participantListDTO = new ArrayList<>();
         CreatorResponseDTO creatorResponseDTO = new CreatorResponseDTO();
 
@@ -180,33 +153,27 @@ public class PlanParticipantService {
     @Transactional
     public boolean delegateRequest(Long planId, UserIdRequestDTO userIdRequestDTO, JwtUserInfo jwtUserInfo) {
         Plan plan = validatePlanExistence(planId);
-        User delegator = validateUserExistence(jwtUserInfo.getUserId());
+        User creator = validateUserExistence(jwtUserInfo.getUserId());
         User user = validateUserExistence(userIdRequestDTO.getUserId());
 
-        if (!userPlanRepository.existsByPlanAndUser(plan, delegator)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan delegatorPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, delegator);
-        if (delegatorPlan.getUserType() == UserType.USER) {
+        UserPlan creatorPlan = userPlanRepository.findByPlanAndUser(plan, creator)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (creatorPlan.getUserType() == UserType.USER) {
             throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
-        } // else if 작성 안하고, 생성자라고 생각 함
-
-        if (!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotApplicantException("참여 요청을 하지 않은 사용자입니다.");
         }
 
-        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (userPlan.getUserStatus() == UserStatus.PENDING) {
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
+        }
+
         userPlan.setUserType(UserType.CREATOR);
-        userPlanRepository.save(userPlan);
-
-        delegatorPlan.setUserType(UserType.USER);
-        userPlanRepository.save(delegatorPlan);
-
+        creatorPlan.setUserType(UserType.USER);
         return true;
     }
 
     public UserInformationResponseDTO getUserInformation(Long planId, Long userId) {
-
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 
@@ -221,22 +188,23 @@ public class PlanParticipantService {
 
     @Transactional
     public boolean resignRequest(Long planId, UserIdRequestDTO userIdRequestDTO, Long userId) {
-        User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
+        User creator = validateUserExistence(userId);
+        User user = validateUserExistence(userIdRequestDTO.getUserId());
+
+        UserPlan creatorPlan = userPlanRepository.findByPlanAndUser(plan, creator)
+                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        if (creatorPlan.getUserType() == UserType.USER) {
+            throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
+        }
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        if (userPlan.getUserType() == UserType.USER) {
-            throw new UserCannotApproveException("참여자에게는 권한이 없습니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        User goodbyeUser = validateUserExistence(userIdRequestDTO.getUserId());
-        UserPlan goodbyeUserPlan = userPlanRepository.findByPlanAndUser(plan, goodbyeUser)
-                .orElseThrow(() -> new NotInThisRoomException("이 방의 참여자가 아닙니다."));
-        userPlanRepository.delete(goodbyeUserPlan);
+        userPlanRepository.delete(userPlan);
         return true;
     }
 

@@ -118,7 +118,6 @@ public class BookmarkService {
     public void deleteBookmark(Long planId, Long bookmarkId, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
-        Bookmark bookmark = validateBookmarkExistence(bookmarkId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
@@ -126,9 +125,8 @@ public class BookmarkService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        if(bookmark.getPlan().getPlanId() != planId) {
-            throw new BookmarkNotExistException("북마크 되어 있지 않습니다.");
-        }
+        Bookmark bookmark = bookmarkRepository.findByBookmarkIdAndPlanId(bookmarkId, planId)
+                .orElseThrow(() -> new BookmarkNotExistException("북마크 되어 있지 않습니다."));
 
         bookmarkRepository.delete(bookmark);
     }
@@ -141,10 +139,5 @@ public class BookmarkService {
     private Plan validatePlanExistence(Long planId) {
         return planRepository.findById(planId)
                 .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다. planId=" + planId));
-    }
-
-    private Bookmark validateBookmarkExistence(Long bookmarkId) {
-        return bookmarkRepository.findById(bookmarkId)
-                .orElseThrow(() -> new BookmarkNotExistException("북마크 되어 있지 않습니다. bookmarkId=" + bookmarkId));
     }
 }

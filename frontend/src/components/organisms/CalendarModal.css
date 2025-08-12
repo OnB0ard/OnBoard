@@ -61,6 +61,15 @@
   display: inline-block;
 }
 
+/* 에러 메시지 (버튼 위) */
+.calendar-modal__error {
+  color: #dc2626; /* red-600 */
+  font-size: 0.75rem;
+  margin-top: -0.5rem; /* 달력과 간격 좁힘 */
+  margin-bottom: 0.5rem; /* 버튼과 간격 */
+  align-self: flex-end; /* 오른쪽 정렬 (content가 flex-end) */
+}
+
 /* 달력과 버튼을 포함하는 전체 레이아웃 */
 .calendar-modal__content {
   display: flex;

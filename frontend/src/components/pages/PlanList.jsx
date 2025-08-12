@@ -417,10 +417,10 @@ const PlanList = () => {
                   <div className="text-gray-500 text-lg font-['Poppins']">
                     계획중인 여행이 없습니다.
                   </div>
-                  <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
                   <div className="text-gray-400 text-sm mt-2 font-['Poppins']">
                     새로운 여행을 계획해보세요!
                   </div>
+                  <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
                 </div>
               )}
             </div>

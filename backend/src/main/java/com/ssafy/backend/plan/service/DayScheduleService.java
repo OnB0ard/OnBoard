@@ -4,7 +4,10 @@ import com.ssafy.backend.plan.dto.request.CreateDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateSchedulePositionRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
+import com.ssafy.backend.plan.dto.response.DayPlaceResponseDTO;
+import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
+import com.ssafy.backend.plan.entity.DayPlace;
 import com.ssafy.backend.plan.entity.DaySchedule;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
@@ -79,8 +82,49 @@ public class DayScheduleService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        return null;
+        List<DaySchedule> schedulesInPlan = dayScheduleRepository.findByPlanId(planId);
+        schedulesInPlan.sort(Comparator.comparingInt(DaySchedule::getDayOrder));
 
+        List<DayPlace> dayPlacesInPlan = dayPlaceRepository.getPlanScheduleByPlanId(planId);
+
+        Map<Long, List<DayPlace>> groupedByDayScheduleId = dayPlacesInPlan.stream()
+                .collect(Collectors.groupingBy(dp -> dp.getDaySchedule().getDayScheduleId()));
+
+        List<DayScheduleResponseDTO> daySchedules = schedulesInPlan.stream()
+                .map(ds -> {
+                    List<DayPlaceResponseDTO> dayPlaces = groupedByDayScheduleId
+                            .getOrDefault(ds.getDayScheduleId(), List.of())
+                            .stream()
+                            .sorted(Comparator.comparingInt(DayPlace::getIndexOrder))
+                            .map(dp -> DayPlaceResponseDTO.builder()
+                                    .dayPlaceId(dp.getDayPlaceId())
+                                    .indexOrder(dp.getIndexOrder())
+                                    .memo(dp.getMemo())
+                                    .placeId(dp.getPlace().getPlaceId())
+                                    .googlePlaceId(dp.getPlace().getGooglePlaceId())
+                                    .placeName(dp.getPlace().getPlaceName())
+                                    .latitude(dp.getPlace().getLatitude())
+                                    .longitude(dp.getPlace().getLongitude())
+                                    .address(dp.getPlace().getAddress())
+                                    .rating(dp.getPlace().getRating())
+                                    .ratingCount(dp.getPlace().getRatingCount())
+                                    .imageUrl(dp.getPlace().getImageUrl())
+                                    .category(dp.getPlace().getCategory())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return DayScheduleResponseDTO.builder()
+                            .dayScheduleId(ds.getDayScheduleId())
+                            .title(ds.getTitle())
+                            .dayOrder(ds.getDayOrder())
+                            .daySchedule(dayPlaces)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PlanScheduleResponseDTO.builder()
+                .planSchedule(daySchedules)
+                .build();
     }
 
     @Transactional

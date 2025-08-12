@@ -755,10 +755,11 @@ const WhiteBoard = ({ planId: planIdProp }) => {
               return (
                 <Text
                   key={id}
-                  fontFamily="Calibri"
+                  fontFamily="poppins"
                   {...commonProps}
                   {...rest}
-                  strokeWidth={1}
+                  strokeWidth={0.1}
+                  fill = {commonProps.stroke}
                   onDblClick={() => beginEditText(shape)}
                 />
               );

@@ -194,7 +194,7 @@ const usePlaceBlocksStore = create(
               // placeDetails는 usePlaceDetailsStore의 processedPlace 형태
               const whiteBoardPlace = {
                 // 서버 에코가 placeId를 포함하도록 전송에 포함 (백엔드가 무시해도 무방)
-                placeId: Number.isFinite(Number(placeId)) ? Number(placeId) : undefined,
+                placeId: placeDetails.placeId,
                 googlePlaceId: placeDetails.googlePlaceId ?? placeId,
                 placeName: placeDetails.placeName,
                 latitude: placeDetails.latitude,

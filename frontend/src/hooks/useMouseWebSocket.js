@@ -70,13 +70,13 @@ export function useMouseStomp({
   // STOMP Client 인스턴스 생성
   const client = useMemo(() => {
     const c = new Client({
-      webSocketFactory: () => new SockJS(wsUrl),
+      webSocketFactory: () => new SockJS(wsUrl || `${location.protocol}//${location.host}/ws`),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
-      reconnectDelay: 1500,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+      reconnectDelay: 5000,
+      heartbeatIncoming: 5000,
+      heartbeatOutgoing: 5000,
       // debug: (msg) => console.log("[STOMP DEBUG]", msg),
       onConnect: () => {
         setConnected(true);
@@ -84,7 +84,9 @@ export function useMouseStomp({
         // 구독
         subRef.current = c.subscribe(SUB_TOPIC, (message) => {
           try {
-            const dto = JSON.parse(message.body); // { userName, x, y, ... }
+            // 안전 파싱 (널문자 방지)
+            const raw = typeof message.body === 'string' ? message.body.replace('\u0000+$', '') : message.body;
+            const dto = JSON.parse(raw); // { userName, x, y, ... }
             setSubCount((n) => n + 1);
             setLastDto(dto);
 
@@ -117,6 +119,10 @@ export function useMouseStomp({
       },
       onDisconnect: () => setConnected(false),
       onWebSocketError: (e) => console.error("[WS error]", e),
+      onWebSocketClose: (e) => {
+        setConnected(false);
+        console.warn('[WS closed]', e?.code, e?.reason);
+      },
       onStompError: (frame) =>
         console.error("[STOMP error]", frame.headers["message"], frame.body),
     });
@@ -169,9 +175,13 @@ export function useMouseStomp({
 
     const onMove = (e) => publishMove(e.clientX, e.clientY);
 
-    // 활성 탭에서만 전송(선택): visibilitychange로 간단 제어
+    // 활성 탭에서만 연결 복구: visibilitychange로 재활성화 시도
     const handleVisibility = () => {
-      // 필요 시 비활성 탭에서 전송 중단/완화 로직 추가 가능
+      const c = stompRef.current;
+      if (!c) return;
+      if (document.visibilityState === 'visible' && !c.connected) {
+        try { c.activate(); } catch (e) { console.debug('[WS visibility] activate error', e); }
+      }
     };
 
     window.addEventListener("mousemove", onMove);

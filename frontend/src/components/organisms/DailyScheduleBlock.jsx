@@ -1,4 +1,5 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
+
 import DailyPlaceBlock from './DailyPlaceBlock';
 import { Button } from '../atoms/Button';
 
@@ -33,6 +34,17 @@ const DailyScheduleBlock = ({
   onDropZoneDrop
 }) => {
   const { isDragging: isPlaceDragging, draggedPlaceId, dragOverIndex, draggedFromDay } = dragState;
+
+  // IME(한글 등) 조합 입력에서 버벅임 방지를 위한 로컬 상태
+  const [title, setTitle] = useState(day.title || '');
+  const [isComposing, setIsComposing] = useState(false);
+
+  // 외부 day.title 변경 시(다른 곳에서 수정되었을 때) 조합 중이 아니면 동기화
+  useEffect(() => {
+    if (!isComposing) {
+      setTitle(day.title || '');
+    }
+  }, [day.title, isComposing]);
 
   // 일차 클릭 핸들러 (드래그와 구분)
   const handleDayClick = (e) => {
@@ -76,8 +88,23 @@ const DailyScheduleBlock = ({
       <div className="day-header">
         <input
           type="text"
-          value={day.title}
-          onChange={(e) => onUpdateTitle(day.id, e.target.value)}
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (!isComposing) {
+              onUpdateTitle(day.id, e.target.value);
+            }
+          }}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={(e) => {
+            setIsComposing(false);
+            onUpdateTitle(day.id, e.target.value);
+          }}
+          onBlur={() => {
+            if (title !== day.title) {
+              onUpdateTitle(day.id, title);
+            }
+          }}
           className="day-title-input"
         />
         <button

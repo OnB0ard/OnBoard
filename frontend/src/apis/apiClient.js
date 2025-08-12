@@ -16,6 +16,21 @@ const apiClient = axios.create({
   headers: { },
 });
 
+// refresh
+const refreshClient = axios.create({
+  baseURL: "https://i13a504.p.ssafy.io/api/v1/",
+  timeout: 10000,
+  withCredentials: true, // 반드시 쿠키 포함
+});
+
+async function requestNewAccessToken() {
+  const res = await refreshClient.get("refresh");
+  const payload = res?.data;
+  const token = payload?.body?.accessToken || payload?.accessToken;
+  if (!token) throw new Error("No accessToken in refresh response");
+  return token;
+}
+
 // 요청 인터셉터: API 요청을 보내기 전에 실행
 apiClient.interceptors.request.use(
   (config) => {
@@ -35,18 +50,60 @@ apiClient.interceptors.request.use(
   }
 );
 
+
+let isRefreshing = false;
+let subscribers = [];
+
+const subscribeTokenRefresh = (cb) => subscribers.push(cb);
+const onRefreshed = (token) => {
+  subscribers.forEach((cb) => cb(token));
+  subscribers = [];
+};
+
 // 응답 인터셉터: API 응답을 받은 후에 실행
 apiClient.interceptors.response.use(
-  (response) => {
-    // 성공 응답은 그대로 반환
-    return response;
-  },
-  (error) => {
-    // 401 Unauthorized 에러 시 로그인 페이지로 이동
-    if (error.response && error.response.status === 401) {
-      console.error('인증이 만료되었습니다. 다시 로그인해주세요.');
-      // window.location.href = '/login'; // 실제 프로젝트에서는 이렇게 처리
+  (response) => response,
+  async (error) => {
+    const { response, config: originalRequest } = error;
+    if (!response) return Promise.reject(error);
+
+    // 401만 처리, 무한루프 방지
+    if (response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // 동시에 여러 401 발생 시 첫 번째 요청만 refresh 호출
+      if (!isRefreshing) {
+        isRefreshing = true;
+        try {
+          const newToken = await requestNewAccessToken();
+
+          // 1) Zustand 갱신
+          const { setAuth } = useAuthStore.getState();
+          setAuth({ accessToken: newToken });
+
+          // 2) apiClient가 읽을 getter 최신화
+          setAccessTokenGetter(() => newToken);
+
+          isRefreshing = false;
+          onRefreshed(newToken);
+        } catch (e) {
+          isRefreshing = false;
+          // 갱신 실패 → 인증 제거(선택)
+          const { clearAuth } = useAuthStore.getState();
+          clearAuth();
+          return Promise.reject(e);
+        }
+      }
+
+      // refresh 완료 후 원 요청 재시도
+      return new Promise((resolve) => {
+        subscribeTokenRefresh((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          resolve(apiClient(originalRequest));
+        });
+      });
     }
+
     return Promise.reject(error);
   }
 );

@@ -206,3 +206,30 @@
     flex-direction: column;
   }
 }
+
+.icon-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* 숫자 뱃지 */
+.icon-badge__dot {
+  position: absolute;
+  top: -3px;      /* 아이콘 우측 상단 살짝 바깥으로 */
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 1px;
+  border-radius: 9999px;
+  background: #ef4444;   /* 빨강 */
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* box-shadow: 0 0 0 2px #fff; 겹침 방지용 외곽선(배경색에 맞춰 조정) */
+}

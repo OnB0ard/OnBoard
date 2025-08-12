@@ -17,7 +17,7 @@ export const useBoardStore = create((set, get) => ({
   lines: [],
   selectedId: null,
   isEditingTextId: null,
-  shapeType: 'pen',
+  shapeType: 'select',
   color: '#000000',
 
   historyStep: 0,

@@ -160,7 +160,8 @@ public class WhiteBoardService {
                                 .longitude(obj.getPlace().getLongitude())
                                 .address(obj.getPlace().getAddress())
                                 .rating(obj.getPlace().getRating())
-                                .googleImg(obj.getPlace().getImageUrl())
+                                .imageUrl(obj.getPlace().getImageUrl())
+                                .category(obj.getPlace().getCategory())
                                 .build())
                         .build())
                 .toList();

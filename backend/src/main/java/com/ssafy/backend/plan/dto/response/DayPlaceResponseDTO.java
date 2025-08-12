@@ -23,4 +23,5 @@ public class DayPlaceResponseDTO {
     private Double rating;
     private Integer ratingCount;
     private String imageUrl;
+    private String category;
 }

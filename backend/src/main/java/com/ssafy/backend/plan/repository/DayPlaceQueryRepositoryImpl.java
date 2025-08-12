@@ -2,13 +2,12 @@ package com.ssafy.backend.plan.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ssafy.backend.place.entity.QPlace;
-import com.ssafy.backend.plan.entity.DayPlace;
-import com.ssafy.backend.plan.entity.QDayPlace;
-import com.ssafy.backend.plan.entity.QDaySchedule;
-import com.ssafy.backend.plan.entity.QPlan;
+import com.ssafy.backend.plan.entity.*;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class DayPlaceQueryRepositoryImpl implements DayPlaceQueryRepository {
@@ -41,18 +40,21 @@ public class DayPlaceQueryRepositoryImpl implements DayPlaceQueryRepository {
                 .fetch();
     }
 
-    public DayPlace findByPlanIdAndDayScheduleIdAndDayPlaceId(Long planId, Long dayScheduleId, Long dayPlaceId)
+    public Optional<DayPlace> findByPlanIdAndDayScheduleIdAndDayPlaceId(Long planId, Long dayScheduleId, Long dayPlaceId)
     {
         QDayPlace dp = QDayPlace.dayPlace;
         QDaySchedule ds = QDaySchedule.daySchedule;
         QPlan p = QPlan.plan;
 
-        return queryFactory.selectFrom(dp)
+        DayPlace dayPlace = queryFactory.selectFrom(dp)
                 .join(dp.daySchedule, ds)
                 .join(ds.plan, p)
                 .where(dp.dayPlaceId.eq(dayPlaceId)
                         .and(ds.dayScheduleId.eq(dayScheduleId))
                         .and(p.planId.eq(planId)))
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .fetchOne();
+
+        return Optional.ofNullable(dayPlace);
     }
 }

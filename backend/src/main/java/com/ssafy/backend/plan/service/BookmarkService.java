@@ -86,14 +86,14 @@ public class BookmarkService {
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
-
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
+        // Query (N+1 방지)
         List<Bookmark> bookmarks = bookmarkRepository.findBookmarksByPlanId(planId);
 
-        List<GetBookmarkResponseDTO> getBookmarkResponseDTOS = bookmarks.stream()
+        List<GetBookmarkResponseDTO> bookmarkResponseDTOList = bookmarks.stream()
                 .map(bookmark -> {
                     Place place = bookmark.getPlace();
                     return GetBookmarkResponseDTO.builder()
@@ -110,7 +110,7 @@ public class BookmarkService {
                 }).toList();
 
         return GetBookmarkListResponseDTO.builder()
-                .bookmarkList(getBookmarkResponseDTOS)
+                .bookmarkList(bookmarkResponseDTOList)
                 .build();
     }
 

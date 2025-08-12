@@ -15,6 +15,7 @@ import Icon from "../atoms/Icon";
 import "./PlanList.css";
 import SearchBar from "../organisms/SearchBar";
 import "../organisms/ViewParticipantModal.css";
+import "../organisms/ShareModal.css"; // toast 스타일 적용
 
 // 정렬 함수
 const sortPlans = (plans, type) => {
@@ -127,6 +128,13 @@ const PlanList = () => {
 
   const closeConfirmModal = useCallback(() => {
     setConfirmModal((s) => ({ ...s, open: false }));
+  }, []);
+
+  // 공유 링크 복사 토스트 (PlanList 상단 중앙)
+  const [showToast, setShowToast] = useState(false);
+  const handleShowToast = useCallback(() => {
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
   }, []);
 
   // 여행 계획 목록 조회
@@ -296,6 +304,11 @@ const PlanList = () => {
 
   return (
     <>
+      {showToast && (
+        <div className={`toast-message show`}>
+          링크가 복사되었습니다!
+        </div>
+      )}
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 font-['Poppins']">
         <div className="max-w-7xl mx-auto px-4 pt-[80px] pb-12">
           {/* 헤더 섹션 */}
@@ -373,6 +386,7 @@ const PlanList = () => {
                         isAnyPopoverOpen={isAnyPopoverOpen}
                         onPopoverOpenChange={setIsAnyPopoverOpen}
                         onRequestConfirm={handleRequestConfirm}
+                        onShowToast={handleShowToast}
                       />
                     </div>
                   ))}
@@ -435,6 +449,7 @@ const PlanList = () => {
                     onLeave={handleLeave}
                     onShowLeaveModal={handleShowLeaveModal}
                     onRequestConfirm={handleRequestConfirm}
+                    onShowToast={handleShowToast}
                   />
                 ))
               ) : searchTerm.trim() ? (

@@ -76,11 +76,36 @@
   padding: 0.35rem 0.5rem;
   min-height: 1.75rem;
   height: auto;
+  border: 1px solid #e5e7eb; /* 테두리 추가 */
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+  font-family: 'Poppins', sans-serif; /* 폰트 적용 */
 }
 
 .plan-post-modal textarea {
   min-height: 3rem;
   resize: none;
+}
+
+/* placeholder 색상 */
+.plan-post-modal input::placeholder,
+.plan-post-modal textarea::placeholder {
+  color: #9ca3af; /* gray-400 */
+}
+
+/* 포커스 스타일 */
+.plan-post-modal input:focus,
+.plan-post-modal textarea:focus {
+  border-color: #111827; /* gray-900 */
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.08);
+}
+
+/* 읽기 전용(여행 기간) 스타일 */
+.plan-post-modal input[readonly] {
+  cursor: pointer;
+  background-color: #f9fafb; /* gray-50 */
 }
 
 /* 버튼 크기 조정 */
@@ -261,4 +286,32 @@
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+/* 에러 메시지 */
+.plan-post-modal__error {
+  color: #dc2626; /* red-600 */
+  font-size: 0.6875rem;
+  margin-top: 0.25rem;
+}
+
+/* 에러 인풋 스타일 */
+.plan-input--error {
+  border-color: #f87171 !important; /* red-400 */
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
+}
+
+/* 흔들림 애니메이션 */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
 }

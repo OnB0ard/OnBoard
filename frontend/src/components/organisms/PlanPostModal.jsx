@@ -9,6 +9,37 @@ import { usePlanFormStore } from "../../store/usePlanFormStore";
 
 import "./PlanPostModal.css";
 
+// 이미지 압축 함수 
+const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        const compressedFile = new File([blob], file.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+        resolve(compressedFile);
+      }, 'image/jpeg', quality);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null }) {
   const {
     name, setName,
@@ -54,10 +85,18 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     return "여행 기간을 선택하세요";
   };
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setImage(file);
+    if (!file) return;
+    try {
+      // 1MB 이상만 압축 시도 (스토어에서도 1MB 이상 압축하므로 중복 방지 효과)
+      const finalFile = file.size > 1024 * 1024
+        ? await compressImage(file, 800, 800, 0.8)
+        : file;
+      await setImage(finalFile);
+    } catch (e) {
+      console.error('이미지 압축 실패, 원본 사용:', e);
+      await setImage(file);
     }
   };
   

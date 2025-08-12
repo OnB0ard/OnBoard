@@ -17,6 +17,7 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   width: 100%;
   max-width: 500px;
+  max-height: 85vh;
   padding: 0.875rem;
   display: flex;
   flex-direction: column;

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import PlanImage from "../atoms/PlanImage";
 import CardDropDown from "../atoms/CardDropDown";
 import { Button } from "../ui/button";

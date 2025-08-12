@@ -25,15 +25,15 @@ public class PlanExceptionHandler {
                 HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(NotInThisRoomException.class)
-    public CommonResponse<ErrorBody> NotInThisRoomException(NotInThisRoomException e, HttpServletRequest request) {
+    @ExceptionHandler(UserNotInPlanException.class)
+    public CommonResponse<ErrorBody> UserNotInPlanException(UserNotInPlanException e, HttpServletRequest request) {
         log.warn("PLAN-013> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-013", "당신은 이 방에 속해있지 않습니다."),
                 HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(NotApplicantException.class)
-    public CommonResponse<ErrorBody> NotApplicantException(NotApplicantException e, HttpServletRequest request) {
+    @ExceptionHandler(AlreadyApprovedException.class)
+    public CommonResponse<ErrorBody> AlreadyApprovedException(AlreadyApprovedException e, HttpServletRequest request) {
         log.warn("PLAN-014> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-014", "참여 요청을 하지 않은 사용자입니다."),
                 HttpStatus.FORBIDDEN);
@@ -66,8 +66,8 @@ public class PlanExceptionHandler {
                 HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(BookmarkExistException.class)
-    public CommonResponse<ErrorBody> BookmarkExistException(BookmarkExistException e, HttpServletRequest request) {
+    @ExceptionHandler(AlreadyBookmarkedException.class)
+    public CommonResponse<ErrorBody> AlreadyBookmarkedException(AlreadyBookmarkedException e, HttpServletRequest request) {
         log.warn("PLAN-018> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
         return new CommonResponse<>(new ErrorBody("PLAN-018", "이미 북마크 되어있습니다."),
                 HttpStatus.BAD_REQUEST);

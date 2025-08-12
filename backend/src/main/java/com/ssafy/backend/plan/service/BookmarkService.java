@@ -38,12 +38,10 @@ public class BookmarkService {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         Place place = placeRepository.findByGooglePlaceIdForUpdate(createBookmarkRequestDTO.getGooglePlaceId())
@@ -66,7 +64,7 @@ public class BookmarkService {
 
         if(bookmarkRepository.existsByPlanAndPlace(plan, place))
         {
-            throw new BookmarkExistException("이미 북마크 되어있습니다.");
+            throw new AlreadyBookmarkedException("이미 북마크 되어있습니다.");
         }
 
         Bookmark bookmark = Bookmark.builder()
@@ -87,10 +85,10 @@ public class BookmarkService {
         User user = validateUserExistence(userId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
 
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         List<Bookmark> bookmarks = bookmarkRepository.findBookmarksByPlanId(planId);
@@ -122,12 +120,10 @@ public class BookmarkService {
         User user = validateUserExistence(userId);
         Bookmark bookmark = validateBookmarkExistence(bookmarkId);
 
-        if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
-        }
-        UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
+        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         if(bookmark.getPlan().getPlanId() != planId) {

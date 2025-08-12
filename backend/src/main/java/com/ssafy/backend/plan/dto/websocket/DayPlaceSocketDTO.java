@@ -25,6 +25,16 @@ public class DayPlaceSocketDTO {
 
     private String memo;
 
+    private String googlePlaceId;
+    private String placeName;
+    private Double latitude;
+    private Double longitude;
+    private String address;
+    private Double rating;
+    private Integer ratingCount;
+    private String imageUrl;
+    private String category;
+
     public CreateDayPlaceRequestDTO toCreateDayPlaceRequestDTO() {
         return CreateDayPlaceRequestDTO.builder()
                 .placeId(placeId)

@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./SettingModal.css";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/atoms/Input";
-import { Button } from "@/components/atoms/Button";
-import Icon from "@/components/atoms/Icon";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Input } from "../atoms/Input";
+import { Button } from "../atoms/Button";
+import Icon from "../atoms/Icon";
 import { updateUserProfile } from "../../apis/updateProfile"; 
 import { deleteUserAccount } from "../../apis/deleteUserAccount";
-import { useAuthStore } from "@/store/useAuthStore"; // zustand store import
+import { useAuthStore } from "../../store/useAuthStore"; // zustand store import
 
 // 이미지 압축 함수
 const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.8) => {
@@ -148,8 +148,25 @@ const handleSave = async () => {
     });
 
     // Zustand store 업데이트
-    const newProfileImage = imageFile ? URL.createObjectURL(imageFile) : profileImage;
-    updateProfile(nickname.trim(), newProfileImage);
+    // API에서 새로운 이미지 URL을 반환하면 우선 사용, 없으면 로컬 objectURL 또는 기존 URL 사용
+    let nextImageUrl = (response && (response.imageUrl || response?.data?.imageUrl))
+      || (imageFile ? URL.createObjectURL(imageFile) : profileImage);
+    // 캐시버스터는 http(s) URL에만 적용 (blob:/data:에는 붙이면 안 됨)
+    if (nextImageUrl) {
+      const isHttp = /^https?:\/\//.test(nextImageUrl);
+      const alreadyHasBust = /[?&]t=\d+/.test(nextImageUrl);
+      if (isHttp && !alreadyHasBust) {
+        const sep = nextImageUrl.includes('?') ? '&' : '?';
+        nextImageUrl = `${nextImageUrl}${sep}t=${Date.now()}`;
+      }
+    }
+    updateProfile(nickname.trim(), nextImageUrl);
+    // 전체 앱(특히 MyPage) 강제 리렌더를 위한 커스텀 이벤트 디스패치
+    try {
+      window.dispatchEvent(new CustomEvent('profile-updated'));
+    } catch (_) {
+      // SSR 등 window 미존재 환경 방어
+    }
 
     alert("프로필이 저장되었습니다.");
     onClose();

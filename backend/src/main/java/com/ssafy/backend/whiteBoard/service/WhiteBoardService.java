@@ -14,10 +14,7 @@ import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.entity.UserPlan;
 import com.ssafy.backend.user.entity.UserStatus;
 import com.ssafy.backend.user.repository.UserRepository;
-import com.ssafy.backend.whiteBoard.dto.request.CreateDiagramRequestDTO;
-import com.ssafy.backend.whiteBoard.dto.request.CreateLineRequestDTO;
-import com.ssafy.backend.whiteBoard.dto.request.CreateTravelRequestDTO;
-import com.ssafy.backend.whiteBoard.dto.request.ModifyWhiteBoardObjectRequestDTO;
+import com.ssafy.backend.whiteBoard.dto.request.*;
 import com.ssafy.backend.whiteBoard.dto.response.*;
 import com.ssafy.backend.whiteBoard.entity.ObjectType;
 import com.ssafy.backend.whiteBoard.entity.WhiteBoardObject;
@@ -74,7 +71,7 @@ public class WhiteBoardService {
     }
 
     @Transactional
-    public Long createTravel(Long planId, CreateTravelRequestDTO createTravelRequestDTO, Long userId) {
+    public CreateTravelResult  createTravel(Long planId, CreateTravelRequestDTO createTravelRequestDTO, Long userId) {
         Plan plan = validatePlanExistence(planId);
         User user = validateUserExistence(userId);
         validateUserIsApprovedParticipant(plan, user);
@@ -111,7 +108,7 @@ public class WhiteBoardService {
                 .objectType(ObjectType.PLACE) // ENUM
                 .build();
         whiteBoardRepository.save(whiteBoardObject);
-        return whiteBoardObject.getWhiteBoardObjectId();
+        return new CreateTravelResult(whiteBoardObject.getWhiteBoardObjectId(), place.getPlaceId());
     }
 
     public RetrieveWhiteBoardObjectsResponseDTO retrieveWhiteBoardObjects(Long planId, Long userId) {

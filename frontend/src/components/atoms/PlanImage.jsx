@@ -1,18 +1,19 @@
-import React from "react"
+// PlanImage.jsx
+const PlanImage = ({ src, alt }) => {
+  const defaultImage = '/images/planImage_default3.png'; // 없는 경우 기본 이미지
 
-// 여행계획 이미지 파일 첨부시 비율 가로:세로=16:9 되게
-const PlanImage = ({ src, alt = "계획 이미지" }) => {
-  const defaultImage = "/images/planImage_default3.png"
-  
   return (
-    <div className="w-full max-w-2xl aspect-[16/9] overflow-hidden rounded-lg bg-gray-100">
+    <div className="w-full aspect-[16/9] overflow-hidden rounded-lg bg-gray-100">
       <img
-        src={src || defaultImage} // src 지정하지 않으면 기본 이미지로.
+        src={src || defaultImage}
         alt={alt}
-        className="h-full w-full object-cover"
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          e.target.src = defaultImage;
+        }}
       />
     </div>
-  )
-}
+  );
+};
 
-export default PlanImage
+export default PlanImage;

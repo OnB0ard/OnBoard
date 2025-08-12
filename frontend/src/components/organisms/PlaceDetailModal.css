@@ -11,25 +11,26 @@
 .place-detail-modal-content {
   background-color: white;
   border-radius: 12px;
-  width: 330px;
+  width: 450px;
   height: calc(100vh - 100px); /* max-height에서 height로 변경하여 고정 높이 설정 */
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   pointer-events: auto;
   position: relative;
-  animation: slideInFromSidebar 0.3s ease-out;
-  transform-origin: top left;
+  /* 중앙 고정과 충돌하지 않는 페이드/스케일 애니메이션 */
+  animation: modalFadeIn 0.18s ease-out;
+  transform-origin: center center;
 }
 
-@keyframes slideInFromSidebar {
+@keyframes modalFadeIn {
   from {
     opacity: 0;
-    transform: translateX(-10px) scale(0.95);
+    transform: translate(-50%, -50%) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 

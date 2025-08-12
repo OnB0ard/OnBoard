@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../atoms/Button";
 import Icon from "../atoms/Icon";
 import SettingModal from "../organisms/SettingModal";
@@ -311,6 +311,7 @@ const MyPage = () => {
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
                               hideDropdown={true}
+                              hideManageActions={true}
                             />
                           </div>
                         ))}
@@ -377,6 +378,7 @@ const MyPage = () => {
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
                               hideDropdown={true}
+                              hideManageActions={true}
                             />
                           </div>
                         ))}
@@ -396,7 +398,7 @@ const MyPage = () => {
                           </button>
                           
                           <div className="pagination-dots">
-                                                         {[...Array(getTotalPages(completedPlans))].map((_, index) => (
+                             {[...Array(getTotalPages(completedPlans))].map((_, index) => (
                                <button
                                  key={index}
                                  onClick={() => handlePageClick('completed', index)}

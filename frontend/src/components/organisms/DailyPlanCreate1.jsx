@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import DailyScheduleBlock from './DailyScheduleBlock';
 import BookmarkModal from './BookmarkModal';
@@ -6,12 +6,20 @@ import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';
 import { useDayMarkersStore } from '../../store/mapStore';
+import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
+import { useStompDayPlace } from '@/hooks/useStompDayPlace';
+import { getPlaceDetail } from '@/apis/placeDetail';
+import { useAuthStore } from '@/store/useAuthStore';
+
 import './DailyPlanCreate1.css';
 
 const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
   const modalRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const autoScrollIntervalRef = useRef(null);
+  const lastLoadedPlanIdRef = useRef(null);
+  const saveCacheTimeoutRef = useRef(null);
+  const accessToken = useAuthStore((s) => s.accessToken);
   
   // Zustand 스토어에서 상태와 액션들 가져오기
   const {
@@ -35,6 +43,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     
     // 액션
     setPlanId,
+    setDailyPlans,
     addDailyPlan,
     removeDailyPlan,
     updateDayTitle,
@@ -45,6 +54,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     updatePlaceMemo,
     reorderPlaces,
     swapPlaces,
+    // WS place actions (ID 기반)
+    insertPlaceByServer,
+    updatePlaceMemoById,
+    reorderPlacesById,
+    movePlaceAcrossDaysById,
+    removePlaceById,
+    findDayIndexById,
     setDayDragState,
     setPlaceDragState,
     setDragOverIndex,
@@ -63,20 +79,227 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     setMemoModalOpen,
     selectedPlace,
     setSelectedPlace,
-    toggleDayMarkersOnMap,
-    clearDayMarkersFromMap
+    toggleDayMarkersOnMap
   } = useDailyPlanStore();
 
   // 지도 스토어에서 일차별 마커 액션들 가져오기
   const { setDayMarkers, clearDayMarkers } = useDayMarkersStore();
+  
 
-  // planId가 변경될 때 스토어에 설정
+  // DaySchedule 전용 WebSocket (신규)
+  const {
+    connected: dayWsConnected,
+    createDay,
+    renameDay,
+    moveDayRealtime,
+    updateSchedule,
+    deleteDay,
+  } = useStompDaySchedule({
+    planId,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
+    accessToken,
+    onMessage: (msg) => {
+      try {
+        const { action, ...payload } = msg || {};
+        console.log('[DaySchedule][recv]', action, payload);
+        switch (action) {
+          case 'RENAME': {
+            const { dayScheduleId, title } = payload || {};
+            if (dayScheduleId != null && typeof title === 'string') {
+              updateDayTitle(dayScheduleId, title);
+            }
+            break;
+          }
+          case 'CREATE': {
+            // 서버가 브로드캐스트한 새 일차 생성 반영
+            const { dayScheduleId, title, dayOrder } = payload || {};
+            if (dayScheduleId == null) break;
+            const exists = (dailyPlans || []).some((d) => d.id === dayScheduleId);
+            if (exists) break;
+            const insertIndex = Math.max(0, (typeof dayOrder === 'number' ? dayOrder - 1 : (dailyPlans?.length || 0)));
+            const newDay = { id: dayScheduleId, title: title || `${insertIndex + 1}일차`, places: [] };
+            const before = (dailyPlans || []);
+            const next = [...before.slice(0, insertIndex), newDay, ...before.slice(insertIndex)];
+            setDailyPlans(next);
+            break;
+          }
+          case 'DELETE': {
+            const { dayScheduleId } = payload || {};
+            if (dayScheduleId == null) break;
+            removeDailyPlan(dayScheduleId);
+            break;
+          }
+          case 'UPDATE_SCHEDULE': {
+            // 특정 dayScheduleId를 modifiedDayOrder 위치로 이동
+            const { dayScheduleId, modifiedDayOrder } = payload || {};
+            if (dayScheduleId == null || typeof modifiedDayOrder !== 'number') break;
+            const fromIndex = (dailyPlans || []).findIndex((d) => d.id === dayScheduleId);
+            const toIndex = Math.max(0, modifiedDayOrder - 1);
+            if (fromIndex < 0 || fromIndex === toIndex) break;
+            reorderDailyPlans(fromIndex, toIndex);
+            break;
+          }
+          default:
+            console.warn('[DaySchedule] unknown action:', action);
+        }
+      } catch (e) {
+        console.warn('[DaySchedule] onMessage handler error', e);
+      }
+    },
+    onSubscribed: () => {
+      console.log('[DailyPlanCreate1] daySchedule subscribed');
+      // REST 기반 초기 동기화 제거됨
+    },
+  });
+
+  // DayPlace 전용 WebSocket (신규)
+  const {
+    connected: placeWsConnected,
+    createPlace,
+    renameMemo,
+    updateInner,
+    updateOuter,
+    deletePlace,
+  } = useStompDayPlace({
+    planId,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
+    accessToken,
+    onMessage: async (msg) => {
+      try {
+        const { action, ...payload } = msg || {};
+        console.log('[DayPlace][recv]', action, payload);
+        switch (action) {
+          case 'CREATE': {
+            const { dayScheduleId, dayPlaceId, placeId, indexOrder } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null) break;
+            // 1-based -> 0-based
+            const insertIndex = Math.max(0, (indexOrder || 1) - 1);
+            // 서버 페이로드에 상세가 포함되면 즉시 사용, 없으면 상세 조회로 폴백
+            const hasInlineDetail = typeof payload.placeName === 'string' && payload.latitude != null && payload.longitude != null;
+            if (hasInlineDetail) {
+              const placeObj = {
+                id: dayPlaceId,
+                name: payload.placeName,
+                displayName: payload.placeName,
+                address: payload.address,
+                formatted_address: payload.address,
+                rating: payload.rating,
+                ratingCount: typeof payload.ratingCount === 'number' ? payload.ratingCount : 0,
+                imageUrl: payload.imageUrl || '',
+                latitude: payload.latitude,
+                longitude: payload.longitude,
+                primaryCategory: payload.category,
+                memo: payload.memo || '',
+                placeId: placeId ?? payload.placeId,
+                googlePlaceId: payload.googlePlaceId,
+              };
+              insertPlaceByServer(dayScheduleId, insertIndex, placeObj);
+            } else if (placeId != null) {
+              try {
+                const detail = await getPlaceDetail(placeId);
+                const placeObj = {
+                  id: dayPlaceId,
+                  name: detail.placeName,
+                  displayName: detail.placeName,
+                  address: detail.address,
+                  formatted_address: detail.address,
+                  rating: detail.rating,
+                  ratingCount: typeof detail.ratingCount === 'number' ? detail.ratingCount : 0,
+                  imageUrl: detail.imageUrl || '',
+                  latitude: detail.latitude,
+                  longitude: detail.longitude,
+                  primaryCategory: detail.category,
+                  memo: payload?.memo || '',
+                  placeId: placeId,
+                  googlePlaceId: detail.googlePlaceId,
+                };
+                insertPlaceByServer(dayScheduleId, insertIndex, placeObj);
+              } catch (e) {
+                console.warn('place detail fetch failed, skip insert', e);
+              }
+            }
+            break;
+          }
+          case 'RENAME': {
+            const { dayScheduleId, dayPlaceId, memo } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null) break;
+            updatePlaceMemoById(dayScheduleId, dayPlaceId, memo || '');
+            break;
+          }
+          case 'UPDATE_INNER': {
+            const { dayScheduleId, dayPlaceId, modifiedIndexOrder } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null || modifiedIndexOrder == null) break;
+            const toIndex = Math.max(0, modifiedIndexOrder - 1);
+            reorderPlacesById(dayScheduleId, dayPlaceId, toIndex);
+            break;
+          }
+          case 'UPDATE_OUTER': {
+            const { dayScheduleId, dayPlaceId, modifiedDayScheduleId, modifiedIndexOrder } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null || modifiedDayScheduleId == null || modifiedIndexOrder == null) break;
+            const toIndex = Math.max(0, modifiedIndexOrder - 1);
+            movePlaceAcrossDaysById(dayPlaceId, dayScheduleId, modifiedDayScheduleId, toIndex);
+            break;
+          }
+          case 'DELETE': {
+            const { dayScheduleId, dayPlaceId } = payload || {};
+            if (dayScheduleId == null || dayPlaceId == null) break;
+            removePlaceById(dayScheduleId, dayPlaceId);
+            break;
+          }
+          default:
+            break;
+        }
+      } catch (e) {
+        console.error('[DayPlace][recv] error:', e);
+      }
+    },
+  });
+
+  // 장소/화이트보드 관련 WebSocket 제거됨: DailyPlanCreate1에서는 사용하지 않음
+
+  // planId가 "실제로 변경될 때만" 초기화/로드 수행
   useEffect(() => {
-    if (planId) {
-      setPlanId(planId);
-      console.log('📋 planId 설정됨:', planId);
+    if (!planId) return;
+    if (lastLoadedPlanIdRef.current === planId) {
+      // 같은 방이면 재초기화/재로드 금지
+      return;
     }
-  }, [planId, setPlanId]);
+    setPlanId(planId);
+    console.log('📋 planId 변경 감지 및 로드:', planId);
+    clearDayMarkers();
+    // 1) 로컬 캐시 우선 로드
+    try {
+      const cached = localStorage.getItem(`plan-schedules:${planId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setDailyPlans(parsed);
+          console.log('🗂️ 로컬 캐시 일정 로드 완료');
+        }
+      }
+    } catch (e) {
+      console.warn('로컬 캐시 로드 실패:', e);
+    }
+    // REST 기반 서버 일정 불러오기 제거됨
+    lastLoadedPlanIdRef.current = planId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, setPlanId])
+
+  // 로컬 캐시에 항상 최신 일정 저장 (가벼운 디바운스)
+  useEffect(() => {
+    if (!planId) return;
+    if (saveCacheTimeoutRef.current) clearTimeout(saveCacheTimeoutRef.current);
+    saveCacheTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(`plan-schedules:${planId}`, JSON.stringify(dailyPlans));
+      } catch (e) {
+        console.warn('캐시 저장 실패:', e);
+      }
+    }, 400);
+    return () => {
+      if (saveCacheTimeoutRef.current) clearTimeout(saveCacheTimeoutRef.current);
+    };
+  }, [dailyPlans, planId]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -233,33 +456,53 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     if (dragDataString) {
       const dragData = JSON.parse(dragDataString);
       console.log('드래그 데이터 (JSON):', dragData);
-      
+
       if (dragData.type === 'day') {
-        // 일차 위치 교환 로직
-        console.log('일차 드롭 감지:', { from: draggedDayIndex, to: dayIndex });
-        if (draggedDayIndex === null || draggedDayIndex === dayIndex) {
-          console.log('일차 드롭 취소: 같은 위치이거나 유효하지 않은 드래그');
-          return;
-        }
-        
-        // 드롭 위치에 따른 인덱스 조정
+        // 드롭 위치 기반 목표 인덱스 산정
         const target = e.currentTarget;
         const dropPosition = target.getAttribute('data-drop-position');
+        // rawTargetIndex: 원본 리스트 기준 삽입될 위치(하단이면 +1)
         let targetIndex = dayIndex;
-        
-        // 하단에 드롭하는 경우 인덱스를 1 증가
-        if (dropPosition === 'bottom') {
-          targetIndex = dayIndex + 1;
+        if (dropPosition === 'bottom') targetIndex = dayIndex + 1;
+
+        // 유효성 체크
+        if (draggedDayIndex === null || draggedDayIndex === undefined) {
+          console.log('일차 드롭 취소: 유효하지 않은 드래그');
+          return;
         }
-        
-        console.log('일차 위치 이동 실행:', { 
-          from: draggedDayIndex, 
-          to: dayIndex, 
-          position: dropPosition,
-          finalIndex: targetIndex 
-        });
-        
-        reorderDailyPlans(draggedDayIndex, targetIndex);
+
+        const fromIndex = draggedDayIndex;
+        const maxIndex = Math.max(0, (dailyPlans?.length || 1) - 1);
+        // insertIndex 계산: 소스가 타깃보다 앞이면 제거 후 인덱스가 1 줄어듦
+        let insertIndex = targetIndex - (fromIndex < targetIndex ? 1 : 0);
+        if (insertIndex > maxIndex) insertIndex = maxIndex; // 끝 다음은 끝으로 보정
+        if (insertIndex < 0) insertIndex = 0;
+
+        const toIndex = targetIndex;
+        console.log('일차 드롭 감지:', { from: fromIndex, toRaw: toIndex, finalInsert: insertIndex, position: dropPosition });
+        if (fromIndex === insertIndex) {
+          console.log('일차 드롭 취소: 최종 위치 동일');
+          return;
+        }
+
+        console.log('일차 위치 이동 실행:', { from: fromIndex, toRaw: toIndex, position: dropPosition, finalIndex: insertIndex });
+
+        // 재배치 실행 (로컬)
+        const movedDayId = (dailyPlans || [])[fromIndex]?.id;
+        const prevOrder = (fromIndex ?? 0) + 1;
+        reorderDailyPlans(fromIndex, insertIndex);
+
+        // WS 송신
+        try {
+          if (movedDayId != null) {
+            const finalOrder = (insertIndex ?? 0) + 1;
+            updateSchedule({ dayScheduleId: movedDayId, dayOrder: prevOrder, modifiedDayOrder: finalOrder });
+            console.log('[WS][send] UPDATE_SCHEDULE', { dayScheduleId: movedDayId, dayOrder: prevOrder, modifiedDayOrder: finalOrder });
+          }
+        } catch (e) {
+          console.warn('updateSchedule send failed', e);
+        }
+
         clearDragState();
         return;
       }
@@ -278,11 +521,23 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           return;
         }
         
-        // 기존 화이트보드 장소 처리 (타입이 없는 경우)
+        // 기존 화이트보드 장소 처리 (타입이 없는 경우) -> WS 전송으로 변경
         if (!dragData.type && (dragData.placeName || dragData.name)) {
-          console.log('화이트보드에서 장소 드롭:', dragData);
-          console.log('일차에 장소 추가:', { dayIndex, place: dragData });
-          addPlaceToDay(dayIndex, dragData);
+          console.log('화이트보드에서 장소 드롭(WS 전송으로 처리):', dragData);
+          const targetDayId = dailyPlans?.[dayIndex]?.id;
+          if (targetDayId == null) {
+            console.warn('❌ 일차 ID 없음 - 추가 취소');
+            return;
+          }
+          // 가능한 식별자 추출 (DB PK 우선, snake_case 포함, googlePlaceId 제외)
+          const rawPlaceId = dragData.id ?? dragData.placeId ?? dragData.place_id;
+          const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+          if (!placeId || Number.isNaN(placeId)) {
+            console.warn('❌ placeId 없음 - 서버 전송 불가');
+            return;
+          }
+          const insertIndex = (dailyPlans?.[dayIndex]?.places?.length || 0); // 끝에 추가
+          try { createPlace({ dayScheduleId: targetDayId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
           return;
         }
         
@@ -488,15 +743,23 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         position: dropPosition
       });
       
-      // 지정된 위치에 장소 추가
-      addPlaceToDay(targetDayIndex, dragData.place, insertIndex);
+      const dayScheduleId = dailyPlans[targetDayIndex]?.id;
+      if (dayScheduleId != null) {
+        const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id;
+        const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+        if (!placeId || Number.isNaN(placeId)) {
+          console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId });
+          return;
+        }
+        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
+      }
       
       // 북마크 모달은 열어둠 (연속 추가를 위해)
       
       return;
     }
     
-    // 2. 페이지 PlaceBlock 처리
+    // 2. 페이지 PlaceBlock 처리 (WS 전송)
     if (dragData.type === 'page-place' && dragData.place) {
       console.log('🏢 페이지 PlaceBlock 드롭 처리');
       
@@ -509,36 +772,23 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       if (dropPosition === 'bottom') {
         insertIndex = targetPlaceIndex + 1;
       }
-      
-      console.log('🎯 페이지 PlaceBlock 삽입:', {
-        place: dragData.place.placeName || dragData.place.name,
-        dayIndex: targetDayIndex,
-        insertIndex,
-        position: dropPosition
-      });
-      
-      // PlaceBlock 데이터를 DailyPlaceBlock 형식으로 변환
-      const placeData = dragData.place;
-      const normalizedPlace = {
-        id: placeData.id,
-        name: placeData.placeName || placeData.name,
-        address: placeData.address,
-        rating: placeData.rating,
-        ratingCount: placeData.ratingCount,
-        imageUrl: placeData.googleImg && placeData.googleImg[0],
-        latitude: placeData.latitude || placeData.lat,
-        longitude: placeData.longitude || placeData.lng,
-        primaryCategory: placeData.primaryCategory,
-        originalData: placeData
-      };
-      
-      // 지정된 위치에 장소 추가
-      addPlaceToDay(targetDayIndex, normalizedPlace, insertIndex);
+
+      // 페이지 PlaceBlock에서 온 placeId를 우선 사용하고 숫자로 검증하여 전송
+      const dayScheduleId = dailyPlans[targetDayIndex]?.id;
+      if (dayScheduleId != null) {
+        const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id ?? dragData.place.googlePlaceId;
+        const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+        if (!placeId || Number.isNaN(placeId)) {
+          console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId, from: 'page-place' });
+          return;
+        }
+        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
+      }
       
       return;
     }
 
-    // 기존 장소 드래그 처리
+    // 기존 장소 드래그 처리 (WS 전송)
     if (dragData.type !== 'place') {
       console.log('❌ 지원되지 않는 드래그 타입 - 종료');
       return;
@@ -546,37 +796,38 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
 
     const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
   
-  // 드롭 위치에 따른 인덱스 조정
-  const target = e.currentTarget;
-  const dropPosition = target.getAttribute('data-drop-position');
-  let finalTargetPlaceIndex = targetPlaceIndex;
-  
-  // 하단에 드롭하는 경우 인덱스를 1 증가
-  if (dropPosition === 'bottom') {
-    finalTargetPlaceIndex = targetPlaceIndex + 1;
-  }
-  
-  console.log('✅ 장소 이동 준비:', { 
-    from: { day: sourceDayIndex, place: sourcePlaceIndex }, 
-    to: { day: targetDayIndex, place: targetPlaceIndex },
-    position: dropPosition,
-    finalIndex: finalTargetPlaceIndex
-  });
-  
-  if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
-    console.log('❌ 같은 위치로 드롭 - 취소');
-    handlePlaceDragEnd(e);
-    return;
-  }
+    // 드롭 위치에 따른 1-based 목적지 순서 계산 (안전 클램핑 포함)
+    const target = e.currentTarget;
+    const dropPosition = target.getAttribute('data-drop-position');
+    const toCount = dailyPlans?.[targetDayIndex]?.places?.length || 0;
+    // 기본 1-based 계산: top= i+1, bottom= i+2
+    let modifiedOrder1b = (dropPosition === 'bottom') ? (targetPlaceIndex + 2) : (targetPlaceIndex + 1);
+    
+    // 동일 일차 이동이면 최대값은 현재 개수(toCount),
+    // 다른 일차로 이동이면 드롭 후 개수가 1 증가하므로 최대값은 toCount + 1
+    const withinSameDay = (dailyPlans?.[sourceDayIndex]?.id === dailyPlans?.[targetDayIndex]?.id);
+    const maxOrder = withinSameDay ? toCount : (toCount + 1);
+    modifiedOrder1b = Math.max(1, Math.min(modifiedOrder1b, maxOrder));
+    
+    // 같은 위치로의 이동 취소 체크 (0-based로 역변환 후 비교)
+    const finalTargetPlaceIndex = Math.max(0, modifiedOrder1b - 1);
+    if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
+      console.log('❌ 같은 위치로 드롭 - 취소');
+      handlePlaceDragEnd(e);
+      return;
+    }
 
-  console.log('🔄 장소 위치 이동 실행 시작!');
-  
-  try {
-    reorderPlaces(sourceDayIndex, sourcePlaceIndex, targetDayIndex, finalTargetPlaceIndex);
-    console.log('✅ 장소 이동 성공!');
-  } catch (error) {
-    console.error('❌ 장소 이동 오류:', error);
-  }
+    console.log('🔄 장소 위치 이동 실행 (WS)');
+    const fromDayId = dailyPlans[sourceDayIndex]?.id;
+    const toDayId = dailyPlans[targetDayIndex]?.id;
+    const dayPlaceId = dailyPlans[sourceDayIndex]?.places?.[sourcePlaceIndex]?.id;
+    if (fromDayId == null || toDayId == null || dayPlaceId == null) {
+      console.warn('skip move: missing ids');
+    } else if (fromDayId === toDayId) {
+      try { updateInner({ dayScheduleId: fromDayId, dayPlaceId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b }); } catch (e4) { console.warn('updateInner send failed', e4); }
+    } else {
+      try { updateOuter({ dayScheduleId: fromDayId, dayPlaceId, modifiedDayScheduleId: toDayId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b }); } catch (e5) { console.warn('updateOuter send failed', e5); }
+    }
 
     handlePlaceDragEnd(e);
   };
@@ -628,7 +879,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   const addPlaceFromBookmark = (place, insertIndex = -1) => {
     console.log('📝 addPlaceFromBookmark 호출:', { selectedDayIndex, placeName: place.name, insertIndex });
     if (selectedDayIndex === null) return;
-    addPlaceToDay(selectedDayIndex, place, insertIndex);
+    const dayScheduleId = dailyPlans[selectedDayIndex]?.id;
+    if (dayScheduleId == null) return;
+    const idx = insertIndex === -1 ? (dailyPlans[selectedDayIndex]?.places?.length || 0) : insertIndex;
+    const indexOrder = idx + 1; // 1-based
+    // place.id 는 원본 placeId 이어야 함
+    try { createPlace({ dayScheduleId, placeId: place.id || place.placeId || place.googlePlaceId, indexOrder }); } catch (e) { console.warn('createPlace send failed', e); }
     closeBookmarkModal();
   };
 
@@ -673,12 +929,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     e.currentTarget.classList.remove('drop-zone-active');
     
     try {
-      // 1. 북마크 장소 (application/json) 처리
+      // 1. 북마크/기존 장소 (application/json) 처리
       let dragDataStr = e.dataTransfer.getData('application/json');
       
       if (dragDataStr) {
         const dragData = JSON.parse(dragDataStr);
         
+        // 1-1) 북마크 추가
         if (dragData.type === 'bookmark-place' && dragData.place) {
           console.log('📌 북마크 장소 드롭:', {
             place: dragData.place.name,
@@ -686,10 +943,50 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             insertIndex
           });
           
-          // 지정된 위치에 장소 추가
-          addPlaceToDay(dayIndex, dragData.place, insertIndex);
-          
+          // WS 전송으로 생성
+      const dayScheduleId = dailyPlans[dayIndex]?.id;
+      const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id;
+      const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+      if (dayScheduleId != null && placeId && !Number.isNaN(placeId)) {
+        try { createPlace({ dayScheduleId, placeId, indexOrder: (insertIndex ?? 0) + 1 }); } catch (e1) { console.warn('createPlace send failed', e1); }
+      } else {
+        console.warn('❌ dayScheduleId/placeId 누락 - 생성 취소');
+      }
           // 북마크 모달은 열어둠 (연속 추가를 위해)
+          return;
+        }
+        
+        // 1-2) 기존 장소 이동 (same/other day 모두 처리)
+        if (dragData.type === 'place') {
+          const { dayIndex: sourceDayIndex, placeIndex: sourcePlaceIndex } = dragData;
+          const fromDayId = dailyPlans?.[sourceDayIndex]?.id;
+          const toDayId = dailyPlans?.[dayIndex]?.id;
+          const dayPlaceId = dailyPlans?.[sourceDayIndex]?.places?.[sourcePlaceIndex]?.id;
+          if (fromDayId == null || toDayId == null || dayPlaceId == null) {
+            console.warn('drop-zone move skip: missing ids');
+            return;
+          }
+          const toCount = dailyPlans?.[dayIndex]?.places?.length || 0;
+          const withinSameDay = fromDayId === toDayId;
+          // 드롭 존 insertIndex는 0..toCount, 1-based는 +1
+          let modifiedOrder1b = (insertIndex ?? 0) + 1;
+          const maxOrder = withinSameDay ? toCount : (toCount + 1);
+          modifiedOrder1b = Math.max(1, Math.min(modifiedOrder1b, maxOrder));
+          const finalTargetIdx0b = Math.max(0, modifiedOrder1b - 1);
+          // 동일 일차에서 동일 위치면 취소
+          if (withinSameDay && sourcePlaceIndex === finalTargetIdx0b) {
+            console.log('drop-zone same position within day - cancel');
+            return;
+          }
+          try {
+            if (withinSameDay) {
+              updateInner({ dayScheduleId: fromDayId, dayPlaceId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b });
+            } else {
+              updateOuter({ dayScheduleId: fromDayId, dayPlaceId, modifiedDayScheduleId: toDayId, indexOrder: sourcePlaceIndex + 1, modifiedIndexOrder: modifiedOrder1b });
+            }
+          } catch (errMove) {
+            console.warn('place move via drop-zone failed', errMove);
+          }
           return;
         }
       }
@@ -712,6 +1009,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           const placeData = dragData.place;
           const normalizedPlace = {
             id: placeData.id,
+            placeId: placeData.placeId ?? placeData.place_id ?? undefined,
             name: placeData.placeName || placeData.name,
             address: placeData.address,
             rating: placeData.rating,
@@ -722,9 +1020,19 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             primaryCategory: placeData.primaryCategory,
             originalData: placeData
           };
-          
-          // 지정된 위치에 장소 추가
-          addPlaceToDay(dayIndex, normalizedPlace, insertIndex);
+          // WS 전송으로 생성
+      const dayScheduleId = dailyPlans[dayIndex]?.id;
+      if (dayScheduleId != null) {
+            const rawPlaceId = normalizedPlace.placeId ?? normalizedPlace.id ?? normalizedPlace.place_id;
+            const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+            if (!placeId || Number.isNaN(placeId)) {
+              console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId });
+              return;
+            }
+            try { createPlace({ dayScheduleId, placeId, indexOrder: (insertIndex ?? 0) + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
+      } else {
+        console.warn('❌ dayScheduleId 없음 - 생성 취소');
+      }
           return;
         }
       }
@@ -745,7 +1053,11 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const dayIndex = dailyPlans.findIndex(day => day.title === dayTitle);
     const placeIndex = dailyPlans[dayIndex]?.places.findIndex(p => p.id === place.id);
     if (dayIndex !== -1 && placeIndex !== -1) {
-      updatePlaceMemo(dayIndex, placeIndex, memo);
+      const dayScheduleId = dailyPlans[dayIndex]?.id;
+      const dayPlaceId = dailyPlans[dayIndex]?.places?.[placeIndex]?.id;
+      if (dayScheduleId != null && dayPlaceId != null) {
+        try { renameMemo({ dayScheduleId, dayPlaceId, memo }); } catch (e) { console.warn('renameMemo send failed', e); }
+      }
     }
     closeMemoModal();
   };
@@ -811,13 +1123,33 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             onDrop={(e) => handleDayDrop(e, dayIndex)}
             onDragEnd={handleDayDragEnd}
             onDragLeave={handleDayDragLeave}
-            onUpdateTitle={updateDayTitle}
-            onRemoveDay={removeDailyPlan}
+            onUpdateTitle={(dayId, newTitle) => {
+              // 로컬 업데이트
+              updateDayTitle(dayId, newTitle);
+              // WS 전송 (신규 채널)
+              try { renameDay({ dayScheduleId: dayId, title: newTitle }); } catch (e) { console.warn('renameDay send failed', e); }
+            }}
+            onRemoveDay={(dayId) => {
+              // 로컬 제거
+              removeDailyPlan(dayId);
+              // WS 전송 (신규 채널)
+              try { deleteDay({ dayScheduleId: dayId }); } catch (e) { console.warn('deleteDay send failed', e); }
+            }}
             onAddPlaceClick={handleAddPlaceClick}
             onDayClick={handleDayClick}
             places={day.places || []}
-            onRemovePlace={removePlace}
-            onUpdatePlaceMemo={updatePlaceMemo}
+            onRemovePlace={(dayIndex, placeIndex) => {
+              const dayScheduleId = dailyPlans[dayIndex]?.id;
+              const dayPlaceId = dailyPlans[dayIndex]?.places?.[placeIndex]?.id;
+              if (dayScheduleId == null || dayPlaceId == null) return;
+              try { deletePlace({ dayScheduleId, dayPlaceId }); } catch (e) { console.warn('deletePlace send failed', e); }
+            }}
+            onUpdatePlaceMemo={(dayIndex, placeIndex, memo) => {
+              const dayScheduleId = dailyPlans[dayIndex]?.id;
+              const dayPlaceId = dailyPlans[dayIndex]?.places?.[placeIndex]?.id;
+              if (dayScheduleId == null || dayPlaceId == null) return;
+              try { renameMemo({ dayScheduleId, dayPlaceId, memo }); } catch (e) { console.warn('renameMemo send failed', e); }
+            }}
             onOpenMemoModal={handleOpenMemoModal}
             dragState={{
               isDragging,
@@ -838,21 +1170,30 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           />
         ))}
           
-          <Button className="add-day-button" onClick={addDailyPlan}>
+          <Button 
+            className="add-day-button" 
+            onClick={() => {
+              // 중복 생성 방지: 로컬 즉시 추가 대신 WS 브로드캐스트만 신뢰
+              const order = (Array.isArray(dailyPlans) ? dailyPlans.length : 0) + 1;
+              const title = `Day ${order}`;
+              try { createDay({ title, dayOrder: order }); } catch (e) { console.warn('createDay send failed', e); }
+            }}
+          >
             + 일정 추가
           </Button>
         </div>
       </div>
       
-      {showBookmarkModal && (
-        <BookmarkModal
-          isOpen={showBookmarkModal}
-          onClose={closeBookmarkModal}
-          bookmarkedPlaces={bookmarkedPlaces}
-          onPlaceSelect={addPlaceFromBookmark}
-          position={bookmarkModalPosition}
-        />
-      )}
+             {showBookmarkModal && (
+         <BookmarkModal
+           isOpen={showBookmarkModal}
+           onClose={closeBookmarkModal}
+           bookmarkedPlaces={bookmarkedPlaces}
+           onPlaceSelect={addPlaceFromBookmark}
+           position={bookmarkModalPosition}
+           planId={planId}
+         />
+       )}
 
       {showMemoModal && (
         <PlanMemoModal

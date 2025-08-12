@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import PlanImage from "../atoms/PlanImage";
 import CardDropDown from "../atoms/CardDropDown";
 import { Button } from "../ui/button";
@@ -21,6 +21,9 @@ const Card = ({
   onLeave,
   onShowLeaveModal,
   hideDropdown = false,
+  onRequestConfirm,
+  hideManageActions = false,
+  onShowToast,
 }) => {
   const {
     participantOpenId,
@@ -247,6 +250,8 @@ const Card = ({
                       planId={id}
                       isOpen={isParticipantOpen}
                       onClose={() => toggleParticipantPopover(id)}
+                      onRequestConfirm={onRequestConfirm}
+                      hideManageActions={hideManageActions}
                     />
                   </Popover.Content>
                 </Popover.Portal>
@@ -287,7 +292,12 @@ const Card = ({
                     onEscapeKeyDown={(e) => e.preventDefault()}
                     onPointerDownCapture={(e) => e.stopPropagation()}
                   >
-                    <ShareModal open={isShareOpen} onOpenChange={() => toggleSharePopover(id)} planId={id} />
+                    <ShareModal 
+                      open={isShareOpen} 
+                      onOpenChange={() => toggleSharePopover(id)} 
+                      planId={id}
+                      onCopySuccess={() => { if (typeof onShowToast === 'function') onShowToast(); }}
+                    />
                   </Popover.Content>
                 </Popover.Portal>
               </Popover.Root>

@@ -1,13 +1,15 @@
 // 장소 검색 후 나올 결과 리스트 
 
 import React, { useRef, useEffect, useCallback } from 'react';
-import { useSearchStore } from '../../store/mapStore';
+import { useSearchStore, useBookmarkStore } from '../../store/mapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import Icon from '../atoms/Icon';
 
-const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
+const PlaceResult = ({ places, onBookmarkClick, onPlaceClick, showBookmarkIcon = true }) => {
   const searchResults = useSearchStore((state) => state.searchResults);
+  const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
   const isSearching = useSearchStore((state) => state.isSearching);
   const fetchNextPage = useSearchStore((state) => state.fetchNextPage);
   const pagination = useSearchStore((state) => state.pagination);
@@ -45,9 +47,14 @@ const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
     return <div className="p-4 text-center">검색 중...</div>;
   }
 
+  // 외부에서 places가 주어지지 않으면, store의 검색결과에 현재 북마크 상태를 입혀서 사용
+  const list = (places && places.length > 0)
+    ? places
+    : searchResults.map((p) => ({ ...p, isBookmarked: isBookmarked(p.place_id) }));
+
   return (
     <div className="space-y-2 font-['Poppins']">
-      {searchResults.filter(Boolean).map((place) => {
+      {list.filter(Boolean).map((place) => {
         const imageUrl = place.photos && place.photos[0]
           ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 })
           : '/images/placeImage_default.png'
@@ -73,6 +80,7 @@ const PlaceResult = ({ onBookmarkClick, onPlaceClick }) => {
               <PlaceImage
                 imageUrl={imageUrl}
                 isBookmarked={place.isBookmarked}
+                showBookmark={false}
                 onBookmarkClick={(e) => {
                   e.stopPropagation();
                   onBookmarkClick?.(place);

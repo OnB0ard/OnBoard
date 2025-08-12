@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Input } from "@/components/atoms/Input";
 import { Textarea } from "@/components/atoms/TextArea";
 import { Button } from "@/components/atoms/Button";
@@ -8,6 +8,37 @@ import Icon from "@/components/atoms/Icon";
 import { usePlanFormStore } from "../../store/usePlanFormStore";
 
 import "./PlanPostModal.css";
+
+// 이미지 압축 함수 
+const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        const compressedFile = new File([blob], file.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+        resolve(compressedFile);
+      }, 'image/jpeg', quality);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null }) {
   const {
@@ -22,6 +53,12 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
   } = usePlanFormStore();
 
   const fileInputRef = useRef(null);
+
+  // 입력 길이 제한 상태 (15자)
+  const [nameError, setNameError] = useState(false);
+  const [nameShake, setNameShake] = useState(false);
+  const [hashError, setHashError] = useState(false);
+  const [hashShake, setHashShake] = useState(false);
 
   const isEditMode = mode === 'edit';
   const modalTitle = isEditMode ? '여행 계획 수정하기' : '새로운 여행 계획 만들기';
@@ -54,10 +91,30 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     return "여행 기간을 선택하세요";
   };
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setImage(file);
+    if (!file) return;
+    try {
+      // 1MB 이상만 압축 시도 (스토어에서도 1MB 이상 압축하므로 중복 방지 효과)
+      const finalFile = file.size > 1024 * 1024
+        ? await compressImage(file, 800, 800, 0.8)
+        : file;
+      // 압축(또는 원본) 후 5MB 초과 시 첨부하지 않음
+      if (finalFile.size > 5 * 1024 * 1024) {
+        alert('압축 후에도 파일 크기가 5MB를 초과합니다. 더 작은 이미지를 선택해주세요.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      await setImage(finalFile);
+    } catch (e) {
+      console.error('이미지 압축 실패, 원본 사용:', e);
+      // 압축 실패 시에도 원본이 5MB 초과면 제한
+      if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기가 5MB를 초과합니다. 더 작은 이미지를 선택해주세요.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      await setImage(file);
     }
   };
   
@@ -68,6 +125,33 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const triggerShake = (setter) => {
+    setter(true);
+    setTimeout(() => setter(false), 600);
+  };
+
+  const handleNameChange = (e) => {
+    const val = e.target.value || "";
+    if (val.length > 15) {
+      setNameError(true);
+      triggerShake(setNameShake);
+      return; // 15자 초과 입력 방지
+    }
+    setName(val);
+    setNameError(false);
+  };
+
+  const handleHashChange = (e) => {
+    const val = e.target.value || "";
+    if (val.length > 15) {
+      setHashError(true);
+      triggerShake(setHashShake);
+      return; // 15자 초과 입력 방지
+    }
+    setHashTag(val);
+    setHashError(false);
   };
 
   const handleFormSubmit = () => {
@@ -127,13 +211,31 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
 
           <div className="space-y-1">
             <label className="plan-post-modal__label"><Icon type="book" /> 제목</label>
-            <Input size="full" placeholder="여행 계획의 제목을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input 
+              size="full" 
+              placeholder="여행 계획의 제목을 입력하세요" 
+              value={name} 
+              onChange={handleNameChange}
+              className={`${nameError ? 'plan-input--error' : ''} ${nameShake ? 'shake' : ''}`}
+            />
+            {nameError && (
+              <p className="plan-post-modal__error">공백 포함 15자 이내로 작성해주세요</p>
+            )}
           </div>
 
           <div className="plan-post-modal__form-group">
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="hashtag" /> 해시 태그</label>
-              <Input size="full" placeholder="#가족, #친구, #제주도" value={hashTag} onChange={(e) => setHashTag(e.target.value)} />
+              <Input 
+                size="full" 
+                placeholder="#가족, #친구, #제주도" 
+                value={hashTag} 
+                onChange={handleHashChange}
+                className={`${hashError ? 'plan-input--error' : ''} ${hashShake ? 'shake' : ''}`}
+              />
+              {hashError && (
+                <p className="plan-post-modal__error">해시태그와 공백 포함 15자 이내로 작성해주세요</p>
+              )}
             </div>
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="calendar" /> 여행 기간</label>

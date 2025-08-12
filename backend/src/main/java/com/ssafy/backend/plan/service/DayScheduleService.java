@@ -120,13 +120,7 @@ public class DayScheduleService {
 
     public DayScheduleResponseDTO getDaySchedule(Long planId, Long dayScheduleId, Long userId) {
         User user = validateUserExistence(userId);
-        List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
-
-        if (dayPlaces.isEmpty()) {
-            throw new DayScheduleNotExistException("존재하지 않거나 해당 플랜에 속하지 않는 일정입니다.");
-        }
-
-        Plan plan = dayPlaces.get(0).getDaySchedule().getPlan();
+        Plan plan = validatePlanExistence(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
@@ -134,7 +128,12 @@ public class DayScheduleService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        DaySchedule daySchedule = dayPlaces.get(0).getDaySchedule();
+        // Lock없는 것으로
+        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleIdNoLock(planId, dayScheduleId)
+                .orElseThrow(() -> new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다."));
+
+        // 이미 여기서 plan - daySchedule 에 연결된 dayPlace들을 place정보와 함께 가져옴
+        List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
 
         List<DayPlaceResponseDTO> dayPlaceResponseDTOS = dayPlaces.stream()
                 .map(dp -> DayPlaceResponseDTO.builder()

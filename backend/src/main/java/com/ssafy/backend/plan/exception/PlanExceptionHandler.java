@@ -79,14 +79,6 @@ public class PlanExceptionHandler {
         return new CommonResponse<>(new ErrorBody("PLAN-019", "북마크 되어 있지 않습니다."),
                 HttpStatus.BAD_REQUEST);
     }
-
-    @ExceptionHandler(DayScheduleNotExistException.class)
-    public CommonResponse<ErrorBody> DayScheduleNotExistException(DayScheduleNotExistException e, HttpServletRequest request) {
-        log.warn("PLAN-020> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
-        return new CommonResponse<>(new ErrorBody("PLAN-020", "일정이 존재하지 않습니다."),
-                HttpStatus.BAD_REQUEST);
-    }
-
     @ExceptionHandler(DayScheduleNotInThisPlanException.class)
     public CommonResponse<ErrorBody> DayScheduleNotInThisPlanException(DayScheduleNotInThisPlanException e, HttpServletRequest request) {
         log.warn("PLAN-021> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());

@@ -21,7 +21,7 @@ public class DayPlaceQueryRepositoryImpl implements DayPlaceQueryRepository {
 
         return queryFactory
                 .selectFrom(dp)
-                .join(dp.daySchedule, ds).fetchJoin()
+                .join(dp.daySchedule, ds)
                 .join(dp.place, p).fetchJoin()
                 .where(ds.plan.planId.eq(planId))
                 .fetch();

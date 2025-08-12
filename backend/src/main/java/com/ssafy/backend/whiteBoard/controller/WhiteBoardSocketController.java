@@ -57,6 +57,11 @@ public class WhiteBoardSocketController {
                 CreateTravelResult result  = whiteBoardService.createTravel(planId, createTravelDTO, userId);
                 whiteBoardSocketDTO.setWhiteBoardObjectId(result.getWhiteBoardObjectId());
                 whiteBoardSocketDTO.setPlaceId(result.getPlaceId());
+
+                log.info("[CREATE_PLACE][Broadcast] whiteBoardObjectId={}, placeId={}",
+                        whiteBoardSocketDTO.getWhiteBoardObjectId(),
+                        whiteBoardSocketDTO.getPlaceId());
+
                 messagingTemplate.convertAndSend("/topic/whiteboard/" + planId, whiteBoardSocketDTO);
                 break;
 

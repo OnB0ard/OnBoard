@@ -46,8 +46,9 @@ export const useStompDaySchedule = ({
     const client = new Client({
       webSocketFactory: () => new SockJS(base),
       reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+      // 하트비트 주기를 줄여 idle 타임아웃과 백그라운드 스로틀에 더 견고하게 대응
+      heartbeatIncoming: 5000,
+      heartbeatOutgoing: 5000,
       debug: (str) => console.log('[STOMP raw]', str),
       onConnect: (frame) => {
         connectedRef.current = true;
@@ -87,7 +88,7 @@ export const useStompDaySchedule = ({
     };
   }, [wsUrl]);
 
-  // 토큰 준비되면 활성화
+  // 토큰 변경 시 안전한 재연결(헤더 갱신 -> deactivate -> activate)
   useEffect(() => {
     const client = clientRef.current;
     if (!client) return;
@@ -98,11 +99,38 @@ export const useStompDaySchedule = ({
       return;
     }
 
-    if (connectedRef.current && client.active) return; // 이미 연결됨
-
     client.connectHeaders = { Authorization: `Bearer ${tokenRef.current}` };
-    client.activate();
+
+    if (client.active) {
+      try {
+        client
+          .deactivate()
+          .then(() => client.activate())
+          .catch((e) => {
+            console.warn('[WS-DaySchedule] deactivate failed, re-activating anyway', e);
+            client.activate();
+          });
+      } catch (e) {
+        console.warn('[WS-DaySchedule] deactivate threw, re-activating anyway', e);
+        client.activate();
+      }
+    } else {
+      client.activate();
+    }
   }, [accessToken]);
+
+  // 탭이 다시 보일 때 연결이 없으면 재연결 시도
+  useEffect(() => {
+    const onVisibility = () => {
+      const client = clientRef.current;
+      if (!client) return;
+      if (document.visibilityState === 'visible' && !client.connected) {
+        try { client.activate(); } catch (e) { console.debug('[WS-DaySchedule] visibility activate error', e); }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   // 구독/재구독
   useEffect(() => {

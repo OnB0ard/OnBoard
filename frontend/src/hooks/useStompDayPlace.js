@@ -41,8 +41,9 @@ export const useStompDayPlace = ({ planId, wsUrl, accessToken, onMessage, onSubs
     const client = new Client({
       webSocketFactory: () => new SockJS(base),
       reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+      // 하트비트 주기를 줄여 idle 타임아웃과 백그라운드 스로틀에 더 견고하게 대응
+      heartbeatIncoming: 5000,
+      heartbeatOutgoing: 5000,
       debug: (str) => console.log('[STOMP raw]', str),
       onConnect: (frame) => {
         connectedRef.current = true;
@@ -81,7 +82,7 @@ export const useStompDayPlace = ({ planId, wsUrl, accessToken, onMessage, onSubs
     };
   }, [wsUrl]);
 
-  // 토큰 준비되면 활성화
+  // 토큰 변경 시 안전한 재연결(헤더 갱신 -> deactivate -> activate)
   useEffect(() => {
     const client = clientRef.current;
     if (!client) return;
@@ -92,11 +93,46 @@ export const useStompDayPlace = ({ planId, wsUrl, accessToken, onMessage, onSubs
       return;
     }
 
-    if (connectedRef.current && client.active) return;
-
     client.connectHeaders = { Authorization: `Bearer ${tokenRef.current}` };
-    client.activate();
+
+    // 이미 활성 상태면 deactivate 후 재활성화하여 새 토큰 반영
+    if (client.active) {
+      try {
+        client
+          .deactivate()
+          .then(() => {
+            // 연결 상태 플래그는 콜백에서 갱신되지만, 안전하게 재시도
+            client.activate();
+          })
+          .catch((e) => {
+            console.warn('[WS-DayPlace] deactivate failed, re-activating anyway', e);
+            client.activate();
+          });
+      } catch (e) {
+        console.warn('[WS-DayPlace] deactivate threw, re-activating anyway', e);
+        client.activate();
+      }
+    } else {
+      client.activate();
+    }
   }, [accessToken]);
+
+  // 탭이 다시 보일 때 연결이 없으면 재연결 시도
+  useEffect(() => {
+    const onVisibility = () => {
+      const client = clientRef.current;
+      if (!client) return;
+      if (document.visibilityState === 'visible' && !client.connected) {
+        try {
+          client.activate();
+        } catch (e) {
+          console.debug('[WS-DayPlace] visibility activate error', e);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   // 구독/재구독
   useEffect(() => {

@@ -99,9 +99,21 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
       const finalFile = file.size > 1024 * 1024
         ? await compressImage(file, 800, 800, 0.8)
         : file;
+      // 압축(또는 원본) 후 5MB 초과 시 첨부하지 않음
+      if (finalFile.size > 5 * 1024 * 1024) {
+        alert('압축 후에도 파일 크기가 5MB를 초과합니다. 더 작은 이미지를 선택해주세요.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
       await setImage(finalFile);
     } catch (e) {
       console.error('이미지 압축 실패, 원본 사용:', e);
+      // 압축 실패 시에도 원본이 5MB 초과면 제한
+      if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기가 5MB를 초과합니다. 더 작은 이미지를 선택해주세요.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
       await setImage(file);
     }
   };

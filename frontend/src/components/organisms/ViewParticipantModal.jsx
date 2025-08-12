@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 
 import { createPortal } from "react-dom";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Check, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { useParticipantStore } from "../../store/usePlanUserStore"; // Zustand 스토어 import

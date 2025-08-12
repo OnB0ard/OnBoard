@@ -82,9 +82,14 @@ const SettingModal = ({ isOpen, onClose }) => {
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      // 파일 타입 검증
-      if (!file.type.startsWith('image/')) {
-        alert("이미지 파일만 업로드 가능합니다.");
+      // 파일 타입 검증 (jpeg, png, webp만 허용)
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        alert("지원하지 않는 이미지 형식입니다. jpg, png, webp만 업로드할 수 있어요.");
         event.target.value = "";
         return;
       }
@@ -218,7 +223,7 @@ const handleWithdrawCancel = () => {
           </button>
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             ref={fileInputRef}
             style={{ display: "none" }}
             onChange={handleFileChange}
@@ -232,7 +237,11 @@ const handleWithdrawCancel = () => {
               size="full"
               className="custom-input"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              maxLength={10}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNickname(val.length <= 10 ? val : val.slice(0, 10));
+              }}
               disabled={!isEditing}
             />
             <span className="input-icon" onClick={()=>setIsEditing(true)}>

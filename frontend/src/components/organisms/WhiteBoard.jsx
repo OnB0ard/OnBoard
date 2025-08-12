@@ -123,7 +123,9 @@ const normalizeDiagrams = (list = []) => {
   return { shapes, lines };
 };
 
-const WhiteBoard = ({ planId: planIdProp }) => {
+const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
+  const stageW = Math.max(1, viewportSize?.width || 0);
+  const stageH = Math.max(1, viewportSize?.height || 0);
   const params = useParams();
   const planId = planIdProp ?? params.planId;
 
@@ -328,6 +330,14 @@ const WhiteBoard = ({ planId: planIdProp }) => {
     moveShape: null,
     updateShape: null,
   });
+
+  useEffect(() => {
+    if (stageRef.current && stageW > 0 && stageH > 0) {
+      stageRef.current.width(stageW);
+      stageRef.current.height(stageH);
+      stageRef.current.batchDraw();
+    }
+  }, [stageW, stageH]);
 
   useEffect(() => {
     throttled.current.moveShape   = throttle((payload) => sendMessage('MOVE', payload), 60);
@@ -651,8 +661,10 @@ const WhiteBoard = ({ planId: planIdProp }) => {
       />
 
       <Stage
-        width={window.innerWidth}
-        height={window.innerHeight}
+        // width={window.innerWidth}
+        // height={window.innerHeight}
+        width={stageW}
+        height={stageH}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

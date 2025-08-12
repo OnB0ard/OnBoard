@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
+import { useBookmarkStore } from '../../../store/mapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
 import './BookmarkModal.css';

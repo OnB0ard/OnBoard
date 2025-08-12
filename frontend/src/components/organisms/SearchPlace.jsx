@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Icon from "../atoms/Icon";
 import SearchBar from "./SearchBar";
 import PlaceResult from "./PlaceResult";
-import Bookmark from "./bookmark/Bookmark";
-
+import Bookmark from "./Bookmark";
 import PlaceDetailModal from "./PlaceDetailModal";
 import { useSearchStore, useBookmarkStore, usePlaceDetailsStore } from "../../store/mapStore";
 import useDailyPlanStore from "@/store/useDailyPlanStore";
@@ -108,7 +107,16 @@ const SearchPlace = ({ isOpen, onClose }) => {
     setIsPlaceDetailModalOpen(true);
   };
 
-  // 활성 플랜 설정은 PlanPage에서 처리합니다.
+  // 현재 planId를 URL에서 추출해 활성 플랜 설정 (PlanPage 컨텍스트)
+  useEffect(() => {
+    try {
+      const path = window.location.pathname;
+      const match = path.match(/plan\/(\d+|[\w-]+)/i);
+      if (match) setActivePlanId(match[1]);
+    } catch (e) {
+      // ignore
+    }
+  }, [setActivePlanId]);
 
   if (!isOpen) return null;
 

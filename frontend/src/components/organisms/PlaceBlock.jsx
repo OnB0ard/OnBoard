@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import StarRating from '../atoms/StarRating';
-import { useMapCoreStore } from '../../store/mapStore';
+import { useMapCoreStore, usePlaceDetailsStore } from '../../store/mapStore';
 import './PlaceBlock.css';
 
 const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, isDailyPlanModalOpen = false }) => {
   const panToPlace = useMapCoreStore((state) => state.panToPlace);
+  const openPlaceDetailByPlaceId = usePlaceDetailsStore((state) => state.openPlaceDetailByPlaceId);
+  const openPlaceDetailFromCandidate = usePlaceDetailsStore((state) => state.openPlaceDetailFromCandidate);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
@@ -36,6 +38,7 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
 
   // 화이트보드 내 이동 및 클릭/드래그 구분 로직
   const handleMouseDown = (e) => {
+    console.debug('[PlaceBlock] mouseDown', { x: e.clientX, y: e.clientY, placeId: place?.placeId, name: place?.placeName });
     setIsDragging(false);
     setStartPos({ x: e.clientX, y: e.clientY });
     if (parentOnMouseDown) {
@@ -50,14 +53,27 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
       const dy = Math.abs(e.clientY - startPos.y);
       if (dx > 5 || dy > 5) { // 5px 이상 움직이면 드래그로 확정
         setIsDragging(true);
+        console.debug('[PlaceBlock] dragging detected', { dx, dy });
       }
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = async (e) => {
     if (!isDragging) {
-      // 드래그가 아니면 클릭으로 처리
+      // 드래그가 아니면 클릭으로 처리: 지도 이동 + 상세 모달 오픈
+      console.debug('[PlaceBlock] click detected, opening detail modal', { placeId: place?.placeId, name: place?.placeName });
       panToPlace(place);
+      try {
+        if (place.placeId) {
+          console.debug('[PlaceBlock] openPlaceDetailByPlaceId call');
+          await openPlaceDetailByPlaceId(place.placeId, true, 'center');
+        } else {
+          console.debug('[PlaceBlock] openPlaceDetailFromCandidate call');
+          await openPlaceDetailFromCandidate(place, true, 'center');
+        }
+      } catch (err) {
+        console.error('[PlaceBlock] open detail failed:', err);
+      }
     }
     // 드래그 상태 초기화
     setIsDragging(false);

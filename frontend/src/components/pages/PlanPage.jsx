@@ -7,6 +7,7 @@ import WhiteBoard from '../organisms/WhiteBoard';
 import MapContainer from '../organisms/Map';
 import PlaceBlock from '../organisms/PlaceBlock';
 import AccessControlModal from '../organisms/AccessControlModal';
+import PlaceDetailModal from '../organisms/PlaceDetailModal';
 
 import { useMapCoreStore, usePlaceBlocksStore, usePlaceDetailsStore, useDayMarkersStore } from '../../store/mapStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -663,8 +664,11 @@ const handleGlobalMouseUp = () => {
           />
         </div>
       ))}
+      
+      {/* 장소 상세 모달: 스토어 상태에 따라 표시 */}
+      <PlaceDetailModal />
     </div>
   );
 };
 
-export default PlanPage; 
+export default PlanPage;

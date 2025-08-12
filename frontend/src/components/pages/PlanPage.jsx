@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { APIProvider, useMapsLibrary, Map, useMap } from '@vis.gl/react-google-maps';
 import CustomMarker from '../atoms/CustomMarker';
@@ -16,6 +16,35 @@ import { useParticipantStore } from '../../store/usePlanUserStore';
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const fallbackCenter = { lat: 37.5665, lng: 126.9780 };
+
+function useContainerSize() {
+  const [node, setNode] = React.useState(null);        // 현재 DOM 노드
+  const [size, setSize] = React.useState({ width: 0, height: 0 });
+
+  // ref로 사용할 콜백. 노드가 붙거나(detach/attach) 바뀔 때마다 호출됨.
+  const ref = React.useCallback((el) => {
+    setNode(el || null);
+  }, []);
+
+  React.useLayoutEffect(() => {
+    if (!node) return;
+
+    // 최초 1회 즉시 측정
+    const rect = node.getBoundingClientRect();
+    setSize({ width: rect.width, height: rect.height });
+
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setSize({ width, height });
+    });
+    ro.observe(node);
+
+    return () => ro.disconnect();
+  }, [node]);  // node가 바뀌면(= 실제로 DOM에 붙으면) 다시 실행
+
+  return [ref, size];
+}
+
 
 // 지도 초기화 로직을 담당하는 컴포넌트
 function MapInitializer() {
@@ -115,6 +144,8 @@ const PlanPage = () => {
 
   const [accessStatus, setAccessStatus] = useState('loading');
   const [modalState, setModalState] = useState({ isOpen: false, type: 'permission', message: '' });
+
+  const [wrapRef, {width: wrapW, height: wrapH}] = useContainerSize();
 
   const {
     isMapVisible,
@@ -406,15 +437,17 @@ const PlanPage = () => {
 
   return (
     <div 
+      ref={wrapRef}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       style={{ 
         position: 'relative', 
         overflow: 'visible',
-        top:'50px',
-        width: '100vw', 
-        height: '100vh',
+        top:'0px',
+        width: '92vw', 
+        height: '90vh',
+        margin: '50px auto 0',
         backgroundColor: isDragOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -423,8 +456,10 @@ const PlanPage = () => {
       }}
     >
         <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
-        <WhiteBoard planId = {Number(planId)}/>
-        {/* <EditToolBar /> */}
+        <WhiteBoard
+          planId={Number(planId)}
+          viewportSize={{ width: wrapW, height: wrapH }}
+        />        {/* <EditToolBar /> */}
         {isMapVisible && (
           <MapContainer>
             <APIProvider apiKey={apiKey}>

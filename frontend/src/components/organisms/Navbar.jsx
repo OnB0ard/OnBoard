@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import Icon from "@/components/atoms/Icon";
 import { Button as CustomButton } from "@/components/atoms/Button";
 import { AlarmBell } from "../atoms/AlarmBell";
+import * as Popover from "@radix-ui/react-popover";
 
 const Navbar = () => {
   const location = useLocation();
@@ -17,6 +18,8 @@ const Navbar = () => {
   const isFirstSection = isLandingPage && landingActiveIndex === 0;
   const handleGoogleLogin = useGoogleLogin();
   
+  const [open, setOpen] = useState(false);
+
   // 로그인 상태 관리
   const { accessToken, clearAuth } = useAuthStore();
   const isLoggedIn = !!accessToken;
@@ -72,8 +75,38 @@ const Navbar = () => {
 
         {/* <Link to="/test">
           <Button className={`temp ${isFirstSection ? 'landing-text' : ''}`} variant="link">TEST</Button>          
-        </Link> */}
-        <AlarmBell count={5} color={isFirstSection ? '#ffffff' : '#000000'} />
+        </Link> */} 
+
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              className="relative"
+              // AlarmBell 자체가 버튼/interactive 컴포넌트면 asChild로 AlarmBell을 직접 감싸도 OK
+            >
+              <AlarmBell count={5} color={isFirstSection ? '#ffffff' : '#000000'} />
+            </button>
+          </Popover.Trigger>
+
+          {/* 필요하면 Portal로 분리 */}
+          <Popover.Portal>
+            <Popover.Content
+              side="bottom"
+              align="center"
+              sideOffset={8}
+              className="z-[9999] w-[250px] bg-white shadow-xl rounded-xl p-0"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onCloseAutoFocus={(e) => e.preventDefault()}
+              onEscapeKeyDown={(e) => e.preventDefault()}
+              onPointerDownCapture={(e) => e.stopPropagation()}
+            >
+              {/* 여기에 알림 목록 등 내용 */}
+              <Popover.Arrow className="fill-white" /> Temp
+              {/* <div className="fill-white" /> Temp */}
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+
         <Button 
           className={`temp ${isFirstSection ? 'landing-text' : ''}`} 
           variant="link"

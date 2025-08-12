@@ -75,7 +75,9 @@ const useDailyPlanStore = create(
       // 중복 방지: 동일 id가 이미 있으면 무시
       if (places.some((p) => p.id === placeObj.id)) return plans;
       places.splice(pos, 0, placeObj);
-      newPlans[idx] = { ...day, places };
+      // 배열 순서 기준으로 indexOrder 재계산 (1-based)
+      const normalized = places.map((p, i) => ({ ...p, indexOrder: i + 1 }));
+      newPlans[idx] = { ...day, places: normalized };
       return newPlans;
     }),
     // 메모 갱신 (RENAME)
@@ -97,11 +99,13 @@ const useDailyPlanStore = create(
       const places = [...(day.places || [])];
       const fromIndex = places.findIndex((p) => p.id === dayPlaceId);
       if (fromIndex < 0) return plans;
-      let insertIndex = Math.max(0, Math.min(toIndex, places.length - 1));
+      // 먼저 제거 후, 새로운 길이를 기준으로 toIndex를 클램프 (끝으로 이동 허용)
       const [moved] = places.splice(fromIndex, 1);
-      if (fromIndex < insertIndex) insertIndex -= 1;
+      const insertIndex = Math.max(0, Math.min(toIndex, places.length));
       places.splice(insertIndex, 0, moved);
-      newPlans[dIdx] = { ...day, places };
+      // 배열 순서 기준으로 indexOrder 재계산 (1-based)
+      const normalized = places.map((p, i) => ({ ...p, indexOrder: i + 1 }));
+      newPlans[dIdx] = { ...day, places: normalized };
       return newPlans;
     }),
     // 다른 일차로 이동 (UPDATE_OUTER)
@@ -119,8 +123,11 @@ const useDailyPlanStore = create(
       const [moved] = fromPlaces.splice(srcIndex, 1);
       const insertIndex = Math.max(0, Math.min(toIndex, toPlaces.length));
       toPlaces.splice(insertIndex, 0, moved);
-      newPlans[fromIdx] = { ...fromDay, places: fromPlaces };
-      newPlans[toIdx] = { ...toDay, places: toPlaces };
+      // 양쪽 일차 모두 indexOrder 재계산 (1-based)
+      const normalizedFrom = fromPlaces.map((p, i) => ({ ...p, indexOrder: i + 1 }));
+      const normalizedTo = toPlaces.map((p, i) => ({ ...p, indexOrder: i + 1 }));
+      newPlans[fromIdx] = { ...fromDay, places: normalizedFrom };
+      newPlans[toIdx] = { ...toDay, places: normalizedTo };
       return newPlans;
     }),
     // 삭제 (DELETE)

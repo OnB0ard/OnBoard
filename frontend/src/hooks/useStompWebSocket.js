@@ -137,7 +137,7 @@ export const useStompWebSocket = ({
         try {
           // 일부 브로커/프록시에서 \u0000(널문자) 끝에 붙는 경우가 있어 안전 파싱
           const raw = typeof msg.body === 'string'
-            ? msg.body.replace('\u0000+$', '')
+            ? (function trimNulls(s) { let t = s; while (t.endsWith('\u0000')) { t = t.slice(0, -1); } return t; })(msg.body)
             : msg.body;
           const body = JSON.parse(raw);
           onMessageRef.current?.(body);

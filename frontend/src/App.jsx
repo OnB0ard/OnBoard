@@ -9,8 +9,12 @@ import MyPage from "./components/pages/MyPage"
 import PrivateRoute from './router/PrivateRoute'
 import PlanAccessRoute from './router/PlanAccessRoute'
 import NotFound from './components/pages/NotFound'
+import { useAuthStore } from './store/useAuthStore'
 
 function App() {
+  // 프로필 변경 시 마이페이지를 remount시키기 위한 키
+  const userName = useAuthStore((s) => s.userName)
+  const profileImage = useAuthStore((s) => s.profileImage)
 
   return (
     <>
@@ -20,8 +24,8 @@ function App() {
         <Route path="/Test" element={<Test/>} />
         <Route element={<PrivateRoute />}>
           <Route path="/list" element={<PlanList/>} />
-          
-          <Route path="/mypage" element={<MyPage />} />
+          {/* 프로필 변경 시 키를 바꿔 강제 remount */}
+          <Route path="/mypage" element={<MyPage key={`${userName}-${profileImage}`} />} />
         </Route>
         <Route element={<PlanAccessRoute />}>
           <Route path="/plan/:planId" element={<PlanPage />} />

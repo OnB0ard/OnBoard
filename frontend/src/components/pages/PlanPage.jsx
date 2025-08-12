@@ -617,17 +617,11 @@ const handleGlobalMouseUp = () => {
         cursor: draggedBlock ? 'grabbing' : 'default'
       }}
     >
-<<<<<<< frontend/src/components/pages/PlanPage.jsx
-        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} />
+        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} planId={Number(planId)} />
         <WhiteBoard
           planId={Number(planId)}
           viewportSize={{ width: wrapW, height: wrapH }}
         />        {/* <EditToolBar /> */}
-=======
-        <SideBar onDailyPlanModalToggle={handleDailyPlanModalToggle} planId={Number(planId)} />
-        <WhiteBoard planId = {Number(planId)}/>
-        {/* <EditToolBar /> */}
->>>>>>> frontend/src/components/pages/PlanPage.jsx
         {isMapVisible && (
           <MapContainer>
             <APIProvider apiKey={apiKey}>

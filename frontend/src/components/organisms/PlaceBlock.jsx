@@ -119,8 +119,20 @@ const PlaceBlock = ({ place, onRemove, onEdit, onMouseDown: parentOnMouseDown, i
         {onRemove && (
           <button 
             className="place-block-remove"
-            onClick={(e) => {
+            onMouseDown={(e) => {
+              // 부모 onMouseDown 로직, 드래그 시작 방지
               e.stopPropagation();
+              e.preventDefault();
+            }}
+            onMouseUp={(e) => {
+              // 부모 onMouseUp 로직(상세 열기) 차단
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onClick={(e) => {
+              // 부모 onClick 로직 차단
+              e.stopPropagation();
+              e.preventDefault();
               onRemove(place.id);
             }}
             title="삭제"

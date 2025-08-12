@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { APIProvider, useMapsLibrary, Map, useMap } from '@vis.gl/react-google-maps';
 import CustomMarker from '../atoms/CustomMarker';
 import SideBar from '../organisms/SideBar';
@@ -113,6 +113,7 @@ const getMarkerTypeFromPlace = (place) => {
 const PlanPage = () => {
   const mapsLib = useMapsLibrary('maps');
   const { planId } = useParams();
+  const navigate = useNavigate();
   const numericPlanId = planId ? Number(planId) : undefined;
   const accessToken = useAuthStore((s) => s.accessToken);
   // headers는 렌더마다 동일 참조를 유지하도록 메모이제이션하여 불필요한 재연결을 방지
@@ -240,6 +241,12 @@ const PlanPage = () => {
   // 접근 권한 확인
   useEffect(() => {
     const checkAccess = async () => {
+      // 유효하지 않은 planId면 즉시 404로 이동
+      if (!planId || Number.isNaN(Number(planId))) {
+        navigate('/not-found', { replace: true });
+        return;
+      }
+
       if (!userId) {
         setAccessStatus('denied');
         setModalState({ isOpen: true, type: 'error', message: '로그인이 필요합니다.' });
@@ -263,6 +270,11 @@ const PlanPage = () => {
         }
       } catch (error) {
         console.error('접근 권한 확인 중 오류 발생:', error.response);
+        // 플랜이 존재하지 않음: 404 처리 -> NotFound로 리다이렉트
+        if (error.response?.status === 404) {
+          navigate('/not-found', { replace: true });
+          return;
+        }
         // 사용자가 방에 속하지 않은 특정 에러(403, PLAN-013) 처리
         if (error.response?.status === 403 && error.response?.data?.body?.code === 'PLAN-013') {
           setAccessStatus('denied');
@@ -275,7 +287,7 @@ const PlanPage = () => {
       }
     };
     checkAccess();
-  }, [planId, userId, fetchMyRole]);
+  }, [planId, userId, fetchMyRole, navigate]);
 
   // 스토어의 에러 상태 감지
   useEffect(() => {

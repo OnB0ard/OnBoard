@@ -48,11 +48,9 @@ public class DayPlaceService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        // LOCK
-        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
-        if (!daySchedule.getPlan().getPlanId().equals(planId)) {
-            throw new DayScheduleNotExistException("존재하지 않거나 해당 플랜에 속하지 않는 일정입니다.");
-        }
+        // 일정 한 개 LOCK
+        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleId(planId, dayScheduleId)
+                .orElseThrow(() -> new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다."));
 
         Place place = placeRepository.findById(createDayPlaceRequestDTO.getPlaceId())
                 .orElseThrow(() -> new PlaceNotExistException("존재하지 않는 여행지 입력값입니다."));
@@ -62,7 +60,7 @@ public class DayPlaceService {
 
         int insertIndex = createDayPlaceRequestDTO.getIndexOrder();
 
-        if (insertIndex <= 0 || insertIndex > dayPlaces.size() + 1) {
+        if ((insertIndex) <= 0 || insertIndex > (dayPlaces.size() + 1)) {
             throw new InvalidIndexOrderException("잘못된 위치 입력값 입니다.");
         }
 
@@ -95,10 +93,8 @@ public class DayPlaceService {
         }
 
         DayPlace dayPlace = dayPlaceRepository
-                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId);
-        if(dayPlace == null) {
-            throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
-        }
+                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId)
+                .orElseThrow(() -> new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다."));
 
         dayPlace.setMemo(renameMemoRequestDTO.getMemo());
     }
@@ -113,18 +109,19 @@ public class DayPlaceService {
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
-
+        
+        // 일정 한 개 LOCK
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
 
         DayPlace dayPlace = dayPlaceRepository
-                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateInnerPositionRequestDTO.getDayPlaceId());
-        if(dayPlace == null) {
-            throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
-        }
+                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateInnerPositionRequestDTO.getDayPlaceId())
+                .orElseThrow(() -> new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다."));
+
         if (dayPlace.getIndexOrder() != updateInnerPositionRequestDTO.getIndexOrder()) {
-            throw new ConflictException("기존 위치가 잘못되었거나, 다른 사용자가 작업중입니다.");
+            throw new ConflictException("기존 위치가 잘못되었거나, 다른 사용자가 작업 중입니다.");
         }
 
+        // planId 와 dayScheduleId로 한 일정의 여행지 전부 가져옴
         List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
 
         dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));
@@ -132,10 +129,10 @@ public class DayPlaceService {
         int oldIndex = updateInnerPositionRequestDTO.getIndexOrder();
         int newIndex = updateInnerPositionRequestDTO.getModifiedIndexOrder();
 
-        if (oldIndex <= 0 || oldIndex > dayPlaces.size()) {
+        if ((oldIndex) <= 0 || oldIndex > (dayPlaces.size() + 1)) {
             throw new InvalidIndexOrderException("잘못된 위치 입력값 입니다.");
         }
-        if (newIndex <= 0 || newIndex > dayPlaces.size()) {
+        if ((newIndex) <= 0 || newIndex > (dayPlaces.size() + 1)) {
             throw new InvalidIndexOrderException("잘못된 위치 입력값 입니다.");
         }
 
@@ -173,10 +170,9 @@ public class DayPlaceService {
         DaySchedule modifiedDaySchedule = dayScheduleRepository.findByDayScheduleId(updateOuterPositionRequestDTO.getModifiedDayScheduleId());
 
         DayPlace dayPlace = dayPlaceRepository
-                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateOuterPositionRequestDTO.getDayPlaceId());
-        if(dayPlace == null) {
-            throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
-        }
+                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, updateOuterPositionRequestDTO.getDayPlaceId())
+                .orElseThrow(() -> new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다."));
+
         if (dayPlace.getIndexOrder() != updateOuterPositionRequestDTO.getIndexOrder()) {
             throw new ConflictException("기존 위치가 잘못되었거나, 다른 사용자가 작업중입니다.");
         }
@@ -225,10 +221,8 @@ public class DayPlaceService {
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
 
         DayPlace dayPlace = dayPlaceRepository
-                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId);
-        if(dayPlace == null) {
-            throw new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다.");
-        }
+                .findByPlanIdAndDayScheduleIdAndDayPlaceId(planId, dayScheduleId, dayPlaceId)
+                .orElseThrow(() -> new DayPlaceNotExistException("해당 계획에 속하지 않은 여행지입니다."));
 
         List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
         dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));

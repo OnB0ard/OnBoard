@@ -23,7 +23,6 @@ public class DayScheduleSocketDTO {
     public CreateDayScheduleRequestDTO toCreateDayScheduleRequestDTO() {
         return CreateDayScheduleRequestDTO.builder()
                 .title(title)
-                .dayOrder(dayOrder)
                 .build();
     }
 

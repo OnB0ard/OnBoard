@@ -3,8 +3,9 @@ import * as React from "react"
 import { Copy } from "lucide-react"
 import { Button } from "../ui/button"
 import { createInvitationLink } from "../../apis/participantApi.js"
+import "./ShareModal.css";
 
-const ShareModal = ({ open, onOpenChange, trigger, planId }) => {
+const ShareModal = ({ open, onOpenChange, trigger, planId, onCopySuccess }) => {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const [inviteUrl, setInviteUrl] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -56,10 +57,12 @@ const ShareModal = ({ open, onOpenChange, trigger, planId }) => {
 
   const handleCopy = () => {
     if (inviteUrl) {
-      navigator.clipboard.writeText(inviteUrl)
-      alert("링크가 복사되었습니다!")
+      navigator.clipboard.writeText(inviteUrl);
+      if (typeof onCopySuccess === 'function') {
+        onCopySuccess();
+      }
     }
-  }
+  };
 
   // 트리거 버튼만 렌더링
   if (trigger) {
@@ -79,30 +82,33 @@ const ShareModal = ({ open, onOpenChange, trigger, planId }) => {
   if (!isOpen) return null;
 
   return (
-    <div ref={modalRef} className="w-72 rounded-xl shadow-lg bg-white p-4 border border-gray-200 relative z-[99999]" style={{ zIndex: 99999, position: 'relative' }}>
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-base font-semibold">계획 초대하기</h2>
-        <Button 
-          onClick={() => setIsOpen(false)} 
-          className="text-lg leading-none bg-gray-100 hover:bg-gray-200 text-gray-600 w-6 h-6 p-0 flex items-center justify-center rounded-full text-sm"
-        >
-          ×
-        </Button>
-      </div>
-      <div className="flex items-center gap-2 border rounded-md px-3 py-2 bg-gray-50">
-        <div className="flex-1 text-sm bg-transparent outline-none text-gray-700 truncate">
-          {loading ? "링크 생성 중..." : inviteUrl || "링크를 생성할 수 없습니다."}
+    <>
+      <div ref={modalRef} className="w-72 rounded-xl shadow-lg bg-white p-4 border border-gray-200 relative z-[99999]" style={{ zIndex: 99999, position: 'relative' }}>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-base font-semibold">계획 초대하기</h2>
+          <Button 
+            onClick={() => setIsOpen(false)} 
+            className="text-lg leading-none bg-gray-100 hover:bg-gray-200 text-gray-600 w-6 h-6 p-0 flex items-center justify-center rounded-full text-sm"
+          >
+            ×
+          </Button>
         </div>
-        <Button 
-          onClick={handleCopy} 
-          disabled={loading || !inviteUrl}
-          className="bg-black text-white w-8 h-8 p-0 flex items-center justify-center rounded-lg disabled:bg-gray-400"
-        >
-          <Copy className="w-4 h-4 text-gray-200" />
-        </Button>
+        <div className="flex items-center gap-2 border rounded-md px-3 py-2 bg-gray-50">
+          <div className="flex-1 text-sm bg-transparent outline-none text-gray-700 truncate">
+            {loading ? "링크 생성 중..." : inviteUrl || "링크를 생성할 수 없습니다."}
+          </div>
+          <Button 
+            onClick={handleCopy} 
+            disabled={loading || !inviteUrl}
+            className="bg-black text-white w-8 h-8 p-0 flex items-center justify-center rounded-lg disabled:bg-gray-400"
+          >
+            <Copy className="w-4 h-4 text-gray-200" />
+          </Button>
+        </div>
       </div>
-    </div>
-  )
+    </>
+  );
+
 }
 
 export default ShareModal

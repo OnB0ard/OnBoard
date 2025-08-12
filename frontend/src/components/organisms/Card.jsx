@@ -23,6 +23,7 @@ const Card = ({
   hideDropdown = false,
   onRequestConfirm,
   hideManageActions = false,
+  onShowToast,
 }) => {
   const {
     participantOpenId,
@@ -291,7 +292,12 @@ const Card = ({
                     onEscapeKeyDown={(e) => e.preventDefault()}
                     onPointerDownCapture={(e) => e.stopPropagation()}
                   >
-                    <ShareModal open={isShareOpen} onOpenChange={() => toggleSharePopover(id)} planId={id} />
+                    <ShareModal 
+                      open={isShareOpen} 
+                      onOpenChange={() => toggleSharePopover(id)} 
+                      planId={id}
+                      onCopySuccess={() => { if (typeof onShowToast === 'function') onShowToast(); }}
+                    />
                   </Popover.Content>
                 </Popover.Portal>
               </Popover.Root>

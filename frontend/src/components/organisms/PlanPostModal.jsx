@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Input } from "@/components/atoms/Input";
 import { Textarea } from "@/components/atoms/TextArea";
 import { Button } from "@/components/atoms/Button";
@@ -54,6 +54,12 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
 
   const fileInputRef = useRef(null);
 
+  // 입력 길이 제한 상태 (15자)
+  const [nameError, setNameError] = useState(false);
+  const [nameShake, setNameShake] = useState(false);
+  const [hashError, setHashError] = useState(false);
+  const [hashShake, setHashShake] = useState(false);
+
   const isEditMode = mode === 'edit';
   const modalTitle = isEditMode ? '여행 계획 수정하기' : '새로운 여행 계획 만들기';
   const subtitle = isEditMode ? '여행 정보를 수정하세요.' : '함께 떠날 여행의 첫 걸음을 시작해보세요.';
@@ -107,6 +113,33 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const triggerShake = (setter) => {
+    setter(true);
+    setTimeout(() => setter(false), 600);
+  };
+
+  const handleNameChange = (e) => {
+    const val = e.target.value || "";
+    if (val.length > 15) {
+      setNameError(true);
+      triggerShake(setNameShake);
+      return; // 15자 초과 입력 방지
+    }
+    setName(val);
+    setNameError(false);
+  };
+
+  const handleHashChange = (e) => {
+    const val = e.target.value || "";
+    if (val.length > 15) {
+      setHashError(true);
+      triggerShake(setHashShake);
+      return; // 15자 초과 입력 방지
+    }
+    setHashTag(val);
+    setHashError(false);
   };
 
   const handleFormSubmit = () => {
@@ -166,13 +199,31 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
 
           <div className="space-y-1">
             <label className="plan-post-modal__label"><Icon type="book" /> 제목</label>
-            <Input size="full" placeholder="여행 계획의 제목을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input 
+              size="full" 
+              placeholder="여행 계획의 제목을 입력하세요" 
+              value={name} 
+              onChange={handleNameChange}
+              className={`${nameError ? 'plan-input--error' : ''} ${nameShake ? 'shake' : ''}`}
+            />
+            {nameError && (
+              <p className="plan-post-modal__error">공백 포함 15자 이내로 작성해주세요</p>
+            )}
           </div>
 
           <div className="plan-post-modal__form-group">
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="hashtag" /> 해시 태그</label>
-              <Input size="full" placeholder="#가족, #친구, #제주도" value={hashTag} onChange={(e) => setHashTag(e.target.value)} />
+              <Input 
+                size="full" 
+                placeholder="#가족, #친구, #제주도" 
+                value={hashTag} 
+                onChange={handleHashChange}
+                className={`${hashError ? 'plan-input--error' : ''} ${hashShake ? 'shake' : ''}`}
+              />
+              {hashError && (
+                <p className="plan-post-modal__error">해시태그와 공백 포함 15자 이내로 작성해주세요</p>
+              )}
             </div>
             <div className="flex-1 space-y-1">
               <label className="plan-post-modal__label"><Icon type="calendar" /> 여행 기간</label>

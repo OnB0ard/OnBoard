@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../atoms/Button";
 import Icon from "../atoms/Icon";
 import SettingModal from "../organisms/SettingModal";

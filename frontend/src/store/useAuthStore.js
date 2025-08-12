@@ -15,6 +15,10 @@ export const useAuthStore = create(
           ...state,
           ...authData,
         })),
+      
+      updateProfile: (userName, profileImage) =>
+        set(() => ({ userName, profileImage })),
+      
       clearAuth: () =>
         set({
           userId: null,

@@ -128,7 +128,7 @@ const DailyPlaceBlock = ({
         <div className="daily-place-block-header">
           <h3 className="daily-place-block-title" title={place.name || place.displayName}>{place.name || place.displayName}</h3>
           <div className="daily-place-block-rating">
-            <StarRating rating={place.rating} reviewCount={null} />
+            <StarRating rating={place.rating} reviewCount={place.ratingCount} />
           </div>
         </div>
         

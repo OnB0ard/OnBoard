@@ -180,10 +180,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
               const placeObj = {
                 id: dayPlaceId,
                 name: detail.placeName,
+                displayName: detail.placeName, // UI fallback 일치
                 address: detail.address,
+                formatted_address: detail.address, // UI fallback 일치
                 rating: detail.rating,
-                ratingCount: detail.ratingCount,
-                imageUrl: detail.imageUrl,
+                ratingCount: typeof detail.ratingCount === 'number' ? detail.ratingCount : 0,
+                imageUrl: detail.imageUrl || '',
                 latitude: detail.latitude,
                 longitude: detail.longitude,
                 primaryCategory: detail.category,
@@ -749,26 +751,17 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       if (dropPosition === 'bottom') {
         insertIndex = targetPlaceIndex + 1;
       }
-      
-      // PlaceBlock 데이터를 DailyPlaceBlock 형식으로 변환
-      const placeData = dragData.place;
-      const normalizedPlace = {
-        id: placeData.id,
-        name: placeData.placeName || placeData.name,
-        address: placeData.address,
-        rating: placeData.rating,
-        ratingCount: placeData.ratingCount,
-        imageUrl: placeData.googleImg && placeData.googleImg[0],
-        latitude: placeData.latitude || placeData.lat,
-        longitude: placeData.longitude || placeData.lng,
-        primaryCategory: placeData.primaryCategory,
-        originalData: placeData
-      };
-      
+
+      // 페이지 PlaceBlock에서 온 placeId를 우선 사용하고 숫자로 검증하여 전송
       const dayScheduleId = dailyPlans[targetDayIndex]?.id;
       if (dayScheduleId != null) {
-        const placeId = normalizedPlace.id || normalizedPlace.placeId || normalizedPlace.googlePlaceId;
-        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e3) { console.warn('createPlace send failed', e3); }
+        const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id ?? dragData.place.googlePlaceId;
+        const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+        if (!placeId || Number.isNaN(placeId)) {
+          console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId, from: 'page-place' });
+          return;
+        }
+        try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
       }
       
       return;
@@ -955,6 +948,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           const placeData = dragData.place;
           const normalizedPlace = {
             id: placeData.id,
+            placeId: placeData.placeId ?? placeData.place_id ?? undefined,
             name: placeData.placeName || placeData.name,
             address: placeData.address,
             rating: placeData.rating,

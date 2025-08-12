@@ -47,14 +47,12 @@ public class DayPlaceQueryRepositoryImpl implements DayPlaceQueryRepository {
         QDaySchedule ds = QDaySchedule.daySchedule;
         QPlan p = QPlan.plan;
 
-        DayPlace dayPlace = queryFactory.selectFrom(dp)
+        return queryFactory.selectFrom(dp)
                 .join(dp.daySchedule, ds)
                 .join(ds.plan, p)
                 .where(dp.dayPlaceId.eq(dayPlaceId)
                         .and(ds.dayScheduleId.eq(dayScheduleId))
                         .and(p.planId.eq(planId)))
                 .fetchOne();
-
-        return dayPlace;
     }
 }

@@ -42,9 +42,9 @@ public class DayPlaceService {
         Plan plan = validatePlanExistence(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
@@ -53,7 +53,7 @@ public class DayPlaceService {
         }
 
         // TODO : placeID 잇는지 확인 및 영속성 확인, 익셉션 고치기
-        Place place = placeRepository.findById(createDayPlaceRequestDTO.getPlaceId()).orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+        Place place = placeRepository.findById(createDayPlaceRequestDTO.getPlaceId()).orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
 
         List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
         dayPlaces.sort(Comparator.comparingInt(DayPlace::getIndexOrder));
@@ -88,9 +88,9 @@ public class DayPlaceService {
         Plan plan = validatePlanExistence(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         DayPlace dayPlace = dayPlaceRepository
@@ -108,9 +108,9 @@ public class DayPlaceService {
         Plan plan = validatePlanExistence(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
@@ -163,9 +163,9 @@ public class DayPlaceService {
         Plan plan = validatePlanExistence(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
@@ -216,9 +216,9 @@ public class DayPlaceService {
         Plan plan = validatePlanExistence(planId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다."));
+                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
         DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);

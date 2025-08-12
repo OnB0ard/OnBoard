@@ -100,6 +100,7 @@ public class DayScheduleService {
                                 .rating(dp.getPlace().getRating())
                                 .ratingCount(dp.getPlace().getRatingCount())
                                 .imageUrl(dp.getPlace().getImageUrl())
+                                .category(dp.getPlace().getCategory())
                                 .build(), Collectors.toList())
                 ));
 
@@ -149,6 +150,7 @@ public class DayScheduleService {
                         .rating(dp.getPlace().getRating())
                         .ratingCount(dp.getPlace().getRatingCount())
                         .imageUrl(dp.getPlace().getImageUrl())
+                        .category(dp.getPlace().getCategory())
                         .build()
                 )
                 .sorted(Comparator.comparing(DayPlaceResponseDTO::getIndexOrder))

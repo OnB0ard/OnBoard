@@ -15,6 +15,7 @@ import useBookmarkWebSocket from '../../hooks/useBookmarkWebSocket';
 import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
+import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -195,6 +196,7 @@ const PlanPage = () => {
     fetchDetailsAndAddBlock,
     hidePlaceBlockMarkers,
     setActivePlanId,
+    replaceAllFromServer: replacePlaceBlocksFromServer,
   } = usePlaceBlocksStore();
 
   // PlaceBlock WebSocket 연결 (도메인 훅으로 캡슐화)
@@ -236,6 +238,21 @@ const PlanPage = () => {
     setActivePlanId(numericPlanId);
     console.log('🏠 PlaceBlock 스토어에 planId 설정:', numericPlanId);
   }, [numericPlanId, setActivePlanId]);
+
+  // 초기 로드: 해당 planId의 화이트보드 중 PLACE 타입만 REST로 가져와 PlaceBlock에 주입
+  useEffect(() => {
+    if (!numericPlanId) return;
+    (async () => {
+      try {
+        const { whiteBoardPlaces } = await getWhiteBoardObjects(numericPlanId);
+        // 서버의 PLACE 데이터만 로컬 스토어로 치환
+        replacePlaceBlocksFromServer(Array.isArray(whiteBoardPlaces) ? whiteBoardPlaces : [], numericPlanId);
+        console.log('📥 초기 PLACE 로드 완료:', whiteBoardPlaces);
+      } catch (err) {
+        console.error('화이트보드 PLACE 초기 로드 실패:', err);
+      }
+    })();
+  }, [numericPlanId, replacePlaceBlocksFromServer]);
 
   // 접근 권한 확인
   useEffect(() => {
@@ -392,7 +409,7 @@ setModalState({ ...modalState, isOpen: false });
 const handleRemove = (id) => {
 removePlaceBlock(id, numericPlanId);
 // WebSocket으로 PlaceBlock 삭제 알림
-const deletePayload = { whiteBoardId: numericPlanId, type: 'PLACE', whiteBoardObjectId: id };
+const deletePayload = { whiteBoardId: numericPlanId, type: 'PLACE', whiteBoardObjectId: Number(id) };
 console.groupCollapsed('[PlaceBlock][SEND] DELETE');
 console.log('planId:', planId, 'payload:', deletePayload);
 console.groupEnd();
@@ -422,12 +439,13 @@ const newX = e.clientX - dragOffsetRef.current.x;
 const newY = e.clientY - dragOffsetRef.current.y;
 updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY }, numericPlanId);
         
-// WebSocket으로 PlaceBlock 이동 알림
+// WebSocket으로 PlaceBlock 이동 알림 (flat x,y)
 const movePayload = {
-whiteBoardId: numericPlanId,
-type: 'PLACE',
-whiteBoardObjectId: draggedBlock.id,
-objectInfo: { x: newX, y: newY }
+  whiteBoardId: numericPlanId,
+  type: 'PLACE',
+  whiteBoardObjectId: Number(draggedBlock.id),
+  x: newX,
+  y: newY,
 };
 console.groupCollapsed('[PlaceBlock][SEND] MOVE');
 console.log('planId (numeric):', numericPlanId, 'payload:', movePayload);
@@ -439,9 +457,32 @@ sendPlaceBlockMessage('MOVE', movePayload);
 };
 
 const handleGlobalMouseUp = () => {
-if (draggedBlock) {
-setDraggedBlock(null);
-}
+  if (draggedBlock) {
+    // 최종 좌표로 MODIFY 커밋 전송
+    try {
+      const latest = Array.isArray(placeBlocks)
+        ? placeBlocks.find((b) => b.id === draggedBlock.id)
+        : null;
+      const x = latest?.position?.x;
+      const y = latest?.position?.y;
+      if (x != null && y != null) {
+        const commitPayload = {
+          whiteBoardId: numericPlanId,
+          type: 'PLACE',
+          whiteBoardObjectId: Number(draggedBlock.id),
+          x,
+          y,
+        };
+        console.groupCollapsed('[PlaceBlock][SEND] MODIFY (commit)');
+        console.log('planId (numeric):', numericPlanId, 'payload:', commitPayload);
+        console.groupEnd();
+        sendPlaceBlockMessage('MODIFY', commitPayload);
+      }
+    } catch (e) {
+      console.warn('Failed to send MODIFY commit on mouseup:', e);
+    }
+    setDraggedBlock(null);
+  }
 };
 
     if (draggedBlock && !isDailyPlanModalOpen) {
@@ -453,7 +494,7 @@ setDraggedBlock(null);
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [draggedBlock, isDailyPlanModalOpen, updatePlaceBlockPosition]);
+  }, [draggedBlock, isDailyPlanModalOpen, updatePlaceBlockPosition, numericPlanId, placeBlocks, sendPlaceBlockMessage]);
 
   // 검색 결과에서 드래그앤드롭 처리
   const handleDragOver = (e) => {
@@ -489,6 +530,10 @@ setDraggedBlock(null);
   // 일정 추가 모달 상태 변경 핸들러
   const handleDailyPlanModalToggle = (isOpen) => {
     setIsDailyPlanModalOpen(isOpen);
+    // 모달이 닫힐 때 일차 마커를 제거하고 PlaceBlock 마커를 복원
+    if (!isOpen) {
+      clearDayMarkers();
+    }
   };
 
   // 접근 제어 조건부 렌더링
@@ -496,6 +541,7 @@ setDraggedBlock(null);
     return <div>Loading...</div>;
   }
 
+  // ...
   if (accessStatus !== 'approved') {
     return (
       <AccessControlModal

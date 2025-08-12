@@ -52,20 +52,52 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
           break;
         }
         case 'MOVE': {
+          try {
+            console.groupCollapsed('[PlaceBlock][RECV] MOVE');
+            console.log('payload:', payload);
+            console.groupEnd();
+          } catch (_) { void 0; }
           const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payload || {};
-          if (payloadType !== 'PLACE') break;
-          if (!objectInfo) break;
+          if (payloadType && payloadType !== 'PLACE') break;
           const targetId = whiteBoardObjectId ?? id;
           if (!targetId) break;
-          updatePlaceBlockPosition(targetId, { x: objectInfo.x, y: objectInfo.y }, planId);
+          const x = (objectInfo && objectInfo.x != null) ? objectInfo.x : payload?.x;
+          const y = (objectInfo && objectInfo.y != null) ? objectInfo.y : payload?.y;
+          if (typeof x === 'number' && typeof y === 'number') {
+            updatePlaceBlockPosition(targetId, { x, y }, planId);
+          }
+          break;
+        }
+        case 'MODIFY': {
+          try {
+            console.groupCollapsed('[PlaceBlock][RECV] MODIFY');
+            console.log('payload:', payload);
+            console.groupEnd();
+          } catch (_) { void 0; }
+          const { type: payloadType, whiteBoardObjectId, id, objectInfo } = payload || {};
+          if (payloadType && payloadType !== 'PLACE') break;
+          const targetId = whiteBoardObjectId ?? id;
+          if (!targetId) break;
+          // 최종 커밋: 좌표 갱신
+          const x = (objectInfo && objectInfo.x != null) ? objectInfo.x : payload?.x;
+          const y = (objectInfo && objectInfo.y != null) ? objectInfo.y : payload?.y;
+          if (typeof x === 'number' && typeof y === 'number') {
+            updatePlaceBlockPosition(targetId, { x, y }, planId);
+          }
+          // temp 캐시는 현재 별도로 운용하지 않으므로 no-op
           break;
         }
         case 'DELETE': {
+          try {
+            console.groupCollapsed('[PlaceBlock][RECV] DELETE');
+            console.log('payload:', payload);
+            console.groupEnd();
+          } catch (_) { void 0; }
           const { type: payloadType, whiteBoardObjectId, id } = payload || {};
-          if (payloadType !== 'PLACE') break;
+          if (payloadType && payloadType !== 'PLACE') break;
           const targetId = whiteBoardObjectId ?? id;
           if (!targetId) break;
-          removePlaceBlock(targetId, planId);
+          removePlaceBlock(targetId);
           break;
         }
         default:

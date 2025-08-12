@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import Icon from "../atoms/Icon";
 import AutocompleteSearchModal from "./AutocompleteSearchModal";
-import Bookmark from "./Bookmark";
+import Bookmark from "./bookmark/Bookmark";
 import DailyPlanCreate1 from "./DailyPlanCreate1";
 
 import { useMapCoreStore, useBookmarkStore, usePlaceDetailsStore } from "../../store/mapStore";

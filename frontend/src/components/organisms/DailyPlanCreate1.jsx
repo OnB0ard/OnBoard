@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import DailyScheduleBlock from './DailyScheduleBlock';
-import BookmarkModal from './BookmarkModal';
+import BookmarkModal from './bookmark/BookmarkModal';
 import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
 import useDailyPlanStore from '../../store/useDailyPlanStore';

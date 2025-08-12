@@ -425,7 +425,7 @@ const useMapStore = create((set, get) => ({
       dayMarkers: validPlaces.map(place => ({
         id: place.id || `day-${dayIndex}-${place.name}`,
         position: { lat: place.latitude, lng: place.longitude },
-        type: place.primaryCategory || '기타',
+        type: place.primaryCategory || place.categories,
         name: place.name,
         dayIndex: dayIndex
       })),

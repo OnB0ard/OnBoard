@@ -20,7 +20,7 @@ public class WhiteBoardSocketDTO {
     // 공통 메타정보
     private String action; // "MOVE", "MODIFY", "CREATE", "CREATE_PLACE", "DELETE"
     private Long whiteBoardObjectId; // 삭제/수정/생성된 도형 ID
-
+    private Long placeId;
     // 도형 공통 속성
     private String type;   // RECT, TEXT, PEN, ARROW, CIRCLE, PLACE 등
     private Double x;
@@ -45,6 +45,7 @@ public class WhiteBoardSocketDTO {
     // =====================================
     // 변환 메서드: to → 기존 RequestDTO
     // =====================================
+
 
     public ModifyWhiteBoardObjectRequestDTO toModifyRequestDTO() {
         return ModifyWhiteBoardObjectRequestDTO.builder()

@@ -34,7 +34,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
             String token = jwtUtil.extractToken(bearerToken);
 
             if (!jwtUtil.validateToken(token, TokenType.ACCESS)) {
-                log.warn("유효하지 않은 JWT 토큰입니다.");
+//                log.warn("유효하지 않은 JWT 토큰입니다.");
                 throw new IllegalArgumentException("유효하지 않은 JWT 토큰입니다.");
             }
 

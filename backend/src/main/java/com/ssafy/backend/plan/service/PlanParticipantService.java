@@ -1,6 +1,7 @@
 package com.ssafy.backend.plan.service;
 
 import com.ssafy.backend.common.util.S3Util;
+import com.ssafy.backend.notification.service.NotificationService;
 import com.ssafy.backend.plan.dto.request.UserIdRequestDTO;
 import com.ssafy.backend.plan.dto.response.UserInformationResponseDTO;
 import com.ssafy.backend.plan.entity.Plan;
@@ -31,6 +32,7 @@ public class PlanParticipantService {
     private final UserPlanRepository userPlanRepository;
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
+    private final NotificationService notificationService;
     private final S3Util s3Util;
 
     @Transactional
@@ -53,6 +55,15 @@ public class PlanParticipantService {
                 .build();
 
         userPlanRepository.save(userPlan);
+        // 방장에게 알림
+        Long ownerId = userPlanRepository.findCreatorUserIdByPlan(plan);
+        if (ownerId != null && !ownerId.equals(user.getUserId())) {
+            notificationService.create(
+                    ownerId,
+                    user.getUserName() + "님이 참여를 요청하였습니다.",
+                    (user.getProfileImage() != null ? s3Util.getUrl(user.getProfileImage()) : null)
+            );
+        }
         return true;
     }
 
@@ -75,6 +86,14 @@ public class PlanParticipantService {
         }
 
         applicantPlan.setUserStatus(UserStatus.APPROVED);
+        userPlanRepository.save(applicantPlan);
+
+        //메세지 발송
+        notificationService.create(
+                applicant.getUserId(),
+                 plan.getPlanName() + " 방에 수락되었습니다.",
+                (creator.getProfileImage() != null ? s3Util.getUrl(creator.getProfileImage()) : null)
+        );
         return true;
     }
 
@@ -97,6 +116,13 @@ public class PlanParticipantService {
         }
 
         userPlanRepository.deleteByPlanAndUser(plan, applicant);
+
+        //메세지 발송
+        notificationService.create(
+                applicant.getUserId(),
+                plan.getPlanName() + " 방에 거절되었습니다.",
+                (creator.getProfileImage() != null ? s3Util.getUrl(creator.getProfileImage()) : null)
+        );
         return true;
     }
 

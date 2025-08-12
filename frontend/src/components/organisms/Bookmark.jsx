@@ -38,7 +38,7 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
     >
       <div className="bookmark-popup-container">
         <div className="bookmark-popup-header">
-          <h2 className="bookmark-popup-title">저장된 장소</h2>
+          <h2 className="bookmark-popup-title">북마크된 장소</h2>
           <button onClick={onClose} className="bookmark-popup-close">✕</button>
         </div>
         <div className="bookmark-popup-content">
@@ -50,32 +50,33 @@ const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
             <div className="bookmark-list">
               {bookmarkedPlaces.map((place) => (
                 <div 
-                  key={place.id} 
+                  key={place.bookmarkId || place.id || place.googlePlaceId || place.place_id} 
                   className="bookmark-item"
                   onClick={() => onPlaceClick?.(place)}
                 >
                   {/* 왼쪽: 텍스트 정보 */}
                   <div className="bookmark-item-content">
                     {/* 제목 */}
-                    <h3 className="bookmark-item-title">{place.name}</h3>
+                    <h3 className="bookmark-item-title">{place.placeName || place.name}</h3>
                     
                     {/* 별점, 리뷰 수, */}
                     <div className="bookmark-item-rating">
-                      <StarRating rating={place.rating} reviewCount={place.reviewCount} />
+                      <StarRating rating={place.rating} reviewCount={place.ratingCount || place.reviewCount} />
                     </div>
                     
                     
                     {/* 주소 */}
-                    <p className="bookmark-item-address">{place.formatted_address}</p>
+                    <p className="bookmark-item-address">{place.address || place.formatted_address}</p>
                   </div>
                   
                   {/* 오른쪽: 이미지 */}
                   <div className="bookmark-item-image">
                     <PlaceImage 
-                      imageUrl={place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
+                      imageUrl={place.googleImg?.[0] || place.imageUrl}
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
+                        // planId는 스토어 내부에서 자동 해석(_resolvePlanId)됩니다.
                         toggleBookmark(place);
                       }}
                     />

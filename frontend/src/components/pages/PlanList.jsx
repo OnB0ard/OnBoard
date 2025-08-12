@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import Card from "../organisms/Card";
 import PlanAddCard from "../organisms/PlanAddCard";
@@ -12,6 +13,8 @@ import { leavePlan } from "../../apis/planUser";
 import { Button } from "../atoms/Button";
 import Icon from "../atoms/Icon";
 import "./PlanList.css";
+import SearchBar from "../organisms/SearchBar";
+import "../organisms/ViewParticipantModal.css";
 
 // 정렬 함수
 const sortPlans = (plans, type) => {
@@ -60,6 +63,21 @@ const classifyPlans = (plans) => {
   return { ongoing, completed };
 };
 
+// 검색 필터링 함수
+const filterPlansBySearch = (plans, searchTerm) => {
+  if (!searchTerm.trim()) return plans;
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  
+  return plans.filter(plan => {
+    const name = (plan.name || "").toLowerCase();
+    const hashTag = (plan.hashTag || "").toLowerCase();
+    
+    return name.includes(lowerSearchTerm) || 
+           hashTag.includes(lowerSearchTerm);
+  });
+};
+
 const PlanList = () => {
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -71,6 +89,11 @@ const PlanList = () => {
   // "계획중인 여행"과 "완료된 여행"을 위한 상태를 분리
   const [ongoingPlans, setOngoingPlans] = useState([]);
   const [completedPlans, setCompletedPlans] = useState([]);
+  
+  // 검색 관련 상태
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredOngoingPlans, setFilteredOngoingPlans] = useState([]);
+  const [filteredCompletedPlans, setFilteredCompletedPlans] = useState([]);
 
   // 팝오버가 하나라도 열려있는지 관리하는 상태
   const [isAnyPopoverOpen, setIsAnyPopoverOpen] = useState(false);
@@ -87,6 +110,25 @@ const PlanList = () => {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveTarget, setLeaveTarget] = useState(null);
 
+  // 상위 확인 모달 상태 (참여자 수락/거절/위임 등)
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmText: "확인",
+    onConfirm: null,
+    variant: undefined,
+    iconType: undefined,
+  });
+
+  const handleRequestConfirm = useCallback(({ title, message, onConfirm, confirmText = "확인", variant, iconType }) => {
+    setConfirmModal({ open: true, title, message, onConfirm, confirmText, variant, iconType });
+  }, []);
+
+  const closeConfirmModal = useCallback(() => {
+    setConfirmModal((s) => ({ ...s, open: false }));
+  }, []);
+
   // 여행 계획 목록 조회
   const fetchPlans = useCallback(async () => {
     setIsPageLoading(true);
@@ -95,19 +137,43 @@ const PlanList = () => {
       const { ongoing, completed } = classifyPlans(planData || []);
       
       // 데이터를 가져온 후 정렬하여 상태에 저장
-      setOngoingPlans(sortPlans(ongoing, sortType));
-      setCompletedPlans(sortCompletedPlans(completed));
+      const sortedOngoing = sortPlans(ongoing, sortType);
+      const sortedCompleted = sortCompletedPlans(completed);
+      
+      setOngoingPlans(sortedOngoing);
+      setCompletedPlans(sortedCompleted);
+      
+      // 초기 필터링 적용
+      setFilteredOngoingPlans(sortedOngoing);
+      setFilteredCompletedPlans(sortedCompleted);
 
     } catch (error) {
       console.error('여행 계획 목록 조회 실패:', error);
       setOngoingPlans([]);
       setCompletedPlans([]);
+      setFilteredOngoingPlans([]);
+      setFilteredCompletedPlans([]);
     } finally {
       setIsPageLoading(false);
     }
   // sortType을 의존성에 추가하여 초기 정렬을 보장하되, fetchPlans 자체는 마운트 시 한 번만 호출되도록 관리합니다.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 검색어 변경 핸들러
+  const handleSearchChange = useCallback((e) => {
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+  }, []);
+
+  // 검색 필터링 적용 함수
+  const applySearchFilter = useCallback(() => {
+    const filteredOngoing = filterPlansBySearch(ongoingPlans, searchTerm);
+    const filteredCompleted = filterPlansBySearch(completedPlans, searchTerm);
+    
+    setFilteredOngoingPlans(sortPlans(filteredOngoing, sortType));
+    setFilteredCompletedPlans(sortCompletedPlans(filteredCompleted));
+  }, [ongoingPlans, completedPlans, searchTerm, sortType]);
 
   // 정렬만 변경하는 함수 (API 호출 없이)
   const applySorting = useCallback(() => {
@@ -119,13 +185,10 @@ const PlanList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 컴포넌트 마운트 시에만 실행
 
-  // sortType이 변경될 때는 정렬만 적용
+  // 검색어나 정렬 타입이 변경될 때 필터링 적용
   useEffect(() => {
-    if (ongoingPlans.length > 0) {
-      applySorting();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortType, applySorting]);
+    applySearchFilter();
+  }, [searchTerm, sortType, applySearchFilter]);
 
   // 카드 클릭 핸들러
   const handleCardClick = (planData) => {
@@ -241,6 +304,11 @@ const PlanList = () => {
             <p className="text-lg text-gray-600 max-w-2xl mx-auto font-['Poppins']">
               함께 떠날 여행을 계획하고, 완료된 여행들을 추억해보세요
             </p>
+            <SearchBar 
+              value={searchTerm}
+              onChange={handleSearchChange}
+              type="listsearch"
+            />            
           </div>
 
           {/* 계획중인 여행 */}
@@ -250,7 +318,7 @@ const PlanList = () => {
                 <div className="w-2 h-8 bg-gradient-to-b from-blue-600 to-slate-800 rounded-full"></div>
                 <h2 className="text-3xl font-bold text-gray-800 font-['Poppins']">계획중인 여행</h2>
                 <span className="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm font-medium font-['Poppins']">
-                  {ongoingPlans.length}개
+                  {filteredOngoingPlans.length}개
                 </span>
               </div>
               <div className="flex items-center gap-1 bg-white/60 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm border border-gray-200/30">
@@ -281,42 +349,66 @@ const PlanList = () => {
             <div className={`main-content-ing grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 transition-all duration-500 ease-in-out ${
               isSorting ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
             }`}>
-              {ongoingPlans.map((plan, index) => (
-                <div
-                  key={plan.planId}
-                  className={`transition-all duration-500 ease-out ${
-                    isSorting 
-                      ? 'opacity-0 transform -translate-y-4' 
-                      : 'opacity-100 transform translate-y-0'
-                  }`}
-                  style={{
-                    transitionDelay: isSorting ? '0ms' : `${index * 50}ms`
-                  }}
-                >
-                                     <Card
-                     planData={plan}
-                     onView={() => handleCardClick(plan)}
-                     onEdit={() => handleEditClick(plan)}
-                     onDelete={() => handleDeleteClick(plan)}
-                     onLeave={handleLeave}
-                     onShowLeaveModal={handleShowLeaveModal}
-                     isAnyPopoverOpen={isAnyPopoverOpen}
-                     onPopoverOpenChange={setIsAnyPopoverOpen}
-                   />
+              {filteredOngoingPlans.length > 0 ? (
+                <>
+                  {filteredOngoingPlans.map((plan, index) => (
+                    <div
+                      key={plan.planId}
+                      className={`transition-all duration-500 ease-out ${
+                        isSorting 
+                          ? 'opacity-0 transform -translate-y-4' 
+                          : 'opacity-100 transform translate-y-0'
+                      }`}
+                      style={{
+                        transitionDelay: isSorting ? '0ms' : `${index * 50}ms`
+                      }}
+                    >
+                      <Card
+                        planData={plan}
+                        onView={() => handleCardClick(plan)}
+                        onEdit={() => handleEditClick(plan)}
+                        onDelete={() => handleDeleteClick(plan)}
+                        onLeave={handleLeave}
+                        onShowLeaveModal={handleShowLeaveModal}
+                        isAnyPopoverOpen={isAnyPopoverOpen}
+                        onPopoverOpenChange={setIsAnyPopoverOpen}
+                        onRequestConfirm={handleRequestConfirm}
+                      />
+                    </div>
+                  ))}
+                  <div
+                    className={`transition-all duration-500 ease-out ${
+                      isSorting 
+                        ? 'opacity-0 transform -translate-y-4' 
+                        : 'opacity-100 transform translate-y-0'
+                    }`}
+                    style={{
+                      transitionDelay: isSorting ? '0ms' : `${filteredOngoingPlans.length * 50}ms`
+                    }}
+                  >
+                    <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
+                  </div>
+                </>
+              ) : searchTerm.trim() ? (
+                <div className="col-span-full text-center py-12">
+                  <div className="text-gray-500 text-lg font-['Poppins']">
+                    검색 결과가 없습니다.
+                  </div>
+                  <div className="text-gray-400 text-sm mt-2 font-['Poppins']">
+                    다른 키워드로 검색해보세요.
+                  </div>
                 </div>
-              ))}
-              <div
-                className={`transition-all duration-500 ease-out ${
-                  isSorting 
-                    ? 'opacity-0 transform -translate-y-4' 
-                    : 'opacity-100 transform translate-y-0'
-                }`}
-                style={{
-                  transitionDelay: isSorting ? '0ms' : `${ongoingPlans.length * 50}ms`
-                }}
-              >
-                <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
-              </div>
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <div className="text-gray-500 text-lg font-['Poppins']">
+                    계획중인 여행이 없습니다.
+                  </div>
+                  <PlanAddCard onClick={() => setIsCreateModalOpen(true)} />
+                  <div className="text-gray-400 text-sm mt-2 font-['Poppins']">
+                    새로운 여행을 계획해보세요!
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -327,24 +419,43 @@ const PlanList = () => {
                 <div className="w-2 h-8 bg-gradient-to-b from-slate-500 to-slate-700 rounded-full"></div>
                 <h2 className="text-3xl font-bold text-gray-800 font-['Poppins']">완료된 여행</h2>
                 <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-medium font-['Poppins']">
-                  {completedPlans.length}개
+                  {filteredCompletedPlans.length}개
                 </span>
               </div>
             </div>
             <div className="main-content-done grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                             {completedPlans.map((plan) => (
-                 <Card
-                   key={plan.planId}
-                   planData={plan}
-                   onView={() => handleCardClick(plan)}
-                   onEdit={() => handleEditClick(plan)}
-                   onDelete={() => handleDeleteClick(plan)}
-                   onLeave={handleLeave}
-                   onShowLeaveModal={handleShowLeaveModal}
-                   isAnyPopoverOpen={isAnyPopoverOpen}
-                   onPopoverOpenChange={setIsAnyPopoverOpen}
-                 />
-               ))}
+              {filteredCompletedPlans.length > 0 ? (
+                filteredCompletedPlans.map((plan) => (
+                  <Card
+                    key={plan.planId}
+                    planData={plan}
+                    onView={() => handleCardClick(plan)}
+                    onEdit={() => handleEditClick(plan)}
+                    onDelete={() => handleDeleteClick(plan)}
+                    onLeave={handleLeave}
+                    onShowLeaveModal={handleShowLeaveModal}
+                    onRequestConfirm={handleRequestConfirm}
+                  />
+                ))
+              ) : searchTerm.trim() ? (
+                <div className="col-span-full text-center py-12">
+                  <div className="text-gray-500 text-lg font-['Poppins']">
+                    검색 결과가 없습니다.
+                  </div>
+                  <div className="text-gray-400 text-sm mt-2 font-['Poppins']">
+                    다른 키워드로 검색해보세요.
+                  </div>
+                </div>
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <div className="text-gray-500 text-lg font-['Poppins']">
+                    완료된 여행이 없습니다.
+                  </div>
+                  <div className="text-gray-400 text-sm mt-2 font-['Poppins']">
+                    이전 여행을 회상해보세요!
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -421,13 +532,13 @@ const PlanList = () => {
             </div>
             
             <div className="leave-modal__content">
-               <p className="leave-modal__message">
-                 '{leaveTarget.name}' 여행 계획을 나가시겠습니까?
-               </p>
-               <p className="leave-modal__submessage">
-                 나간 후에는 권한 요청을 다시 보내야 참여할 수 있습니다.
-               </p>
-             </div>
+              <p className="leave-modal__message">
+                '{leaveTarget.name}' 여행 계획을 나가시겠습니까?
+              </p>
+              <p className="leave-modal__submessage">
+                나간 후에는 권한 요청을 다시 보내야 참여할 수 있습니다.
+              </p>
+            </div>
 
             <div className="leave-modal__footer">
               <Button 
@@ -449,7 +560,44 @@ const PlanList = () => {
           </div>
         </div>
       )}
-      
+
+      {/* 참여자 액션 확인 모달 (페이지 레벨) */}
+      {confirmModal.open && createPortal(
+        (
+          <div className="participant-action-modal__backdrop" onClick={closeConfirmModal}>
+            <div className={`participant-action-modal ${confirmModal.variant === 'danger' ? 'participant-action-modal--danger' : ''}`} onClick={(e) => e.stopPropagation()}>
+              <div className="participant-action-modal__header">
+                <div className="participant-action-modal__icon">
+                  <Icon type={confirmModal.iconType || "magnifying-glass"} />
+                </div>
+                <h2 className="participant-action-modal__title">{confirmModal.title}</h2>
+              </div>
+              <div className="participant-action-modal__content">
+                <p className="participant-action-modal__message">{confirmModal.message}</p>
+              </div>
+              <div className="participant-action-modal__footer">
+                <Button 
+                  background="white"
+                  textColor="black"
+                  border="gray"
+                  onClick={closeConfirmModal}
+                >
+                  취소
+                </Button>
+                <Button 
+                  background={confirmModal.variant === 'danger' ? 'red' : 'sky'}
+                  textColor={confirmModal.variant === 'danger' ? 'white' : 'black'}
+                  onClick={() => { confirmModal.onConfirm?.(); closeConfirmModal(); }}
+                >
+                  {confirmModal.confirmText}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ),
+        document.getElementById('modal-root') || document.body
+      )}
+
       <LoadingOverlay isVisible={isLoading} message="처리 중..." />
     </>
   );

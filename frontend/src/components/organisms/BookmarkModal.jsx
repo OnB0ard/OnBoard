@@ -1,13 +1,40 @@
 import React, { useRef, useEffect } from 'react';
-import useMapStore from '../../store/useMapStore';
+import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
+import useBookmarkWebSocket from '../../hooks/useBookmarkWebSocket';
 import './BookmarkModal.css';
 
-const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 } }) => {
+const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 }, planId }) => {
   const modalRef = useRef(null);
-  const { bookmarkedPlaces } = useMapStore();
+  const {
+    bookmarkedPlaces,
+    toggleBookmark,
+    clearAllBookmarks,
+    setActivePlanId,
+    setBookmarkWsSenders,
+    clearBookmarkWsSenders,
+    handleBookmarkWsMessage,
+  } = useBookmarkStore();
+
+  // 현재 방(planId)에 맞춰 스토어 활성 플랜 설정
+
   const [isDragging, setIsDragging] = React.useState(false);
+
+  // WebSocket 연결 설정 (신규 공통 훅)
+  const { sendMessage, sendCreate, sendDelete } = useBookmarkWebSocket({
+    planId,
+    onMessage: (msg) => {
+      // 서버에서 오는 표준 메시지(action: 'CREATE' | 'DELETE' ... )를 스토어 핸들러로 전달
+      handleBookmarkWsMessage(msg);
+    },
+  });
+
+  // 스토어에 WS 발신기 연결/해제 (토글 액션에서 사용)
+  useEffect(() => {
+    setBookmarkWsSenders({ sendCreate, sendDelete });
+    return () => clearBookmarkWsSenders();
+  }, [sendCreate, sendDelete, setBookmarkWsSenders, clearBookmarkWsSenders]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -76,7 +103,7 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
       const dailyPlanLeft = 120;
       const dailyPlanWidth = 330;
       const dailyPlanRight = dailyPlanLeft + dailyPlanWidth;
-      const dailyPlanTop = 76; // 일정짜기 모달과 같은 top 위치
+      const dailyPlanTop = 70; // 일정짜기 모달과 같은 top 위치
       
       // 북마크 모달을 일정짜기 모달 오른쪽에 배치
       const x = dailyPlanRight + 20; // 일정짜기 모달 오른쪽에서 20px 떨어진 위치
@@ -121,13 +148,16 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
         ref={modalRef}
         style={{
           position: 'fixed',
-          left: `${safePosition.x}px`,
-          top: `${safePosition.y}px`,
+          left: `410px`,
+          // CSS에서 calc(100vh - 70px)와 일치하도록 상단 오프셋을 맞춤
+          top: `0px`,
           margin: 0
         }}
       >
         <div className="bookmark-modal-header">
-          <h3>북마크된 장소</h3>
+          <div className="header-content">
+            <h3>북마크된 장소</h3>
+          </div>
           <button 
             onClick={handleCloseBookmarkModal} 
             className="close-button"
@@ -157,27 +187,28 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
                   {/* 왼쪽: 텍스트 정보 */}
                   <div className="bookmark-item-content">
                     {/* 제목 */}
-                    <h3 className="bookmark-item-title">{place.name}</h3>
+                    <h3 className="bookmark-item-title">{place.placeName}</h3>
                     
                     {/* 별점, 리뷰 수 */}
                     <div className="bookmark-item-rating">
-                      <StarRating rating={place.rating} />
+                      <StarRating rating={place.rating} reviewCount={place.ratingCount} />
                     </div>
                     
                     
                     {/* 주소 */}
-                    <p className="bookmark-item-address">{place.formatted_address}</p>
+                    <p className="bookmark-item-address">{place.address}</p>
                     
                   </div>
                   
                   {/* 오른쪽: 이미지 */}
                   <div className="bookmark-item-image">
                     <PlaceImage 
-                      imageUrl={place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
+                      imageUrl={(place.photos && place.photos[0] && (typeof place.photos[0].getUrl === 'function' ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : (place.photos[0].url || place.photos[0]))) || place.imageUrl || (place.googleImg && place.googleImg[0]) || 'https://placehold.co/40x40/E5E7EB/6B7280?text=이미지'}
                       isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
                       onBookmarkClick={(e) => {
                         e.stopPropagation();
-                        // 북마크 토글 기능은 여기서는 비활성화
+                        // 북마크 토글 (스토어가 WS 발신기를 통해 전송 처리)
+                        toggleBookmark(place, planId);
                       }}
                     />
                   </div>

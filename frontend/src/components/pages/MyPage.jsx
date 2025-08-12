@@ -311,6 +311,7 @@ const MyPage = () => {
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
                               hideDropdown={true}
+                              hideManageActions={true}
                             />
                           </div>
                         ))}
@@ -377,6 +378,7 @@ const MyPage = () => {
                               isAnyPopoverOpen={isAnyPopoverOpen}
                               onPopoverOpenChange={setIsAnyPopoverOpen}
                               hideDropdown={true}
+                              hideManageActions={true}
                             />
                           </div>
                         ))}
@@ -396,7 +398,7 @@ const MyPage = () => {
                           </button>
                           
                           <div className="pagination-dots">
-                                                         {[...Array(getTotalPages(completedPlans))].map((_, index) => (
+                             {[...Array(getTotalPages(completedPlans))].map((_, index) => (
                                <button
                                  key={index}
                                  onClick={() => handlePageClick('completed', index)}

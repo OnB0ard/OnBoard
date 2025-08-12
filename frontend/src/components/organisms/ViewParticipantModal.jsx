@@ -1,17 +1,23 @@
 // 이 파일은 백엔드 측에서 참여자 목록 데이터 받아와서 적용시킬 수 있는 파일
 
 import { useRef, useEffect } from "react";
+
+import { createPortal } from "react-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/Avatar";
 import { Check, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { useParticipantStore } from "../../store/usePlanUserStore"; // Zustand 스토어 import
 import { useAuthStore } from "../../store/useAuthStore";
 import Icon from "../atoms/Icon";
+import "./ViewParticipantModal.css";
 
 // planId: 계획 ID
 // myName: 현재 로그인한 사용자 이름
 // hostName: 방장 닉네임(카드 기준)
-const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
+// onRequestConfirm: 상위에서 확인 모달을 띄우기 위한 콜백
+// hideManageActions: 방장 위임/강퇴 버튼 숨김 여부 (마이페이지 카드에서 사용)
+const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm, hideManageActions = false }) => {
+
   const modalRef = useRef(null);
   const {
     creator,
@@ -54,31 +60,58 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
+  const openConfirm = (title, message, onConfirm, confirmText = "확인", variant, iconType) => {
+    // 먼저 참여자 목록 모달을 닫고, 상위에 확인 모달 요청
+    onClose?.();
+    onRequestConfirm?.({ title, message, onConfirm, confirmText, variant, iconType });
+  };
+
   const handleApprove = (targetUserId, name) => {
-    if (window.confirm(`${name}님의 참여를 수락하시겠습니까?`)) {
-      approveRequest(planId, targetUserId);
-    }
+    openConfirm(
+      "참여 수락",
+      `${name}님의 참여를 수락하시겠습니까?`,
+      () => approveRequest(planId, targetUserId),
+      "수락",
+      undefined,
+      'people-plus'
+    );
   };
 
   const handleDeny = (targetUserId, name) => {
-    if (window.confirm(`${name}님의 참여 요청을 거절하시겠습니까?`)) {
-      denyRequest(planId, targetUserId);
-    }
+    openConfirm(
+      "참여 거절",
+      `${name}님의 참여 요청을 거절하시겠습니까?`,
+      () => denyRequest(planId, targetUserId),
+      "거절",
+      'danger',
+      'people-minus'
+    );
   };
 
   const handlePromote = (targetUserId, name) => {
     console.log('Promoting:', { planId, targetUserId }); // 디버깅용 로그
-    if (window.confirm(`${name}님을 방장으로 위임하시겠습니까?`)) {
-      delegateCreatorRole(planId, targetUserId);
-    }
-  };  
-
+    openConfirm(
+      "방장 위임",
+      `${name}님을 방장으로 위임하시겠습니까?`,
+      () => delegateCreatorRole(planId, targetUserId),
+      "위임",
+      undefined,
+      'change'
+    );
+  };
+  
   const handleKick = (targetUserId, name) => {
     console.log('Kicking:', { planId, targetUserId }); // 디버깅용 로그
-    if (window.confirm(`${name}님을 강퇴하시겠습니까?`)) {
-      kickUser(planId, targetUserId);
-    }
+    openConfirm(
+      "강퇴",
+      `${name}님을 강퇴하시겠습니까?`,
+      () => kickUser(planId, targetUserId),
+      "강퇴",
+      'danger',
+      'people-minus'
+    );
   };
+
 
   const combinedParticipants = [
     ...(creator ? [{ ...creator, status: 'CREATOR' }] : []),
@@ -137,13 +170,14 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
                 </button>
               </>
             )} 
-            {isCreator && p.status !== 'CREATOR' && p.userStatus === 'APPROVED' && (
+            {isCreator && p.status !== 'CREATOR' && p.userStatus === 'APPROVED' && !hideManageActions && (
               <>
               <button
                 className="ml-1 p-1 rounded-full hover:bg-red-200 text-red-500 transition"
                 title="강퇴"
                 onClick={() => handleKick(p.userId, p.userName)}
               >
+
                 <Icon type="minus" />
               </button>
               <button
@@ -158,6 +192,8 @@ const ViewParticipantModal = ({ planId, isOpen, onClose }) => {
           </li>
         ))}
       </ul>
+
+      {/* 확인 모달은 상위 컴포넌트(페이지)에서 포털로 렌더링됩니다. */}
     </div>
   )
 }

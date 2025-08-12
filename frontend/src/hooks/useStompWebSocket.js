@@ -16,7 +16,7 @@ export const useStompWebSocket = ({
   const onMessageRef = useRef(onMessage);
   const onSubscribedRef = useRef(onSubscribed);
   const planIdRef = useRef(planId);
-  const tokenRef = useRef(accessToken);
+  const tokenRef = useRef(accessToken); 
   const outboxRef = useRef([]);
   const [connected, setConnected] = useState(false);
 
@@ -143,6 +143,20 @@ export const useStompWebSocket = ({
       body: JSON.stringify({ action, ...payload }),
       headers: { 'content-type': 'application/json' },
     };
+
+    try {
+      const parsed = { action, ...payload };
+      // 전송 로그: 목적지 planId와 body 내 whiteBoardId 동시 확인
+      console.groupCollapsed('[WS][SEND]');
+      console.log('destination:', destination);
+      if (parsed && typeof parsed === 'object') {
+        console.log('body.action:', parsed.action);
+        console.log('body.whiteBoardId:', parsed.whiteBoardId);
+      }
+      console.groupEnd();
+    } catch (_) {
+      // ignore logging errors
+    }
 
     if (client && client.connected) client.publish(publishPayload);
     else outboxRef.current.push(publishPayload);

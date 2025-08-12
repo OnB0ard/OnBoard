@@ -1,37 +1,99 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import DailyPlaceBlock from './DailyPlaceBlock';
 import BookmarkModal from './BookmarkModal';
 import PlanMemoModal from './PlanMemoModal';
 import { Button } from '../atoms/Button';
+import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
+import { useAuthStore } from '@/store/useAuthStore';
 import './DailyPlanCreate.css';
 
-const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) => {
+const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
   const [isMounted, setIsMounted] = useState(false);
   const modalRef = useRef(null);
   const [dailyPlans, setDailyPlans] = useState([]);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
-  const [draggedPlaceId, setDraggedPlaceId] = useState(null);
-  const [draggedFromDay, setDraggedFromDay] = useState(null);
-  const [draggedFromIndex, setDraggedFromIndex] = useState(null);
-  const [bookmarkModalPosition, setBookmarkModalPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
-  
+  const accessToken = useAuthStore(s => s.accessToken);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [memoModalData, setMemoModalData] = useState({
     place: null,
     dayTitle: '',
     memo: '',
-    position: { x: 0, y: 0 }
+    position: { x: 0, y: 0 },
   });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
-  useEffect(() => {
-    setIsMounted(true);
+  // DaySchedule 소켓 수신 핸들러
+  const handleDayMsg = useCallback((msg) => {
+    // msg: { action, ...payload }
+    switch (msg.action) {
+      case 'CREATE': {
+        const newDay = { id: msg.dayScheduleId, title: msg.title || '', places: [] };
+        setDailyPlans(prev => {
+          const arr = [...prev];
+          const idx = typeof msg.dayOrder === 'number' && msg.dayOrder > 0 ? msg.dayOrder - 1 : arr.length;
+          arr.splice(Math.min(idx, arr.length), 0, newDay);
+          return arr;
+        });
+        break;
+      }
+      case 'RENAME': {
+        setDailyPlans(prev => prev.map(d => d.id === msg.dayScheduleId ? { ...d, title: msg.title ?? d.title } : d));
+        break;
+      }
+      case 'MOVE': {
+        // 실시간 UI 이동: 저장은 아님
+        setDailyPlans(prev => {
+          const arr = [...prev];
+          const fromIdx = arr.findIndex(d => d.id === msg.dayScheduleId);
+          if (fromIdx === -1) return prev;
+          const toIdx = typeof msg.modifiedDayOrder === 'number' && msg.modifiedDayOrder > 0 ? msg.modifiedDayOrder - 1 : fromIdx;
+          const [item] = arr.splice(fromIdx, 1);
+          arr.splice(Math.min(toIdx, arr.length), 0, item);
+          return arr;
+        });
+        break;
+      }
+      case 'UPDATE_SCHEDULE': {
+        // 최종 확정 이동 반영
+        setDailyPlans(prev => {
+          const arr = [...prev];
+          const fromIdx = arr.findIndex(d => d.id === msg.dayScheduleId);
+          if (fromIdx === -1) return prev;
+          const toIdx = typeof msg.modifiedDayOrder === 'number' && msg.modifiedDayOrder > 0 ? msg.modifiedDayOrder - 1 : fromIdx;
+          const [item] = arr.splice(fromIdx, 1);
+          arr.splice(Math.min(toIdx, arr.length), 0, item);
+          return arr;
+        });
+        break;
+      }
+      case 'DELETE': {
+        setDailyPlans(prev => prev.filter(d => d.id !== msg.dayScheduleId));
+        break;
+      }
+      default:
+        console.warn('[DaySchedule] Unknown action', msg);
+    }
   }, []);
 
+  const {
+    connected: dayWsConnected,
+    createDay,
+    renameDay,
+    moveDayRealtime,
+    updateSchedule,
+    deleteDay,
+  } = useStompDaySchedule({
+    planId,
+    wsUrl: 'https://i13a504.p.ssafy.io/ws',
+    accessToken,
+    onMessage: handleDayMsg,
+    onSubscribed: () => console.log('[DailyPlanCreate] daySchedule subscribed'),
+  });
 
+  // mount & modal open state effects
+  useEffect(() => { setIsMounted(true); }, []);
   useEffect(() => {
     if (!isOpen) {
       setShowBookmarkModal(false);
@@ -40,10 +102,31 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
     }
   }, [isOpen]);
 
+  // 원격 업데이트 처리 함수들
+  const handleRemotePlaceAdded = (data) => {
+    const { dayIndex, place } = data;
+    setDailyPlans(prev => prev.map((day, idx) =>
+      idx === dayIndex
+        ? { ...day, places: [...day.places, place] }
+        : day
+    ));
+  };
+
+  const handleRemoteDayAdded = () => {};
+  const handleRemoteDayRemoved = () => {};
+
+  // DaySchedule 전송 헬퍼 사용 예시: 아래 UI 이벤트들에서 사용
+
+  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+  const [draggedPlaceId, setDraggedPlaceId] = useState(null);
+  const [draggedFromDay, setDraggedFromDay] = useState(null);
+  const [draggedFromIndex, setDraggedFromIndex] = useState(null);
+  const [bookmarkModalPosition, setBookmarkModalPosition] = useState({ x: 0, y: 0 });
+
   // 데이터 구조를 DailyPlaceBlock에 맞게 통일하는 함수
   const normalizePlaceData = (place) => {
     const photoUrl = place.imageUrl || (place.photos && place.photos[0]?.getUrl({ maxWidth: 100, maxHeight: 100 })) || (place.googleImg && place.googleImg[0]);
-    
+
     return {
       id: place.id || place.place_id || place.googlePlaceId,
       name: place.name || place.displayName || place.placeName,
@@ -57,22 +140,18 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
   };
 
   const addDailyPlan = () => {
-    const newDay = {
-      id: Date.now(),
-      title: `${dailyPlans.length + 1}일차`,
-      places: []
-    };
-    setDailyPlans(prev => [...prev, newDay]);
+    const nextOrder = (dailyPlans?.length || 0) + 1;
+    // 기본 제목은 서버 응답으로 갱신되므로 임시로 표시하거나 생략 가능
+    createDay({ title: `Day ${nextOrder}`, dayOrder: nextOrder });
   };
 
   const removeDailyPlan = (dayId) => {
-    setDailyPlans(prev => prev.filter(day => day.id !== dayId));
+    deleteDay({ dayScheduleId: dayId });
   };
 
   const updateDayTitle = (dayId, newTitle) => {
-    setDailyPlans(prev => prev.map(day => 
-      day.id === dayId ? { ...day, title: newTitle } : day
-    ));
+    setDailyPlans(prev => prev.map(day => day.id === dayId ? { ...day, title: newTitle } : day));
+    renameDay({ dayScheduleId: dayId, title: newTitle });
   };
 
   const addPlaceFromBookmark = (place) => {
@@ -88,6 +167,7 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
           ? { ...day, places: [...day.places, newPlace] }
           : day
       ));
+      
       setShowBookmarkModal(false);
       setSelectedDayIndex(null);
     }
@@ -189,19 +269,18 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
       newPlans[sourceDayIndex].places.splice(sourcePlaceIndex, 1);
       
       // 새로운 위치에 삽입
-      if (sourceDayIndex === targetDayIndex) {
-        // 같은 일정 내에서 순서 변경
-        let adjustedTargetIndex = targetPlaceIndex;
-        if (sourcePlaceIndex < targetPlaceIndex) {
-          adjustedTargetIndex -= 1;
-        }
-        console.log('같은 일정 내 이동:', { from: sourcePlaceIndex, to: adjustedTargetIndex });
-        newPlans[targetDayIndex].places.splice(adjustedTargetIndex, 0, draggedPlace);
-      } else {
-        // 다른 일정으로 이동
-        console.log('다른 일정으로 이동');
-        newPlans[targetDayIndex].places.splice(targetPlaceIndex, 0, draggedPlace);
+      let adjustedTargetIndex = targetPlaceIndex;
+      if (sourceDayIndex === targetDayIndex && sourcePlaceIndex < targetPlaceIndex) {
+        adjustedTargetIndex -= 1;
       }
+      
+      if (sourceDayIndex === targetDayIndex) {
+        console.log('같은 일정 내 이동:', { from: sourcePlaceIndex, to: adjustedTargetIndex });
+      } else {
+        console.log('다른 일정으로 이동');
+      }
+      
+      newPlans[targetDayIndex].places.splice(adjustedTargetIndex, 0, draggedPlace);
       
       return newPlans;
     });
@@ -258,6 +337,8 @@ const DailyPlanCreate = ({ isOpen, onClose, bookmarkedPlaces = [], position }) =
   };
 
   const removePlace = (dayIndex, placeIndex) => {
+    const placeId = dailyPlans[dayIndex].places[placeIndex].id;
+    
     setDailyPlans(prev => prev.map((day, index) => 
       index === dayIndex 
         ? { ...day, places: day.places.filter((_, pIndex) => pIndex !== placeIndex) }

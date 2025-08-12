@@ -74,10 +74,10 @@ export function useMouseStomp({
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
-      reconnectDelay: 1500,       // 자동 재연결 (1.5s)
-      heartbeatIncoming: 10000,   // 서버 -> 클라 하트비트
-      heartbeatOutgoing: 10000,   // 클라 -> 서버 하트비트
-      debug: (msg) => console.log("[STOMP DEBUG]", msg),
+      reconnectDelay: 1500,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
+      // debug: (msg) => console.log("[STOMP DEBUG]", msg),
       onConnect: () => {
         setConnected(true);
 

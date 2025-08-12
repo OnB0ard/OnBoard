@@ -34,7 +34,7 @@ export const useGoogleLogin = () => {
           if (response.code === 200) {
             const data = response.body;
 
-            // ✅ JWT 및 사용자 정보 저장
+            // JWT 및 사용자 정보 저장
             setAuth({
               userId: data.userId,
               userName: data.userName,
@@ -44,7 +44,7 @@ export const useGoogleLogin = () => {
               // refreshToken: data.refreshToken,
             });
 
-            // ✅ apiClient에 토큰 getter 설정
+            // apiClient에 토큰 getter 설정
             setAccessTokenGetter(() => data.accessToken);
 
             console.log("로그인 성공! 사용자 상태 저장 완료");

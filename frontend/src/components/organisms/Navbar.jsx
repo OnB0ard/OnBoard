@@ -6,6 +6,7 @@ import {useGoogleLogin} from "@/hooks/useGoogleLogin"
 import { useAuthStore } from "@/store/useAuthStore";
 import Icon from "@/components/atoms/Icon";
 import { Button as CustomButton } from "@/components/atoms/Button";
+import { AlarmBell } from "../atoms/AlarmBell";
 
 const Navbar = () => {
   const location = useLocation();
@@ -68,9 +69,11 @@ const Navbar = () => {
       </div>
       <div className="center" />
       <div className="right">
-        <Link to="/test">
+
+        {/* <Link to="/test">
           <Button className={`temp ${isFirstSection ? 'landing-text' : ''}`} variant="link">TEST</Button>          
-        </Link>
+        </Link> */}
+        <AlarmBell count={5} color={isFirstSection ? '#ffffff' : '#000000'} />
         <Button 
           className={`temp ${isFirstSection ? 'landing-text' : ''}`} 
           variant="link"

@@ -18,9 +18,7 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
   } = useBookmarkStore();
 
   // 현재 방(planId)에 맞춰 스토어 활성 플랜 설정
-  useEffect(() => {
-    if (planId) setActivePlanId(planId);
-  }, [planId, setActivePlanId]);
+
   const [isDragging, setIsDragging] = React.useState(false);
 
   // WebSocket 연결 설정 (신규 공통 훅)
@@ -105,7 +103,7 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
       const dailyPlanLeft = 120;
       const dailyPlanWidth = 330;
       const dailyPlanRight = dailyPlanLeft + dailyPlanWidth;
-      const dailyPlanTop = 76; // 일정짜기 모달과 같은 top 위치
+      const dailyPlanTop = 70; // 일정짜기 모달과 같은 top 위치
       
       // 북마크 모달을 일정짜기 모달 오른쪽에 배치
       const x = dailyPlanRight + 20; // 일정짜기 모달 오른쪽에서 20px 떨어진 위치
@@ -151,7 +149,8 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
         style={{
           position: 'fixed',
           left: `410px`,
-          top: `0`,
+          // CSS에서 calc(100vh - 70px)와 일치하도록 상단 오프셋을 맞춤
+          top: `0px`,
           margin: 0
         }}
       >
@@ -188,16 +187,16 @@ const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0
                   {/* 왼쪽: 텍스트 정보 */}
                   <div className="bookmark-item-content">
                     {/* 제목 */}
-                    <h3 className="bookmark-item-title">{place.name}</h3>
+                    <h3 className="bookmark-item-title">{place.placeName}</h3>
                     
                     {/* 별점, 리뷰 수 */}
                     <div className="bookmark-item-rating">
-                      <StarRating rating={place.rating} />
+                      <StarRating rating={place.rating} reviewCount={place.ratingCount} />
                     </div>
                     
                     
                     {/* 주소 */}
-                    <p className="bookmark-item-address">{place.formatted_address}</p>
+                    <p className="bookmark-item-address">{place.address}</p>
                     
                   </div>
                   

@@ -129,7 +129,6 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             removeDailyPlan(dayScheduleId);
             break;
           }
-          case 'MOVE':
           case 'UPDATE_SCHEDULE': {
             // 특정 dayScheduleId를 modifiedDayOrder 위치로 이동
             const { dayScheduleId, modifiedDayOrder } = payload || {};
@@ -499,11 +498,23 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
           return;
         }
         
-        // 기존 화이트보드 장소 처리 (타입이 없는 경우)
+        // 기존 화이트보드 장소 처리 (타입이 없는 경우) -> WS 전송으로 변경
         if (!dragData.type && (dragData.placeName || dragData.name)) {
-          console.log('화이트보드에서 장소 드롭:', dragData);
-          console.log('일차에 장소 추가:', { dayIndex, place: dragData });
-          addPlaceToDay(dayIndex, dragData);
+          console.log('화이트보드에서 장소 드롭(WS 전송으로 처리):', dragData);
+          const targetDayId = dailyPlans?.[dayIndex]?.id;
+          if (targetDayId == null) {
+            console.warn('❌ 일차 ID 없음 - 추가 취소');
+            return;
+          }
+          // 가능한 식별자 추출 (DB PK 우선, snake_case 포함, googlePlaceId 제외)
+          const rawPlaceId = dragData.id ?? dragData.placeId ?? dragData.place_id;
+          const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+          if (!placeId || Number.isNaN(placeId)) {
+            console.warn('❌ placeId 없음 - 서버 전송 불가');
+            return;
+          }
+          const insertIndex = (dailyPlans?.[dayIndex]?.places?.length || 0); // 끝에 추가
+          try { createPlace({ dayScheduleId: targetDayId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
           return;
         }
         
@@ -711,7 +722,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       
       const dayScheduleId = dailyPlans[targetDayIndex]?.id;
       if (dayScheduleId != null) {
-        const placeId = dragData.place.id || dragData.place.placeId || dragData.place.googlePlaceId;
+        const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id;
+        const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+        if (!placeId || Number.isNaN(placeId)) {
+          console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId });
+          return;
+        }
         try { createPlace({ dayScheduleId, placeId, indexOrder: insertIndex + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
       }
       
@@ -907,9 +923,15 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             insertIndex
           });
           
-          // 지정된 위치에 장소 추가
-          addPlaceToDay(dayIndex, dragData.place, insertIndex);
-          
+          // WS 전송으로 생성
+      const dayScheduleId = dailyPlans[dayIndex]?.id;
+      const rawPlaceId = dragData.place.placeId ?? dragData.place.id ?? dragData.place.place_id;
+      const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+      if (dayScheduleId != null && placeId && !Number.isNaN(placeId)) {
+        try { createPlace({ dayScheduleId, placeId, indexOrder: (insertIndex ?? 0) + 1 }); } catch (e1) { console.warn('createPlace send failed', e1); }
+      } else {
+        console.warn('❌ dayScheduleId/placeId 누락 - 생성 취소');
+      }
           // 북마크 모달은 열어둠 (연속 추가를 위해)
           return;
         }
@@ -943,9 +965,19 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             primaryCategory: placeData.primaryCategory,
             originalData: placeData
           };
-          
-          // 지정된 위치에 장소 추가
-          addPlaceToDay(dayIndex, normalizedPlace, insertIndex);
+          // WS 전송으로 생성
+      const dayScheduleId = dailyPlans[dayIndex]?.id;
+      if (dayScheduleId != null) {
+            const rawPlaceId = normalizedPlace.placeId ?? normalizedPlace.id ?? normalizedPlace.place_id;
+            const placeId = typeof rawPlaceId === 'number' ? rawPlaceId : Number(rawPlaceId);
+            if (!placeId || Number.isNaN(placeId)) {
+              console.warn('❌ placeId 유효하지 않음 - 생성 취소', { rawPlaceId });
+              return;
+            }
+            try { createPlace({ dayScheduleId, placeId, indexOrder: (insertIndex ?? 0) + 1 }); } catch (e2) { console.warn('createPlace send failed', e2); }
+      } else {
+        console.warn('❌ dayScheduleId 없음 - 생성 취소');
+      }
           return;
         }
       }

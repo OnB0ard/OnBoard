@@ -32,7 +32,8 @@ const usePlaceBlocksStore = create(
 
          const newBlock = {
            ...place,
-           id: place?.id ?? (Date.now() + Math.random()),
+           // fallback id는 항상 정수로 생성하여 이후 WS 전송에 소수가 포함되지 않도록 함
+           id: place?.id ?? Date.now(),
            position,
          };
          
@@ -130,7 +131,9 @@ const usePlaceBlocksStore = create(
         // 서버 DTO -> 로컬 PlaceBlock 형태로 매핑
         const mapped = (Array.isArray(serverPlaces) ? serverPlaces : []).map((d) => {
           try {
-            const id = d?.whiteBoardObjectId ?? d?.id ?? (Date.now() + Math.random());
+            const nestedObjId = d?.objectInfo?.whiteBoardObjectId;
+            const rawId = d?.whiteBoardObjectId ?? nestedObjId ?? d?.id ?? Date.now();
+            const id = Number.isFinite(Number(rawId)) ? Number(rawId) : rawId;
             const obj = d?.objectInfo || d || {};
             const x = Number(obj.x ?? d?.x ?? 0);
             const y = Number(obj.y ?? d?.y ?? 0);

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.backend.place.entity.Place;
 import com.ssafy.backend.place.repository.PlaceRepository;
 import com.ssafy.backend.plan.entity.Plan;
-import com.ssafy.backend.plan.exception.NotInThisRoomException;
+import com.ssafy.backend.plan.exception.UserNotInPlanException;
 import com.ssafy.backend.plan.exception.PlanNotExistException;
 import com.ssafy.backend.plan.exception.UserNotExistException;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -234,11 +234,11 @@ public class WhiteBoardService {
     }
     private void validateUserIsApprovedParticipant(Plan plan, User user) {
         if(!userPlanRepository.existsByPlanAndUser(plan, user)) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다.");
         }
         UserPlan userPlan = userPlanRepository.getUserPlanByPlanAndUser(plan, user);
         if (userPlan.getUserStatus() != UserStatus.APPROVED) {
-            throw new NotInThisRoomException("당신은 이 방의 참여자가 아닙니다.");
+            throw new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다.");
         }
     }
     private WhiteBoardObject validateWhiteBoardObject(Long whiteObjectId) {

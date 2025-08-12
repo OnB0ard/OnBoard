@@ -25,7 +25,11 @@ const MyPage = () => {
   const [slideDirection, setSlideDirection] = useState('none'); // 'left', 'right', 'none'
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { userName, profileImage } = useAuthStore();
+  // Zustand에서 필요한 조각만 구독하여 변경 시 정확히 리렌더되도록 처리
+  const userName = useAuthStore((s) => s.userName);
+  const profileImage = useAuthStore((s) => s.profileImage);
+  // SettingModal 저장 후 강제 리렌더 트리거
+  const [profileTick, setProfileTick] = useState(0);
 
   // 프로필 이미지 URL 생성 (이미지 파일이 있는 경우)
   const displayProfileImage = profileImage || "/default-profile.png";
@@ -90,6 +94,13 @@ const MyPage = () => {
   useEffect(() => {
     fetchPlans();
   }, [fetchPlans]);
+
+  // SettingModal이 dispatch한 'profile-updated' 이벤트를 수신해 강제 리렌더
+  useEffect(() => {
+    const onProfileUpdated = () => setProfileTick((t) => t + 1);
+    window.addEventListener('profile-updated', onProfileUpdated);
+    return () => window.removeEventListener('profile-updated', onProfileUpdated);
+  }, []);
 
   // 화면 크기 변경 감지
   useEffect(() => {
@@ -235,6 +246,7 @@ const MyPage = () => {
             <div className="profile-image-container">
               <Avatar className="w-50 h-50">
                 <AvatarImage 
+                  key={displayProfileImage}
                   src={displayProfileImage}
                   alt="Profile"
                 />

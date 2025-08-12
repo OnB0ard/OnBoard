@@ -14,4 +14,5 @@ public class PlaceInfoDTO {
     private String address;
     private Double rating;
     private String imageUrl;
+    private String category;
 }

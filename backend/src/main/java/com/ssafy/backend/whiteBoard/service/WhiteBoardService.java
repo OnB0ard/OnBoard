@@ -161,6 +161,7 @@ public class WhiteBoardService {
                                 .address(obj.getPlace().getAddress())
                                 .rating(obj.getPlace().getRating())
                                 .imageUrl(obj.getPlace().getImageUrl())
+                                .category(obj.getPlace().getCategory())
                                 .build())
                         .build())
                 .toList();

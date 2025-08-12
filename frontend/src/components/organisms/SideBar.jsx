@@ -5,7 +5,7 @@ import AutocompleteSearchModal from "./AutocompleteSearchModal";
 import Bookmark from "./Bookmark";
 import DailyPlanCreate1 from "./DailyPlanCreate1";
 
-import { useMapCoreStore, useBookmarkStore } from "../../store/mapStore";
+import { useMapCoreStore, useBookmarkStore, usePlaceDetailsStore } from "../../store/mapStore";
 import useDailyPlanStore from "../../store/useDailyPlanStore";
 import { getScheduleList } from "@/apis/scheduleList";
 import "./SideBar.css";
@@ -19,6 +19,8 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
   const setIsMapVisible = useMapCoreStore((state) => state.setIsMapVisible);
 
   const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
+  const openPlaceDetailByPlaceId = usePlaceDetailsStore((s) => s.openPlaceDetailByPlaceId);
+  const openPlaceDetailFromCandidate = usePlaceDetailsStore((s) => s.openPlaceDetailFromCandidate);
   const setDailyPlans = useDailyPlanStore((s) => s.setDailyPlans);
   const loadedPlanIdRef = useRef(null);
 
@@ -34,6 +36,20 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       onDailyPlanModalToggle(false);
     }
     setIsDailyPlanModalOpen(false);
+  };
+
+  const handleBookmarkPlaceClick = async (place) => {
+    try {
+      // 다양한 키 케이스 지원
+      const pid = place.placeId || place.googlePlaceId || place.place_id || place.id;
+      if (pid) {
+        await openPlaceDetailByPlaceId(pid, true, 'center');
+      } else {
+        await openPlaceDetailFromCandidate(place, true, 'center');
+      }
+    } catch (err) {
+      console.error('[SideBar] open detail from bookmark failed:', err);
+    }
   };
 
   const handleBookmarkClick = (e) => {
@@ -158,6 +174,7 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       <Bookmark 
         isOpen={isBookmarkModalOpen} 
         onClose={() => setIsBookmarkModalOpen(false)}
+        onPlaceClick={handleBookmarkPlaceClick}
         bookmarkedPlaces={bookmarkedPlaces}
         position={modalPosition}
         planId={planId}

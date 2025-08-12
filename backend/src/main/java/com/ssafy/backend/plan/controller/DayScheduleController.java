@@ -21,9 +21,4 @@ public class DayScheduleController {
     public CommonResponse<PlanScheduleResponseDTO> getPlanSchedule(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(dayScheduleService.getPlanSchedule(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
     }
-
-    @GetMapping("/{dayScheduleId}")
-    public CommonResponse<DayScheduleResponseDTO> getDaySchedule(@PathVariable Long planId, @PathVariable Long dayScheduleId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(dayScheduleService.getDaySchedule(planId, dayScheduleId, jwtUserInfo.getUserId()), HttpStatus.OK);
-    }
 }

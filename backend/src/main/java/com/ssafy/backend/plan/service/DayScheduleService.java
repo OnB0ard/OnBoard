@@ -4,10 +4,7 @@ import com.ssafy.backend.plan.dto.request.CreateDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameDayScheduleRequestDTO;
 import com.ssafy.backend.plan.dto.request.UpdateSchedulePositionRequestDTO;
 import com.ssafy.backend.plan.dto.response.CreateDayScheduleResponseDTO;
-import com.ssafy.backend.plan.dto.response.DayPlaceResponseDTO;
-import com.ssafy.backend.plan.dto.response.DayScheduleResponseDTO;
 import com.ssafy.backend.plan.dto.response.PlanScheduleResponseDTO;
-import com.ssafy.backend.plan.entity.DayPlace;
 import com.ssafy.backend.plan.entity.DaySchedule;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.*;
@@ -79,88 +76,11 @@ public class DayScheduleService {
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
         if (userPlan.getUserStatus() == UserStatus.PENDING) {
-                throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
-        }
-
-        List<DayPlace> dayPlaces = dayPlaceRepository.getPlanScheduleByPlanId(planId);
-
-        Map<DaySchedule, List<DayPlaceResponseDTO>> daySchedule = dayPlaces.stream()
-                .collect(Collectors.groupingBy(
-                        DayPlace::getDaySchedule,
-                        Collectors.mapping(dp -> DayPlaceResponseDTO.builder()
-                                .dayPlaceId(dp.getDayPlaceId())
-                                .indexOrder(dp.getIndexOrder())
-                                .memo(dp.getMemo())
-                                .placeId(dp.getPlace().getPlaceId())
-                                .googlePlaceId(dp.getPlace().getGooglePlaceId())
-                                .placeName(dp.getPlace().getPlaceName())
-                                .latitude(dp.getPlace().getLatitude())
-                                .longitude(dp.getPlace().getLongitude())
-                                .address(dp.getPlace().getAddress())
-                                .rating(dp.getPlace().getRating())
-                                .ratingCount(dp.getPlace().getRatingCount())
-                                .imageUrl(dp.getPlace().getImageUrl())
-                                .category(dp.getPlace().getCategory())
-                                .build(), Collectors.toList())
-                ));
-
-        List<DayScheduleResponseDTO> planSchedule = daySchedule.entrySet().stream()
-                .map(entry -> DayScheduleResponseDTO.builder()
-                        .dayScheduleId(entry.getKey().getDayScheduleId())
-                        .dayOrder(entry.getKey().getDayOrder())
-                        .title(entry.getKey().getTitle())
-                        .daySchedule(entry.getValue())
-                        .build()
-                )
-                .sorted(Comparator.comparing(DayScheduleResponseDTO::getDayOrder))
-                .toList();
-
-        return new PlanScheduleResponseDTO(planSchedule);
-    }
-
-    public DayScheduleResponseDTO getDaySchedule(Long planId, Long dayScheduleId, Long userId) {
-        User user = validateUserExistence(userId);
-        Plan plan = validatePlanExistence(planId);
-
-        UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
-                .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
-        if (userPlan.getUserStatus() == UserStatus.PENDING) {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        // Lock없는 것으로
-        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleIdNoLock(planId, dayScheduleId)
-                .orElseThrow(() -> new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다."));
+        return null;
 
-        // 이미 여기서 plan - daySchedule 에 연결된 dayPlace들을 place정보와 함께 가져옴
-        List<DayPlace> dayPlaces = dayPlaceRepository.getDayScheduleByDayScheduleIdAndPlanId(dayScheduleId, planId);
-
-        List<DayPlaceResponseDTO> dayPlaceResponseDTOS = dayPlaces.stream()
-                .map(dp -> DayPlaceResponseDTO.builder()
-                        .dayPlaceId(dp.getDayPlaceId())
-                        .indexOrder(dp.getIndexOrder())
-                        .memo(dp.getMemo())
-                        .placeId(dp.getPlace().getPlaceId())
-                        .googlePlaceId(dp.getPlace().getGooglePlaceId())
-                        .placeName(dp.getPlace().getPlaceName())
-                        .latitude(dp.getPlace().getLatitude())
-                        .longitude(dp.getPlace().getLongitude())
-                        .address(dp.getPlace().getAddress())
-                        .rating(dp.getPlace().getRating())
-                        .ratingCount(dp.getPlace().getRatingCount())
-                        .imageUrl(dp.getPlace().getImageUrl())
-                        .category(dp.getPlace().getCategory())
-                        .build()
-                )
-                .sorted(Comparator.comparing(DayPlaceResponseDTO::getIndexOrder))
-                .toList();
-
-        return DayScheduleResponseDTO.builder()
-                .dayScheduleId(daySchedule.getDayScheduleId())
-                .dayOrder(daySchedule.getDayOrder())
-                .title(daySchedule.getTitle())
-                .daySchedule(dayPlaceResponseDTOS)
-                .build();
     }
 
     @Transactional

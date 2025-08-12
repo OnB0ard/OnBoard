@@ -6,6 +6,7 @@ import "./CalendarModal.css"
 
 function CalendarModal({ isOpen, onClose, onChange }) {
   const [selectedRange, setSelectedRange] = useState({ from: undefined, to: undefined })
+  const [errorMessage, setErrorMessage] = useState("")
 
   if (!isOpen) return null
 
@@ -19,10 +20,42 @@ function CalendarModal({ isOpen, onClose, onChange }) {
 
   const handleRangeChange = (range) => {
     setSelectedRange(range)
+    // 선택 변경 시 에러 메시지 초기화
+    if (errorMessage) setErrorMessage("")
   }
 
   const handleComplete = () => {
     if (selectedRange.from && selectedRange.to) {
+      // 오늘 00:00 기준으로 과거 날짜 선택 방지
+      const today = new Date()
+      const todayYmd = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      const startYmd = new Date(
+        selectedRange.from.getFullYear(),
+        selectedRange.from.getMonth(),
+        selectedRange.from.getDate()
+      )
+      const endYmd = new Date(
+        selectedRange.to.getFullYear(),
+        selectedRange.to.getMonth(),
+        selectedRange.to.getDate()
+      )
+
+      if (startYmd < todayYmd || endYmd < todayYmd) {
+        setErrorMessage("지나간 일을 계획할 수 없습니다")
+        return
+      }
+
+      // 선택 기간이 30일을 초과하는지 검사 (양끝 포함하여 일수 계산)
+      const diffMs = endYmd - startYmd
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
+
+      if (diffDays > 30) {
+        setErrorMessage("최대 30일까지만 선택해주세요")
+        return
+      }
+
+      // 정상 범위일 때 에러 초기화
+      if (errorMessage) setErrorMessage("")
       onChange(selectedRange)
       onClose()
     }
@@ -30,6 +63,7 @@ function CalendarModal({ isOpen, onClose, onChange }) {
 
   const handleCancel = () => {
     setSelectedRange({ from: undefined, to: undefined })
+    setErrorMessage("")
     onClose()
   }
 
@@ -67,6 +101,13 @@ function CalendarModal({ isOpen, onClose, onChange }) {
           <div className="calendar-modal__calendar">
             <CalendarRange onChange={handleRangeChange} />
           </div>
+
+          {/* 에러 메시지 (버튼 위 영역) */}
+          {errorMessage && (
+            <div className="calendar-modal__error" role="alert" aria-live="polite">
+              {errorMessage}
+            </div>
+          )}
 
           {/* 버튼 */}
           <div className="calendar-modal__footer">

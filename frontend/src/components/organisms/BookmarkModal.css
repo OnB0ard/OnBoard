@@ -1,7 +1,7 @@
 .bookmark-modal {
   position: fixed;
   left: 0;
-  top: 100px;
+  top: 70px;
   width: 100vw;
   height: 100vh;
   background-color: transparent; /* 배경을 투명하게 */
@@ -14,13 +14,16 @@
   border-radius: 12px;
   width: 300px;
   max-width: 330px;
-  max-height: 70vh;
+  /* 모달이 화면을 넘지 않도록: 뷰포트 높이 - 상단 오프셋(70px) (고정 높이) */
+  max-height: 580px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   pointer-events: auto;
   left: 120px;
+  /* 자식에서만 스크롤이 생기도록 콘텐츠 넘침 숨김 */
+  overflow: hidden;
 }
 
 .bookmark-modal-header {

@@ -35,8 +35,9 @@ public class DayPlaceQueryRepositoryImpl implements DayPlaceQueryRepository {
 
         return queryFactory
                 .selectFrom(dp)
+                .join(dp.daySchedule, ds)
                 .join(dp.place, p).fetchJoin()
-                .where(dp.daySchedule.dayScheduleId.eq(dayScheduleId).and(ds.plan.planId.eq(planId)))
+                .where(ds.dayScheduleId.eq(dayScheduleId).and(ds.plan.planId.eq(planId)))
                 .fetch();
     }
 

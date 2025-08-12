@@ -17,13 +17,25 @@ public class DayScheduleQueryRepositoryImpl implements DayScheduleQueryRepositor
         QDaySchedule ds = QDaySchedule.daySchedule;
         QPlan p = QPlan.plan;
 
-        DaySchedule daySchedule =  queryFactory.selectFrom(ds)
+        DaySchedule daySchedule = queryFactory.selectFrom(ds)
                 .join(ds.plan, p)
                 .where(ds.dayScheduleId.eq(dayScheduleId)
                         .and(p.planId.eq(planId)))
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .fetchOne();
         return Optional.ofNullable(daySchedule);
+    }
+
+    public Optional<DaySchedule> findByPlanIdAndDayScheduleIdNoLock(Long planId, Long dayScheduleId){
+        QDaySchedule ds = QDaySchedule.daySchedule;
+        QPlan p = QPlan.plan;
+
+        DaySchedule row = queryFactory.selectFrom(ds)
+                .join(ds.plan, p)
+                .where(ds.dayScheduleId.eq(dayScheduleId)
+                        .and(p.planId.eq(planId)))
+                .fetchOne();
+        return Optional.ofNullable(row);
     }
 
     public List<DaySchedule> findByPlanId(Long planId) {

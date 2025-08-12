@@ -1,6 +1,9 @@
 package com.ssafy.backend.plan.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.ssafy.backend.place.dto.RetrievePlaceDetailResponseDTO;
+import com.ssafy.backend.place.entity.Place;
+import com.ssafy.backend.place.service.PlaceService;
 import com.ssafy.backend.plan.dto.request.CreateDayPlaceRequestDTO;
 import com.ssafy.backend.plan.dto.request.RenameMemoRequestDTO;
 import com.ssafy.backend.plan.dto.websocket.DayPlaceSocketDTO;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Controller;
 public class DayPlaceSocketController {
     private final SimpMessagingTemplate messagingTemplate;
     private final DayPlaceService dayPlaceService;
+    private final PlaceService placeService;
 
     @MessageMapping("/dayPlace/{planId}")
     public void handleDayPlaceSocket(@DestinationVariable Long planId,
@@ -31,8 +35,21 @@ public class DayPlaceSocketController {
         switch (dayPlaceSocketDTO.getAction()) {
             case "CREATE":
                 CreateDayPlaceRequestDTO createDayPlaceRequestDTO = dayPlaceSocketDTO.toCreateDayPlaceRequestDTO();
+                RetrievePlaceDetailResponseDTO retrievePlaceDetailResponseDTO = placeService.retrievePlaceDetail(createDayPlaceRequestDTO.getPlaceId());
+
                 Long dayPlaceId = dayPlaceService.createDayPlace(planId, dayPlaceSocketDTO.getDayScheduleId(), createDayPlaceRequestDTO, userId);
                 dayPlaceSocketDTO.setDayPlaceId(dayPlaceId);
+
+                dayPlaceSocketDTO.setGooglePlaceId(retrievePlaceDetailResponseDTO.getGooglePlaceId());
+                dayPlaceSocketDTO.setPlaceName(retrievePlaceDetailResponseDTO.getPlaceName());
+                dayPlaceSocketDTO.setLatitude(retrievePlaceDetailResponseDTO.getLatitude());
+                dayPlaceSocketDTO.setLongitude(retrievePlaceDetailResponseDTO.getLongitude());
+                dayPlaceSocketDTO.setAddress(retrievePlaceDetailResponseDTO.getAddress());
+                dayPlaceSocketDTO.setRating(retrievePlaceDetailResponseDTO.getRating());
+                dayPlaceSocketDTO.setRatingCount(retrievePlaceDetailResponseDTO.getRatingCount());
+                dayPlaceSocketDTO.setImageUrl(retrievePlaceDetailResponseDTO.getImageUrl());
+                dayPlaceSocketDTO.setCategory(retrievePlaceDetailResponseDTO.getCategory());
+
                 messagingTemplate.convertAndSend("/topic/dayPlace/" + planId, dayPlaceSocketDTO);
                 break;
 

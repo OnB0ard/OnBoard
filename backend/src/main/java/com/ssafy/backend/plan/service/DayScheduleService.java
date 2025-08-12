@@ -42,7 +42,9 @@ public class DayScheduleService {
     @Transactional
     public CreateDayScheduleResponseDTO createDaySchedule(Long planId, CreateDayScheduleRequestDTO createDayScheduleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
-        Plan plan = planRepository.findByIdForUpdate(planId);
+        // Plan 쓰지마세요. 일정 넣습니다. Lock
+        Plan plan = planRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다."));
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
@@ -98,6 +100,7 @@ public class DayScheduleService {
                                 .rating(dp.getPlace().getRating())
                                 .ratingCount(dp.getPlace().getRatingCount())
                                 .imageUrl(dp.getPlace().getImageUrl())
+                                .category(dp.getPlace().getCategory())
                                 .build(), Collectors.toList())
                 ));
 
@@ -147,6 +150,7 @@ public class DayScheduleService {
                         .rating(dp.getPlace().getRating())
                         .ratingCount(dp.getPlace().getRatingCount())
                         .imageUrl(dp.getPlace().getImageUrl())
+                        .category(dp.getPlace().getCategory())
                         .build()
                 )
                 .sorted(Comparator.comparing(DayPlaceResponseDTO::getIndexOrder))
@@ -164,7 +168,6 @@ public class DayScheduleService {
     public void renameDaySchedule(Long planId, Long dayScheduleId, RenameDayScheduleRequestDTO renameDayScheduleRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
         Plan plan = validatePlanExistence(planId);
-        DaySchedule daySchedule = validateDaySchedule(dayScheduleId);
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
@@ -172,18 +175,19 @@ public class DayScheduleService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        if(daySchedule.getPlan().getPlanId() != planId)
-        {
-            throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
-        }
+        // 종속 되어있는지 확인하면서 Lock을 걸어요.
+        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleId(planId, dayScheduleId)
+                .orElseThrow(() -> new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다."));
 
         daySchedule.setTitle(renameDayScheduleRequestDTO.getTitle());
     }
 
     @Transactional
-    public boolean updateSchedulePosition(Long planId, Long dayScheduleId, UpdateSchedulePositionRequestDTO updateSchedulePositionRequestDTO, Long userId) {
+    public void updateSchedulePosition(Long planId, Long dayScheduleId, UpdateSchedulePositionRequestDTO updateSchedulePositionRequestDTO, Long userId) {
         User user = validateUserExistence(userId);
-        Plan plan = planRepository.findByIdForUpdate(planId);
+        // plan을 Lock
+        Plan plan = planRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다."));
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
@@ -191,10 +195,10 @@ public class DayScheduleService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleId(planId, dayScheduleId);
-        if(daySchedule == null) {
-            throw new DayScheduleNotExistException("존재하지 않거나 해당 플랜에 속하지 않는 일정입니다.");
-        }
+        // 이제는 내부 Schedule도 역시 Lock을 걸기
+        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleId(planId, dayScheduleId)
+                .orElseThrow(() -> new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다."));
+        
         if (daySchedule.getDayOrder() != updateSchedulePositionRequestDTO.getDayOrder()) {
             throw new ConflictException("기존 위치가 잘못되었거나, 다른 사용자가 작업중입니다.");
         }
@@ -212,14 +216,14 @@ public class DayScheduleService {
             throw new InvalidIndexOrderException("잘못된 위치 입력값 입니다.");
         }
 
-        if (newIndex < oldIndex) {
+        if (oldIndex > newIndex) {
             for (DaySchedule ds : daySchedules) {
                 int idx = ds.getDayOrder();
-                if (idx >= newIndex && idx < oldIndex) {
+                if (idx < oldIndex && idx >= newIndex) {
                     ds.setDayOrder(idx + 1);
                 }
             }
-        } else if (newIndex > oldIndex) {
+        } else if (oldIndex < newIndex) {
             for (DaySchedule ds : daySchedules) {
                 int idx = ds.getDayOrder();
                 if (idx > oldIndex && idx <= newIndex) {
@@ -229,13 +233,14 @@ public class DayScheduleService {
         }
 
         daySchedule.setDayOrder(updateSchedulePositionRequestDTO.getModifiedDayOrder());
-        return true;
     }
 
     @Transactional
     public void deleteDaySchedule(Long planId, Long dayScheduleId, Long userId) {
         User user = validateUserExistence(userId);
-        Plan plan = planRepository.findByIdForUpdate(planId);
+        // Plan 쓰지마세요. 일정 넣습니다. Lock
+        Plan plan = planRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다."));
 
         UserPlan userPlan = userPlanRepository.findByPlanAndUser(plan, user)
                 .orElseThrow(() -> new UserNotInPlanException("당신은 이 방의 참여자가 아닙니다."));
@@ -243,14 +248,9 @@ public class DayScheduleService {
             throw new PendingUserException("당신이 아직 초대되지 않은 방입니다.");
         }
 
-        DaySchedule daySchedule = dayScheduleRepository.findByDayScheduleId(dayScheduleId);
-        if(daySchedule == null) {
-            throw new DayScheduleNotExistException("존재하지 않는 일정입니다.");
-        }
-        if(daySchedule.getPlan().getPlanId() != planId)
-        {
-            throw new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다.");
-        }
+        // daySchedule도 LOCK
+        DaySchedule daySchedule = dayScheduleRepository.findByPlanIdAndDayScheduleId(planId, dayScheduleId)
+                .orElseThrow(() -> new DayScheduleNotInThisPlanException("이 방의 일정이 아닙니다."));
 
         List<DaySchedule> daySchedules = dayScheduleRepository.findByPlanId(planId);
         daySchedules.sort(Comparator.comparingInt(DaySchedule::getDayOrder));
@@ -273,10 +273,5 @@ public class DayScheduleService {
     private Plan validatePlanExistence(Long planId) {
         return planRepository.findById(planId)
                 .orElseThrow(() -> new PlanNotExistException("존재하지 않는 계획입니다. planId=" + planId));
-    }
-
-    private DaySchedule validateDaySchedule(Long dayScheduleId) {
-        return dayScheduleRepository.findById(dayScheduleId)
-                .orElseThrow(() -> new DayScheduleNotExistException("존재하지 않는 일정입니다. dayScheduleId=" + dayScheduleId));
     }
 }

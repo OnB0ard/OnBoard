@@ -144,9 +144,6 @@ const WhiteBoard = ({ planId: planIdProp }) => {
   // 현재 그리고 있는 임시 라인 id
   const tempLineIdRef = useRef(null);
 
-  const [myUuid, setMyUuid] = useState(null);
-  const [usersMap, setUsersMap] = useState({});
-
   const {
     shapes,
     lines,
@@ -183,7 +180,7 @@ const WhiteBoard = ({ planId: planIdProp }) => {
     throttleMs: 24,
   });
 
-  // 초기 로드: planId로 서버 데이터 가져와 store에 초기화(히스토리 포함)
+  // 초기 로드: planId로 서버 데이터 가져와 store에 초기화
   useEffect(() => {
     if (!planId) return;
     (async () => {
@@ -396,7 +393,7 @@ const WhiteBoard = ({ planId: planIdProp }) => {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  // ★ 포인터 위치에서 닿은 노드를 찾아 서버 DELETE + 로컬 제거
+  // 포인터 위치에서 닿은 노드를 찾아 서버 DELETE + 로컬 제거
   const eraseAtPointer = (pointer) => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -566,6 +563,7 @@ const WhiteBoard = ({ planId: planIdProp }) => {
         break;
       case 'text':
         shapeProps = { x: start.x, y: start.y };
+        setShapeType('select'); //text를 하나 생성하면 select로 자동 변경
         break;
       default:
         break;
@@ -757,8 +755,10 @@ const WhiteBoard = ({ planId: planIdProp }) => {
               return (
                 <Text
                   key={id}
+                  fontFamily="Calibri"
                   {...commonProps}
                   {...rest}
+                  strokeWidth={1}
                   onDblClick={() => beginEditText(shape)}
                 />
               );

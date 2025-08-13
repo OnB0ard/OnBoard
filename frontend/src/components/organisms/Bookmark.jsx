@@ -1,8 +1,8 @@
 // 북마크 모음집 
 import React, { useEffect, useRef } from 'react';
-import { useBookmarkStore } from '../../store/mapStore';
-import StarRating from '../atoms/StarRating';
-import PlaceImage from '../atoms/PlaceImage';
+import { useBookmarkStore } from '@/store/mapStore';
+import StarRating from '@/components/atoms/StarRating';
+import PlaceImage from '@/components/atoms/PlaceImage';
 import './Bookmark.css';
 import {createPortal} from 'react-dom';
 

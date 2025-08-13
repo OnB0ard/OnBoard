@@ -418,7 +418,7 @@ const useMapStore = create((set, get) => ({
       name: place.name,
       latitude: place.latitude,
       longitude: place.longitude,
-      primaryCategory: place.primaryCategory || '기타'
+      primaryCategory: place.primaryCategory || place.categories || '기타'
     })));
     
     set({ 

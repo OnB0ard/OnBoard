@@ -19,7 +19,6 @@ import { useInitialWhiteboardPlaces } from '../../hooks/useInitialWhiteboardPlac
 import { usePlanDayScheduleWS } from '../../hooks/usePlanDayScheduleWS';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
-import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 

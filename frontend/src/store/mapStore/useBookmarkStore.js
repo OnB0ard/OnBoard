@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { getPlanBookmark } from '@/apis/planBookmark';
 import useDailyPlanStore from '@/store/useDailyPlanStore';
 
@@ -8,8 +7,7 @@ import useDailyPlanStore from '@/store/useDailyPlanStore';
  * Manages bookmarked places
  */
 const useBookmarkStore = create(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       // 내부 유틸: 안전한 planId 확보
       _resolvePlanId: (planId) => {
         if (planId) return planId;
@@ -335,12 +333,7 @@ const useBookmarkStore = create(
       clearAllBookmarks: () => {
         set({ bookmarkedPlaces: [] });
       }
-    }),
-    {
-      name: 'map-bookmarks', // localStorage에 저장될 키 이름
-      partialize: (state) => ({ bookmarkedPlaces: state.bookmarkedPlaces }),
-    }
-  )
+    })
 );
 
 export default useBookmarkStore;

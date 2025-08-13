@@ -33,6 +33,7 @@ export const useGoogleLogin = () => {
 
           if (response.code === 200) {
             const data = response.body;
+            console.log("response:", response);
 
             // JWT 및 사용자 정보 저장
             setAuth({

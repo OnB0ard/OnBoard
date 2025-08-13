@@ -6,13 +6,24 @@ import './BookmarkModal.css';
 
 const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 }, planId }) => {
   const modalRef = useRef(null);
-  const { bookmarkedPlaces, toggleBookmark } = useBookmarkStore();
+  const { bookmarkedPlaces, toggleBookmark, loadBookmarks } = useBookmarkStore();
 
   // 현재 방(planId)에 맞춰 스토어 활성 플랜 설정
 
   const [isDragging, setIsDragging] = React.useState(false);
 
   // WebSocket 연결은 PlanPage에서 단일로 관리됩니다.
+
+  // 모달이 열릴 때 최신 북마크를 서버에서 로드
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        loadBookmarks(planId);
+      } catch (e) {
+        console.error('BookmarkModal loadBookmarks error:', e);
+      }
+    }
+  }, [isOpen, planId, loadBookmarks]);
 
   // 외부 클릭 감지
   useEffect(() => {

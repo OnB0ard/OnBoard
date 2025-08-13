@@ -826,6 +826,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     e.preventDefault();
     e.stopPropagation();
     
+    // 기존 DailyPlaceBlock 이동 중에는 드롭 존 포커스 효과를 비활성화
+    if (draggedPlaceId) {
+      e.dataTransfer.dropEffect = 'none';
+      console.log('⏭️ DailyPlaceBlock 이동 중 - 드롭 존 활성화 건너뜀');
+      return;
+    }
+
     // 북마크 장소(application/json) 또는 페이지 PlaceBlock(text/plain) 허용
     const hasJsonData = e.dataTransfer.types.includes('application/json');
     const hasTextData = e.dataTransfer.types.includes('text/plain');
@@ -860,6 +867,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     // 드롭 존 시각적 피드백 제거
     e.currentTarget.classList.remove('drop-zone-active');
     
+    // 기존 DailyPlaceBlock 이동 중에는 드롭 존 드롭을 무시
+    if (draggedPlaceId) {
+      console.log('⏭️ DailyPlaceBlock 이동 중 - 드롭 존 드롭 무시');
+      return;
+    }
+
     try {
       // 1. 북마크/기존 장소 (application/json) 처리
       let dragDataStr = e.dataTransfer.getData('application/json');

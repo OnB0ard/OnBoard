@@ -147,6 +147,9 @@ const handleSave = async () => {
       },
       imageFile,
     });
+    if (response?.accessToken) {
+    useAuthStore.getState().setAuth({ accessToken: response.accessToken });
+    }
 
     // Zustand store 업데이트
     // API에서 새로운 이미지 URL을 반환하면 우선 사용, 없으면 로컬 objectURL 또는 기존 URL 사용

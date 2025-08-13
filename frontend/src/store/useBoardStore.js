@@ -12,17 +12,31 @@ const mergeNonNull = (target, patch) =>
     ])
   );
 
-export const useBoardStore = create((set, get) => ({
+  // "값만" 담긴 초기 상태 (액션 함수 제외)
+const INITIAL_STATE = {
   shapes: [],
   lines: [],
   selectedId: null,
   isEditingTextId: null,
   shapeType: 'select',
   color: '#000000',
-
   historyStep: 0,
   shapesHistory: [[]],
   linesHistory: [[]],
+};
+
+export const useBoardStore = create((set, get) => ({
+  // shapes: [],
+  // lines: [],
+  // selectedId: null,
+  // isEditingTextId: null,
+  // shapeType: 'select',
+  // color: '#000000',
+
+  // historyStep: 0,
+  // shapesHistory: [[]],
+  // linesHistory: [[]],
+  ...INITIAL_STATE,
 
   saveHistory: (newShapes, newLines) => {
     const { historyStep, shapesHistory, linesHistory } = get();
@@ -217,7 +231,10 @@ export const useBoardStore = create((set, get) => ({
       const merged = {};
       const keys = ['type','x','y','points','scaleX','scaleY','rotation','text','stroke','width','height','radius','fill'];
       for (const key of keys) {
-        if (has(fields, key)) merged[key] = (fields[key] === null) ? s[key] : fields[key];
+        // if (has(fields, key)) merged[key] = (fields[key] === null) ? s[key] : fields[key];
+        if (has(fields, key) && fields[key] !== undefined) {
+       merged[key] = (fields[key] === null) ? s[key] : fields[key];
+        }
       }
       return { ...s, ...merged };
     });
@@ -236,6 +253,9 @@ export const useBoardStore = create((set, get) => ({
   }),
   setColor: (color) => set(() => ({ color })),
   setSelectedId: (id) => set(() => ({ selectedId: id })),
-  setIsEditingTextId: (id) => set(() => ({ isEditingTextId: id }))
+  setIsEditingTextId: (id) => set(() => ({ isEditingTextId: id })),
+
+  //초기화 액션
+  reset: () => set(() => ({...INITIAL_STATE})),
 }));
 

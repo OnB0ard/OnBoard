@@ -19,6 +19,8 @@ import { useInitialWhiteboardPlaces } from '../../hooks/useInitialWhiteboardPlac
 import { usePlanDayScheduleWS } from '../../hooks/usePlanDayScheduleWS';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
+import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
+import { useBoardStore } from '@/store/useBoardStore';
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -154,6 +156,41 @@ const PlanPage = () => {
     }
   }, [participantError]);
 
+  useEffect(() => {
+    return () => {
+      // 언마운트 시 보드 상태 초기화
+      useBoardStore.getState().reset();
+    };
+  }, []);
+
+  // 참여자 정보 기반으로 접근 상태 결정
+  useEffect(() => {
+    // 에러가 있으면 이미 처리됨
+    if (participantError) return;
+    
+    // 로딩 중이면 대기
+    if (isParticipantLoading) {
+      setAccessStatus('loading');
+      return;
+    }
+
+    const isCreator = false;
+    const isApprovedParticipant = false;
+    const isPendingParticipant = false;
+
+    if (isCreator || isApprovedParticipant) {
+      setAccessStatus('approved');
+      setModalState({ isOpen: false, type: '', message: '' });
+    } else if (isPendingParticipant) {
+      setAccessStatus('pending');
+      setModalState({ isOpen: true, type: 'pending', message: '승인 대기중입니다. 방장의 수락을 기다려주세요.' });
+    } else {
+      setAccessStatus('denied');
+      setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 참여하려면 방장의 수락이 필요합니다.' });
+    }
+  }, [isParticipantLoading, participantError]);
+
+  // 지도 중심 위치 설정
   useEffect(() => {
     if (lastMapPosition) {
       setMapCenter(lastMapPosition);
@@ -326,6 +363,8 @@ const handleGlobalMouseUp = () => {
       clearDayMarkers();
     }
   };
+
+  // 접근 제어 조건부 렌더링
 
   // ...
   if (accessStatus !== 'approved') {

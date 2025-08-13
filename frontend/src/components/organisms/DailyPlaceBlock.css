@@ -184,6 +184,23 @@
   margin-top: 4px;
 }
 
+/* 항상 보이는 메모 인디케이터 */
+.daily-place-block-memo-indicator {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 메모가 없을 때 플레이스홀더 스타일 */
+.memo-placeholder {
+  font-size: 10px;
+  color: #6b7280; /* 더 연한 텍스트 색상 */
+  background-color: #F3F4F6; /* 연한 배경 */
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 0;
+  display: inline-block;
+}
+
 .memo-text {
   font-size: 10px;
   color: #4d4d4d;
@@ -195,6 +212,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 200px; /* 최대 너비 설정 */
+}
+
+.daily-place-block-memo-indicator:hover .memo-text,
+.daily-place-block-memo-indicator:hover .memo-placeholder {
+  filter: brightness(0.97);
 }
 
 .daily-place-block-actions {
@@ -219,8 +241,35 @@
   color: #374151;
 }
 
-/* 기존 버튼 스타일 제거 */
-.memo-button,
-.daily-place-block-remove {
+/* 기존 메모 버튼만 숨김 */
+.memo-button {
   display: none;
-} 
+}
+
+/* 삭제(X) 버튼 스타일 */
+.daily-place-block-remove {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #6b7280;
+  background-color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.daily-place-block-remove:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.daily-place-block-remove:active {
+  transform: scale(0.96);
+}

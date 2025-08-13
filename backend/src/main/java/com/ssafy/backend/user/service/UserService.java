@@ -2,6 +2,7 @@ package com.ssafy.backend.user.service;
 
 import com.ssafy.backend.common.exception.S3UploadFailedException;
 import com.ssafy.backend.common.util.S3Util;
+import com.ssafy.backend.notification.repository.NotificationRepository;
 import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.UserNotExistException;
 import com.ssafy.backend.plan.repository.PlanRepository;
@@ -30,6 +31,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final UserPlanRepository userPlanRepository;
+    private final NotificationRepository notificationRepository;
     private final S3Util s3Util;
     private final ImageValidatorUtil imageValidatorUtil;
     private final PlanRepository planRepository;
@@ -93,6 +95,8 @@ public class UserService {
 
             candidate.get().setUserType(UserType.CREATOR);
         }
+
+        notificationRepository.deleteByImageUserId(userId);
 
         String imageKey = user.getProfileImage();
         if (imageKey != null && !imageKey.isEmpty() && !imageKey.equals("placeholder.png")) {

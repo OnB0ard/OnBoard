@@ -23,7 +23,7 @@ import java.util.Optional;
 public class StompChannelInterceptor implements ChannelInterceptor {
 
     private final JwtUtil jwtUtil;
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {

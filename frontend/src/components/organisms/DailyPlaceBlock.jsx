@@ -113,11 +113,11 @@ const DailyPlaceBlock = ({
       {/* 왼쪽: 작은 이미지 */}
       <div className="daily-place-block-image">
         <img
-          src={place.imageUrl || (place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : 'https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp')}
+          src={place.imageUrl || (place.photos && place.photos[0] ? place.photos[0].getUrl({ maxWidth: 100, maxHeight: 100 }) : '/images/placeImage_default.png')}
           alt={place.name || place.displayName}
           className="daily-place-block-thumbnail"
           onError={(e) => {
-            e.target.src = 'https://i.namu.wiki/i/DK-BcaE6wDCM-N9UJbeQTn0SD9eWgsX9YKWK827rqjbrzDz0-CxW-JFOCiAsUL3CBZ4zE0UDR-p4sLaYPiUjww.webp';
+            e.target.src = '/images/placeImage_default.png';
           }}
         />
       </div>

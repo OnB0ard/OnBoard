@@ -7,7 +7,7 @@ export default function Map({ children }) {
   const setIsMapVisible = useMapCoreStore((state) => state.setIsMapVisible);
 
   const [size, setSize] = useState({ width: 400, height: 400 });
-  const [position, setPosition] = useState({ x: 950, y: 100 });
+  const [position, setPosition] = useState({ x: 900, y: 40 });
 
   return (
     <>

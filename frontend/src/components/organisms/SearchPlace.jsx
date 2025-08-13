@@ -107,17 +107,6 @@ const SearchPlace = ({ isOpen, onClose }) => {
     setIsPlaceDetailModalOpen(true);
   };
 
-  // 현재 planId를 URL에서 추출해 활성 플랜 설정 (PlanPage 컨텍스트)
-  useEffect(() => {
-    try {
-      const path = window.location.pathname;
-      const match = path.match(/plan\/(\d+|[\w-]+)/i);
-      if (match) setActivePlanId(match[1]);
-    } catch (e) {
-      // ignore
-    }
-  }, [setActivePlanId]);
-
   if (!isOpen) return null;
 
   return (

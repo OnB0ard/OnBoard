@@ -9,7 +9,7 @@ export const deleteUserAccount = async () => {
   try {
     console.log("🔍 [deleteUserAccount]");
     
-    const response = await apiClient.delete(`user/`);
+    const response = await apiClient.delete(`user`);
     
     console.log("✅ 회원 탈퇴 성공:", response.data);
     return response.data;

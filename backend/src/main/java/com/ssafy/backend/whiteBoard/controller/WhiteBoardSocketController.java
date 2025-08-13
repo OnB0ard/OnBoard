@@ -78,6 +78,7 @@ public class WhiteBoardSocketController {
                 CreateLineRequestDTO createLineRequestDTO = whiteBoardSocketDTO.toCreateLineRequestDTO();
                 Long lineId = whiteBoardService.createLine(planId, createLineRequestDTO, userId);
                 createLineRequestDTO.setWhiteBoardObjectId(lineId);
+                createLineRequestDTO.setUserId(userId);
                 messagingTemplate.convertAndSend("/topic/whiteboard/" + planId, createLineRequestDTO);
                 break;
             default:

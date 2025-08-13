@@ -18,7 +18,7 @@ export const updateUserProfile = async ({ profileData, imageFile }) => {
     for (let [key, value] of formData.entries()) {
       console.log(`🧪 FormData - ${key}:`, value);
     }
-    const response = await apiClient.put(`user/`, formData, {
+    const response = await apiClient.put(`user`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

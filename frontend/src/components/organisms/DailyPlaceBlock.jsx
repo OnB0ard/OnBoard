@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
 import StarRating from '../atoms/StarRating';
-import CardDropDown from '../atoms/CardDropDown';
-import Icon from '../atoms/Icon';
 import './DailyPlaceBlock.css';
 
 const DailyPlaceBlock = ({
@@ -86,19 +84,7 @@ const DailyPlaceBlock = ({
     }
   };
 
-  const dropdownItems = [
-    {
-      label: '메모',
-      icon: <Icon type="pen" />,
-      onClick: handleMemoClick
-    },
-    {
-      label: '삭제',
-      icon: <Icon type="trash" />,
-      className: 'delete',
-      onClick: () => onRemove && onRemove(place.id)
-    }
-  ];
+  // 드롭다운 제거: 우측에는 삭제(X) 버튼만 표시
 
   return (
     <div 
@@ -135,19 +121,31 @@ const DailyPlaceBlock = ({
         {/* 두 번째 줄: 주소 */}
         <p className="daily-place-block-address" title={place.formatted_address || place.address}>{place.formatted_address || place.address}</p>
         
-        {/* 메모 표시 (있는 경우) */}
-        {memo && (
-          <div className="daily-place-block-memo">
-            <p className="memo-text" title={memo}>{memo}</p>
-          </div>
-        )}
+        {/* 메모 표시 (항상 표시, 클릭 시 메모 모달 오픈) */}
+        <div className="daily-place-block-memo-indicator" onClick={handleMemoClick} role="button">
+          {/* 메모가 있으면 메모 내용, 없으면 플레이스홀더 */}
+          {memo ? (
+            <div className="daily-place-block-memo">
+              <p className="memo-text" title={memo}>{memo}</p>
+            </div>
+          ) : (
+            <div className="daily-place-block-memo">
+              <p className="memo-placeholder" title="메모 추가">메모</p>
+            </div>
+          )}
+        </div>
       </div>
       
-      {/* 오른쪽: 드롭다운 메뉴 */}
+      {/* 오른쪽: 삭제(X) 버튼 */}
       <div className="daily-place-block-actions" ref={dropdownRef}>
-        <CardDropDown items={dropdownItems}>
-          ⋮
-        </CardDropDown>
+        <button
+          type="button"
+          className="daily-place-block-remove"
+          aria-label="삭제"
+          onClick={() => onRemove && onRemove(place.id)}
+        >
+          ✕
+        </button>
       </div>
     </div>
   );

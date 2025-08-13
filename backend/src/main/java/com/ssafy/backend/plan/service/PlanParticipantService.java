@@ -60,8 +60,7 @@ public class PlanParticipantService {
         if (ownerId != null && !ownerId.equals(user.getUserId())) {
             notificationService.create(
                     ownerId,
-                    user.getUserName() + "님이 참여를 요청하였습니다.",
-                    (user.getProfileImage() != null ? s3Util.getUrl(user.getProfileImage()) : null)
+                    plan.getPlanName()+"방에 "+user.getUserName() + "님이 참여를 요청하였습니다."
             );
         }
         return true;
@@ -91,8 +90,7 @@ public class PlanParticipantService {
         //메세지 발송
         notificationService.create(
                 applicant.getUserId(),
-                 plan.getPlanName() + " 방에 수락되었습니다.",
-                (creator.getProfileImage() != null ? s3Util.getUrl(creator.getProfileImage()) : null)
+                 plan.getPlanName() + " 방에 수락되었습니다."
         );
         return true;
     }
@@ -120,9 +118,7 @@ public class PlanParticipantService {
         //메세지 발송
         notificationService.create(
                 applicant.getUserId(),
-                plan.getPlanName() + " 방에 거절되었습니다.",
-                (creator.getProfileImage() != null ? s3Util.getUrl(creator.getProfileImage()) : null)
-        );
+                plan.getPlanName() + " 방에 거절되었습니다.");
         return true;
     }
 

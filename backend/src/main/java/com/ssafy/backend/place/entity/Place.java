@@ -37,7 +37,7 @@ public class Place extends DateEntity {
     @Column(name = "rating_count")
     private Integer ratingCount;
 
-    @Column(name = "place_url")
+    @Column(name = "place_url",length = 1024)
     private String placeUrl;
 
     @Column(name = "image_url", length = 2048)

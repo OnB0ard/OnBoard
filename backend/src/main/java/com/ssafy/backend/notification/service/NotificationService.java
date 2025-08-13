@@ -23,10 +23,11 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final S3Util s3Util;
     @Transactional
-    public void create(Long receiverUserId, String message) {
+    public void create(Long receiverUserId, Long imageUserId, String message) {
         User receiver = userRepository.getReferenceById(receiverUserId);
         notificationRepository.save(Notification.builder()
                 .user(receiver)
+                .imageUserId(imageUserId)
                 .message(message)
                 .build());
     }
@@ -35,13 +36,15 @@ public class NotificationService {
         User user = validateUserExistence(userId);
         List<Notification> notifications  = notificationRepository.findRecent50ByUserId(user.getUserId());
         return notifications.stream()
-                .map(n -> NotificationResponseDTO.builder()
-                        .notificationId(n.getNotificationId())
-                        .message(n.getMessage())
-                        .userImgUrl(s3Util.getUrl(n.getUser().getProfileImage())) // User의 프로필 이미지
-                        .isRead(n.isRead()) // 알림 읽음 여부
-                        .build()
-                )
+                .map(n -> {
+                    User imageUser = validateUserExistence(n.getImageUserId());
+                    return NotificationResponseDTO.builder()
+                            .notificationId(n.getNotificationId())
+                            .message(n.getMessage())
+                            .userImgUrl(s3Util.getUrl(imageUser.getProfileImage())) // User의 프로필 이미지
+                            .isRead(n.isRead()) // 알림 읽음 여부
+                            .build();
+                })
                 .toList();
     }
     @Transactional

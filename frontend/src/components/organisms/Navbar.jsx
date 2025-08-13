@@ -9,6 +9,8 @@ import Icon from "@/components/atoms/Icon";
 import { Button as CustomButton } from "@/components/atoms/Button";
 import { AlarmBell } from "../atoms/AlarmBell";
 import * as Popover from "@radix-ui/react-popover";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useNotificationStore } from "@/store/useNotificationStore";
 
 const Navbar = () => {
   const location = useLocation();
@@ -25,6 +27,9 @@ const Navbar = () => {
   // 로그인 상태 관리
   const { accessToken, clearAuth } = useAuthStore();
   const isLoggedIn = !!accessToken;
+
+  // 알림 store
+  const { items, load, markAsRead, unreadCount, loading } = useNotificationStore();
 
   // 스크롤 이벤트 처리
   useEffect(() => {
@@ -68,6 +73,22 @@ const Navbar = () => {
     setShowLogoutModal(true);
   };
 
+   // Navbar가 처음 마운트될 때 로그인되어 있으면 알림 로드
+  useEffect(() => {
+    if (isLoggedIn) load();
+  }, [isLoggedIn, load]);
+
+  // 라우트 바뀔 때마다 로드 (staleTime 내면 자동 스킵)
+  useEffect(() => {
+    if (isLoggedIn) load();
+    // pathname + search 기준으로 변화 감지
+  }, [isLoggedIn, location.pathname, location.search, load]);
+
+  // Popover 열릴 때마다 새로고침(실시간 느낌)
+  useEffect(() => {
+    if (open && isLoggedIn) load();
+  }, [open, isLoggedIn, load]);
+
   const handleLogoutConfirm = () => {
     clearAuth();
     // localStorage에서도 토큰 정보 제거
@@ -104,6 +125,8 @@ const Navbar = () => {
     }
   };
   
+  const unread = unreadCount(); // 뱃지 숫자
+
   return (
     <div className={getNavbarClass()}>
       <div className="left">
@@ -118,35 +141,121 @@ const Navbar = () => {
           <Button className={`temp ${isFirstSection ? 'landing-text' : ''}`} variant="link">TEST</Button>          
         </Link> */} 
 
-        <Popover.Root>
-          <Popover.Trigger asChild>
-            <button
-              type="button"
-              className="relative"
-              // AlarmBell 자체가 버튼/interactive 컴포넌트면 asChild로 AlarmBell을 직접 감싸도 OK
-            >
-              <AlarmBell count={5} color={isFirstSection ? '#ffffff' : '#000000'} />
-            </button>
-          </Popover.Trigger>
+        {/* 로그인 한 경우에만 알림 아이콘 표시 */}
+        {isLoggedIn && (
+          <Popover.Root open={open} onOpenChange={setOpen}>
+            <Popover.Trigger asChild>
+              <button type="button" className="relative">
+                <AlarmBell count={unread} color={isFirstSection ? '#ffffff' : '#000000'} />
+              </button>
+            </Popover.Trigger>
 
-          {/* 필요하면 Portal로 분리 */}
-          <Popover.Portal>
-            <Popover.Content
-              side="bottom"
-              align="center"
-              sideOffset={8}
-              className="z-[9999] w-[250px] bg-white shadow-xl rounded-xl p-0"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-              onEscapeKeyDown={(e) => e.preventDefault()}
-              onPointerDownCapture={(e) => e.stopPropagation()}
-            >
-              {/* 여기에 알림 목록 등 내용 */}
-              <Popover.Arrow className="fill-white" /> Temp
-              {/* <div className="fill-white" /> Temp */}
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
+            <Popover.Portal>
+              <Popover.Content
+                side="bottom"
+                align="center"
+                sideOffset={8}
+                className="z-[9999] w-[320px] bg-white shadow-xl rounded-xl p-0"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+                onPointerDownCapture={(e) => e.stopPropagation()}
+              >
+                <div className="p-3 border-b font-semibold">알림</div>
+
+                {/* ▼ 리스트 영역: 4행(224px) 이하이면 내용만큼, 초과면 스크롤 */}
+                <div className="w-full p-2"> 
+                  <div className="overflow-auto max-h-[208px] rounded-lg">
+                    {loading && (
+                      <div className="p-4 text-sm text-gray-500">불러오는 중…</div>
+                    )}
+
+                    {/* {!loading && items.length === 0 && (
+                      <div className="p-4 text-sm text-gray-500">새 알림이 없습니다.</div>
+                    )}
+
+                    {!loading && items.map((n) => {
+                      const { notificationId, message, userImgUrl, isRead } = n;
+                      // console.log(items);
+                      return (
+                        <button
+                          key={notificationId}
+                          type="button"
+                          onClick={async () => {
+                            if (!isRead) await markAsRead(notificationId);
+                            setOpen(false);
+                            navigate('/list');
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 ${
+                            isRead ? "opacity-70" : "bg-white"
+                          } min-h-14`}
+                        >
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarImage src={userImgUrl || ""} alt="user" />
+                            <AvatarFallback>U</AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1">
+                            <div className={`text-sm ${isRead ? "" : "font-semibold"}`}>
+                              {message}
+                            </div>
+                          </div>
+
+                          {!isRead && (
+                            <span className="ml-2 inline-block h-2 w-2 rounded-full bg-blue-500" />
+                          )}
+                        </button>
+                      );
+                    })} */}
+
+                      {/*읽은 알림 삭제.ver*/}
+                      {!loading && (() => {
+                        const unreadItems = items.filter((n) => !n.isRead);
+
+                        if (unreadItems.length === 0) {
+                          return (
+                            <div className="p-4 text-sm text-gray-500">새 알림이 없습니다.</div>
+                          );
+                        }
+
+                        return unreadItems.map((n) => {
+                          const { notificationId, message, userImgUrl } = n;
+                          return (
+                            <button
+                              key={notificationId}
+                              type="button"
+                              onClick={async () => {
+                                // 읽기 처리 후 목록에서 사라지게 됨(스토어가 업데이트되면 즉시 필터 반영)
+                                await markAsRead(notificationId);
+                                setOpen(false);
+                                navigate('/list');
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 bg-white min-h-14"
+                            >
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarImage src={userImgUrl || ""} alt="user" />
+                                <AvatarFallback>U</AvatarFallback>
+                              </Avatar>
+
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold">{message}</div>
+                              </div>
+
+                              {/* 읽지 않은 것만 렌더링하므로 파란 점은 옵션 */}
+                              <span className="ml-2 inline-block h-2 w-2 rounded-full bg-blue-500" />
+                            </button>
+                          );
+                        });
+                      })()}
+                  </div>
+                </div>
+
+                <Popover.Arrow className="fill-white" />
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        )}
+
 
         <Button 
           className={`temp ${getTextClass()}`} 

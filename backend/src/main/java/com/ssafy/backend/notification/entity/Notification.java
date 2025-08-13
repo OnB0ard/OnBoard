@@ -25,6 +25,8 @@ public class Notification extends DateEntity {
 
     private NotificationType type; // JOIN_REQUEST, JOIN_ACCEPT, JOIN_REJECT
 
+    private Long imageUserId;
+
     private String message; // 표시할 메시지
 
     @Column(name = "is_read")

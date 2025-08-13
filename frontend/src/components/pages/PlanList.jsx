@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import Card from "../organisms/Card";
 import PlanAddCard from "../organisms/PlanAddCard";
 import PlanPostModal from "../organisms/PlanPostModal";
-import LoadingOverlay from "../atoms/LoadingOverlay";
 import { getPlanList } from "../../apis/planList";
 import { deletePlan } from "../../apis/planDelete";
 import { createPlan } from "../../apis/planCreate";
@@ -84,7 +83,6 @@ const PlanList = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   
   // "계획중인 여행"과 "완료된 여행"을 위한 상태를 분리
@@ -248,7 +246,6 @@ const PlanList = () => {
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     
-    setIsLoading(true);
     try {
       await deletePlan(deleteTarget.planId);
       await fetchPlans(); // 삭제 후 목록 새로고침
@@ -256,7 +253,6 @@ const PlanList = () => {
       alert('계획 삭제에 실패했습니다.');
       console.error('계획 삭제 실패:', error);
     } finally {
-      setIsLoading(false);
       setShowDeleteModal(false);
       setDeleteTarget(null);
     }
@@ -612,8 +608,6 @@ const PlanList = () => {
         ),
         document.getElementById('modal-root') || document.body
       )}
-
-      <LoadingOverlay isVisible={isLoading} message="처리 중..." />
     </>
   );
 };

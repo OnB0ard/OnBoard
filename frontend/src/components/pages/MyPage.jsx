@@ -273,6 +273,12 @@ const MyPage = () => {
                   key={displayProfileImage}
                   src={displayProfileImage}
                   alt="Profile"
+                  onError={(e) => {
+                    const fallback = '/images/profile_default.png';
+                    if (e.currentTarget.src.indexOf(fallback) === -1) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                 />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>

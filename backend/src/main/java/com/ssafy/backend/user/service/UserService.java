@@ -10,6 +10,7 @@ import com.ssafy.backend.user.dto.response.RetrieveProfileResponseDTO;
 import com.ssafy.backend.user.entity.User;
 import com.ssafy.backend.user.exception.NotYourAccountException;
 import com.ssafy.backend.user.repository.UserRepository;
+import com.ssafy.backend.user.util.ImageValidatorUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,8 @@ import java.io.IOException;
 public class UserService {
     private final UserRepository userRepository;
     private final S3Util s3Util;
+    private final ImageValidatorUtil imageValidatorUtil;
+
     @Transactional
     public ModifyProfileResponseDTO modifyProfile(Long userId, @RequestPart ModifyProfileRequestDTO modifyProfileRequestDTO, @RequestPart MultipartFile image) throws IOException {
         User user = validateUserExistence(userId);
@@ -39,6 +42,9 @@ public class UserService {
             // 새 이미지가 들어온 경우 업로드
             if (image != null && !image.isEmpty()) {
                 String newFileName = "users/" + System.currentTimeMillis() + "_" + image.getOriginalFilename();
+
+                imageValidatorUtil.checkFileExtension(image);
+
                 boolean uploaded = s3Util.putObject(newFileName, image.getInputStream(), image.getContentType());
 
                 if (!uploaded) {
@@ -63,6 +69,8 @@ public class UserService {
             throw new NotYourAccountException("본인 계정이 아닙니다.");
         }
         User user = validateUserExistence(userId);
+
+
 
         String imageKey = user.getProfileImage();
         if (imageKey != null && !imageKey.isEmpty() && !imageKey.equals("placeholder.png")) {

@@ -685,6 +685,12 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
             const commonProps = {
               id,
               draggable: isSelectable,
+              dragBoundFunc: isSelectable // select 일 때 적용됨
+                ? (pos) => ({
+                  x: Math.max(0, Math.min(pos.x, stageW)),
+                  y: Math.max(0, Math.min(pos.y, stageH)),
+                })
+              : undefined,
               onClick: () => setSelectedId(id),
               stroke: vStroke,
               strokeWidth: vStrokeWidth,

@@ -44,24 +44,22 @@ const throttle = (fn, wait = 60) => {
 };
 
 // 커서 렌더 (내 커서는 숨김, 입장 순서대로 색상 부여)
-const renderCursors = (users, myUserName, userOrder) =>
-  Object.entries(users).map(([userId, user]) => {
-    // const userName = useAuthStore((s) => s.userName);
-
-    if (userId === myUserName) return null;
+const renderCursors = (users, myUserIdStr, userOrder) =>
+  Object.entries(users).map(([uid, user]) => {
+    if (uid === myUserIdStr) return null;
     const { x, y } = user?.state || {};
     if (x == null || y == null) return null;
 
-    const colorIndex = userOrder.indexOf(userId);
+    const colorIndex = userOrder.indexOf(uid);
     const color = COLORS[colorIndex % COLORS.length] || "gray";
 
     return (
       <Cursor
-        key={userId}
-        userId={userId}
+        key={uid}
+        userId={uid}
         point={[x, y]}
         color={color}
-        label={userId} // 이름표로 표시
+        label={user.displayName} // 서버에서 온 userName
       />
     );
   });
@@ -169,13 +167,15 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
   const userName = useAuthStore((s) => s.userName);
   const accessToken = useAuthStore((s) => s.accessToken);
   // const myEmail = useMemo(() => email || getOrCreateClientId(), [email]);
-  const myUserName = useMemo(() => userName , [userName]);
+  // const myUserName = useMemo(() => userName , [userName]);
 
   // const WS_URL = "http://70.12.247.36:8080/ws";
   const WS_URL = "https://i13a504.p.ssafy.io/ws";
 
+  const myUserId = useAuthStore(s => s.userId);
+  const myUserName = useAuthStore(s => s.userName);
+
   const { connected, users, userOrder, lastDto, pubCount, subCount } = useMouseStomp({
-    userName: myUserName,
     token: accessToken,
     planId,
     wsUrl: WS_URL,
@@ -229,11 +229,15 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
         (action === 'MODIFY_LINE' && Array.isArray(points));
 
       if (isLineCommit) {
-        // 1) 내가 그리고 있던 temp 라인 제거
-        if (tempLineIdRef.current) {
-          removeShapeById(tempLineIdRef.current);
-          tempLineIdRef.current = null;
+
+        // 서버가 넣어준 userId로 '내 커밋' 판단 (타입 안전)
+        if (msg.userId != null && Number(msg.userId) === Number(myUserId)) {
+          if (tempLineIdRef.current) {
+            removeShapeById(tempLineIdRef.current);
+            tempLineIdRef.current = null;
+          }
         }
+        
         // 2) 서버 id로 확정 라인 추가
         const lineId = msg.whiteBoardObjectId ?? Date.now();
         addLine({
@@ -279,8 +283,11 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
           const type = (msg.type || '').toLowerCase();
           updateShapeFieldsCommit(id, {
             type,
-            x: msg.x, y: msg.y,
-            scaleX: msg.scaleX, scaleY: msg.scaleY, rotation: msg.rotation,
+            x: msg.x ?? null,
+            y: msg.y ?? null,
+            scaleX: msg.scaleX ?? null,
+            scaleY: msg.scaleY ?? null,
+            rotation: msg.rotation ?? null,
             text: msg.text ?? null,
             points: msg.points ?? null,
             stroke: msg.stroke ?? null,
@@ -521,6 +528,7 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
       if (lastLine) {
         updateLastLinePoints(lastLine.points);
         sendMessage('MODIFY_LINE', {
+          // userId: myUserId, (서버가 세션에서 채우기 때문에 보낼 필요 X)
           x: lastLine.points[0],
           y: lastLine.points[1],
           points: lastLine.points,
@@ -712,9 +720,13 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
                 if (!isSelectable) return;
                 const x = e.target.x();
                 const y = e.target.y();
+                const sx = e.target.scaleX?.() ?? shape.scaleX ?? 1;
+                const sy = e.target.scaleY?.() ?? shape.scaleY ?? 1;
                 updateShapeFieldsCommit(id, {
                   type,
                   x, y,
+                  scaleX: sx,
+                  scaleY : sy,
                   points: null,
                   text: type === 'text' ? shape.text ?? '' : null
                 });
@@ -722,6 +734,8 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
                   whiteBoardObjectId: id,
                   type: (type || '').toUpperCase(),
                   x, y,
+                  scaleX: sx,
+                  scaleY: sy,
                   points: null,
                   text: type === 'text' ? shape.text ?? '' : null
                 });
@@ -802,7 +816,7 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
         </Layer>
       </Stage>
 
-      {renderCursors(users, myUserName, userOrder)}
+      {renderCursors(users, String(myUserId), userOrder)}
     </>
   );
 };

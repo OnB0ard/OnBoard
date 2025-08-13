@@ -17,6 +17,7 @@ import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
 import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
+import { useBoardStore } from '@/store/useBoardStore';
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -346,6 +347,13 @@ const PlanPage = () => {
       setModalState({ isOpen: true, type: 'error', message: participantError.message || '오류가 발생했습니다.' });
     }
   }, [participantError]);
+
+  useEffect(() => {
+    return () => {
+      // 언마운트 시 보드 상태 초기화
+      useBoardStore.getState().reset();
+    };
+  }, []);
 
   // 참여자 정보 기반으로 접근 상태 결정
   useEffect(() => {

@@ -7,7 +7,7 @@ export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
     const profileBlob = new Blob([JSON.stringify(profileData)], {
       type: "application/json",
     });
-    formData.append("modifyProfileRequestDTO", profileBlob); // ✅ key 이름 맞춤
+    formData.append("modifyProfileRequestDTO", profileBlob); // key 이름 맞춤
 
     if (imageFile) {
       formData.append("image", imageFile);
@@ -25,10 +25,10 @@ export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
       },
     });
 
-    console.log("✅ 프로필 저장 성공:", response.data);
+    console.log(" 프로필 저장 성공:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ 프로필 저장 실패:", error.response?.data || error.message);
+    console.error(" 프로필 저장 실패:", error.response?.data || error.message);
     throw error;
   }
 };

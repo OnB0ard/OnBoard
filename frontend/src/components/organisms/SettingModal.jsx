@@ -66,14 +66,18 @@ const SettingModal = ({ isOpen, onClose }) => {
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  // 모달이 열릴 때 현재 사용자 정보로 초기화
+  // 모달이 열릴 때 스토어 값으로 초기화 (단일 소스: zustand)
   useEffect(() => {
-    if (isOpen) {
-      setNickname(userName || "");
-      setPreviewUrl(profileImage || "/images/profile_default.png");
-      setImageFile(null);
-      setIsEditing(false);
-    }
+    if (!isOpen) return;
+    setLoading(true);
+    // API 호출 없이 현재 스토어 값을 그대로 사용
+    const name = userName ?? "";
+    const imageUrl = profileImage || "/images/profile_default.png";
+    setNickname(name);
+    setPreviewUrl(imageUrl);
+    setImageFile(null);
+    setIsEditing(false);
+    setLoading(false);
   }, [isOpen, userName, profileImage]);
 
   const handlePhotoClick = () => {
@@ -176,7 +180,9 @@ const handleSave = async () => {
           detail: { message: '프로필이 저장되었습니다!', type: 'success', duration: 3000 },
         })
       );
-    } catch (_) {}
+    } catch (_) {
+      // SSR 등 window 미존재 환경 방어
+    }
     onClose();
   } catch (error) {
     console.error("❌ 프로필 저장 실패:", error);
@@ -371,7 +377,9 @@ const handleWithdrawCancel = () => {
                     // 완전한 로그아웃을 위해 persisted auth까지 제거
                     localStorage.removeItem('auth-storage');
                     localStorage.removeItem('landingActiveIndex');
-                  } catch (_) {}
+                  } catch (_) {
+                    // SSR 등 window 미존재 환경 방어
+                  }
                   // 히스토리 대체로 뒤로가기로 돌아오지 않도록 처리
                   window.location.replace('/');
                 }}

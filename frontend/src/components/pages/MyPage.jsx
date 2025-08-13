@@ -6,7 +6,7 @@ import Icon from "../atoms/Icon";
 import SettingModal from "../organisms/SettingModal";
 import "./MyPage.css";
 import Card from "../organisms/Card";
-// import { useAuthStore } from "../../store/useAuthStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { getPlanList } from "../../apis/planList";
 import { deletePlan } from "../../apis/planDelete";
 import "./MyPage.css";
@@ -27,14 +27,14 @@ const MyPage = () => {
   const [slideDirection, setSlideDirection] = useState('none'); // 'left', 'right', 'none'
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  // MyPage에서는 API 응답만으로 프로필 렌더링 (로컬 상태)
-  const [profileName, setProfileName] = useState("");
-  const [profileImageUrl, setProfileImageUrl] = useState("");
-  // SettingModal 저장 후 강제 리렌더 트리거
-  const [profileTick, setProfileTick] = useState(0);
 
-  // 프로필 이미지 URL 생성 (이미지 파일이 있는 경우)
-  const displayProfileImage = profileImageUrl || "/default-profile.png";
+  // zustand store 구독: 프로필 렌더링은 스토어 상태를 단일 소스로 사용
+  const userName = useAuthStore((s) => s.userName);
+  const profileImage = useAuthStore((s) => s.profileImage);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
+
+  // 프로필 이미지 URL (스토어 기반)
+  const displayProfileImage = profileImage || "/images/profile_default.png";
 
   // 화면 크기별 카드 개수 계산 함수
   const getCardsPerPage = () => {
@@ -97,14 +97,7 @@ const MyPage = () => {
     fetchPlans();
   }, [fetchPlans]);
 
-  // SettingModal이 dispatch한 'profile-updated' 이벤트를 수신해 강제 리렌더
-  useEffect(() => {
-    const onProfileUpdated = () => setProfileTick((t) => t + 1);
-    window.addEventListener('profile-updated', onProfileUpdated);
-    return () => window.removeEventListener('profile-updated', onProfileUpdated);
-  }, []);
-
-  // 내 프로필 조회 → 로컬 상태 반영 (API 데이터만 렌더링)
+  // 내 프로필 조회 → 스토어 동기화 (단일 소스 유지)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -114,17 +107,17 @@ const MyPage = () => {
         const name = body?.userName || body?.name || "";
         const image = body?.profileImage || body?.profileImageUrl || body?.imageUrl || "";
         if (!cancelled) {
-          setProfileName(name);
-          setProfileImageUrl(image);
+          updateProfile(name, image);
         }
       } catch (e) {
+        // 조용히 무시: 스토어의 기존 값 사용
         console.error("마이프로필 조회 실패:", e);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [profileTick]);
+  }, [updateProfile]);
 
   // 화면 크기 변경 감지
   useEffect(() => {
@@ -287,7 +280,7 @@ const MyPage = () => {
             {/* 사용자 이름과 설정 버튼 */}
             <div className="profile-name-section">
               <h1 className="profile-name">
-                {(profileName || "사용자")} 님
+                {(userName || "사용자")} 님
               </h1>
               <button
                 onClick={handleSettingClick}

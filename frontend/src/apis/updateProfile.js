@@ -1,6 +1,6 @@
 import apiClient from "@/apis/apiClient";
 
-export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
+export const updateUserProfile = async ({ profileData, imageFile }) => {
   try {
     const formData = new FormData();
 
@@ -14,12 +14,11 @@ export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
     }
 
 
-    console.log("🔍 [updateUserProfile] userId:", userId);
     console.log("🔍 [updateUserProfile] profileData:", profileData);
     for (let [key, value] of formData.entries()) {
       console.log(`🧪 FormData - ${key}:`, value);
     }
-    const response = await apiClient.put(`user/${userId}`, formData, {
+    const response = await apiClient.put(`user/`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

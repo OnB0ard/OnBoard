@@ -23,6 +23,9 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   // Auto scroll hook 분리 적용
   const { startAutoScroll, stopAutoScroll, handleAutoScroll } = useAutoScroll(scrollContainerRef);
   
+  // 일정(일차) 최대 개수 제한
+  const MAX_DAYS = 30;
+  
   // Zustand 스토어에서 상태와 액션들 가져오기
   const {
     // 상태
@@ -116,6 +119,11 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
             // 서버가 브로드캐스트한 새 일차 생성 반영
             const { dayScheduleId, title, dayOrder } = payload || {};
             if (dayScheduleId == null) break;
+            // 최대 일차 제한: 초과 시 수신된 CREATE도 무시
+            if (Array.isArray(dailyPlans) && dailyPlans.length >= MAX_DAYS) {
+              console.warn(`[DaySchedule] CREATE ignored: reached MAX_DAYS (${MAX_DAYS})`);
+              break;
+            }
             const exists = (dailyPlans || []).some((d) => d.id === dayScheduleId);
             if (exists) break;
             const insertIndex = Math.max(0, (typeof dayOrder === 'number' ? dayOrder - 1 : (dailyPlans?.length || 0)));
@@ -1116,10 +1124,17 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
         ))}
           
           <Button 
-            className="add-day-button" 
+            className="add-day-button"
+            disabled={Array.isArray(dailyPlans) && dailyPlans.length >= MAX_DAYS}
+            title={Array.isArray(dailyPlans) && dailyPlans.length >= MAX_DAYS ? `최대 ${MAX_DAYS}일까지만 추가할 수 있어요` : undefined}
             onClick={() => {
+              const count = Array.isArray(dailyPlans) ? dailyPlans.length : 0;
+              if (count >= MAX_DAYS) {
+                alert(`일정은 최대 ${MAX_DAYS}일까지만 생성할 수 있습니다.`);
+                return;
+              }
               // 중복 생성 방지: 로컬 즉시 추가 대신 WS 브로드캐스트만 신뢰
-              const order = (Array.isArray(dailyPlans) ? dailyPlans.length : 0) + 1;
+              const order = count + 1;
               const title = `Day ${order}`;
               try { createDay({ title, dayOrder: order }); } catch (e) { console.warn('createDay send failed', e); }
             }}

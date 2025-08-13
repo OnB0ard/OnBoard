@@ -229,14 +229,9 @@
   background: none;
   border: none;
   outline: none;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 2px 6px;
+  border-radius: 10px;
   transition: all 0.2s ease;
-}
-
-.day-title-input:focus {
-  background-color: white;
-  box-shadow: 0 0 0 2px #3b82f6;
 }
 
 .remove-day-button {
@@ -348,7 +343,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 50px;
+  min-height: 20px;
 }
 
 .add-place-button:hover {
@@ -436,20 +431,20 @@
 
 /* === 드롭 존 스타일 ===*/
 .place-drop-zone {
-  height: 8px;
-  margin: 6px 0;
+  height: 16px;
+  margin: 0;
   border-radius: 4px;
   transition: all 0.2s ease;
   position: relative;
-  background: linear-gradient(90deg, #e5e7eb, #d1d5db, #e5e7eb);
+  background: none;
   opacity: 0.4;
-  border: 1px dashed #d1d5db;
+  border: none;
 }
 
 /* 드래그 오버 시 드롭 존 활성화 */
 .place-drop-zone.drop-zone-active {
   opacity: 1;
-  height: 18px;
+  height: 30px;
   background: linear-gradient(90deg, #10b981, #059669, #10b981);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
   animation: dropIndicatorPulse 1s ease-in-out infinite;

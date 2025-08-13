@@ -1,44 +1,18 @@
 import React, { useRef, useEffect } from 'react';
-import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
+import { useBookmarkStore } from '@/store/mapStore';
 import StarRating from '../atoms/StarRating';
 import PlaceImage from '../atoms/PlaceImage';
-import useBookmarkWebSocket from '../../hooks/useBookmarkWebSocket';
 import './BookmarkModal.css';
-import { useAuthStore } from '../../store/useAuthStore';
 
 const BookmarkModal = ({ isOpen, onClose, onPlaceSelect, position = { x: 0, y: 0 }, planId }) => {
   const modalRef = useRef(null);
-  const {
-    bookmarkedPlaces,
-    toggleBookmark,
-    clearAllBookmarks,
-    setActivePlanId,
-    setBookmarkWsSenders,
-    clearBookmarkWsSenders,
-    handleBookmarkWsMessage,
-  } = useBookmarkStore();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { bookmarkedPlaces, toggleBookmark } = useBookmarkStore();
 
   // 현재 방(planId)에 맞춰 스토어 활성 플랜 설정
 
   const [isDragging, setIsDragging] = React.useState(false);
 
-  // WebSocket 연결 설정 (신규 공통 훅)
-  const { sendMessage, sendCreate, sendDelete } = useBookmarkWebSocket({
-    planId,
-    onMessage: (msg) => {
-      // 서버에서 오는 표준 메시지(action: 'CREATE' | 'DELETE' ... )를 스토어 핸들러로 전달
-      handleBookmarkWsMessage(msg);
-    },
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    wsUrl: 'https://i13a504.p.ssafy.io/ws',
-  });
-
-  // 스토어에 WS 발신기 연결/해제 (토글 액션에서 사용)
-  useEffect(() => {
-    setBookmarkWsSenders({ sendCreate, sendDelete });
-    return () => clearBookmarkWsSenders();
-  }, [sendCreate, sendDelete, setBookmarkWsSenders, clearBookmarkWsSenders]);
+  // WebSocket 연결은 PlanPage에서 단일로 관리됩니다.
 
   // 외부 클릭 감지
   useEffect(() => {

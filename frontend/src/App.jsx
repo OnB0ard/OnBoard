@@ -10,6 +10,7 @@ import PrivateRoute from './router/PrivateRoute'
 import PlanAccessRoute from './router/PlanAccessRoute'
 import NotFound from './components/pages/NotFound'
 import { useAuthStore } from './store/useAuthStore'
+import { ToastProvider } from '@/components/atoms/Toast'
 
 function App() {
   // 프로필 변경 시 마이페이지를 remount시키기 위한 키
@@ -17,7 +18,7 @@ function App() {
   const profileImage = useAuthStore((s) => s.profileImage)
 
   return (
-    <>
+    <ToastProvider>
       <Navbar/>
       <Routes>
         <Route path="/" element={<Landing/>} />
@@ -33,7 +34,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/not-found" element={<NotFound />} />
       </Routes>
-    </>
+    </ToastProvider>
   )
 }
 

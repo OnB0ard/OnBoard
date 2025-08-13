@@ -47,9 +47,9 @@
 .right {
   flex-basis: 35%;
   flex-direction: row;
-  align-items: flex-end;
+  align-items: center; /* 수직 가운데 정렬 */
   gap: 5%; /* temp 간 간격 */
-  margin-top: 12px;
+  margin-top: 0; /* 아래쪽으로 쳐지는 현상 제거 */
 }
 
 .home {
@@ -213,7 +213,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  top: 1px;
+  top: 2.5px; /* 살짝 아래로 */
 }
 
 /* 숫자 뱃지 */

@@ -9,9 +9,11 @@ import static com.ssafy.backend.plan.entity.QPlan.plan;
 import static com.ssafy.backend.user.entity.QUserPlan.userPlan;
 
 import com.ssafy.backend.user.entity.User;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class PlanQueryRepositoryImpl implements PlanQueryRepository {
@@ -26,5 +28,13 @@ public class PlanQueryRepositoryImpl implements PlanQueryRepository {
                 .join(userPlan.plan, plan)
                 .where(userPlan.user.eq(user))
                 .fetch();
+    }
+
+    public Plan lockPlan(Long planId) {
+        QPlan p = QPlan.plan;
+        return jpaQueryFactory.selectFrom(p)
+                .where(p.planId.eq(planId))
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .fetchOne();
     }
 }

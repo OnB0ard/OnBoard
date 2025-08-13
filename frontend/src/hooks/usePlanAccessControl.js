@@ -39,13 +39,29 @@ export function usePlanAccessControl(planId) {
         setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 접근할 권한이 없습니다. 참여를 요청하시겠습니까?' });
       }
     } catch (error) {
-      if (error.response?.status === 403 && error.response?.data?.body?.code === 'PLAN-013') {
-        setAccessStatus('denied');
-        setModalState({ isOpen: true, type: 'permission', message: '이 플랜에 접근할 권한이 없습니다. 참여를 요청하시겠습니까?' });
-      } else {
-        setAccessStatus('denied');
-        setModalState({ isOpen: true, type: 'error', message: '접근 권한을 확인하는 중 오류가 발생했습니다.' });
+      const status = error?.response?.status;
+      const code = error?.response?.data?.body?.code;
+
+      // 플랜이 존재하지 않는 경우: 404 또는 백엔드 정의 코드에 맞춰 404로 이동
+      if (status === 404 || code === 'PLAN-001' || code === 'PLAN-010') {
+        navigate('/not-found', { replace: true });
+        return;
       }
+
+      // 권한 부족 케이스 (예: 초대/승인 필요)
+      if (status === 403 && code === 'PLAN-013') {
+        setAccessStatus('denied');
+        setModalState({
+          isOpen: true,
+          type: 'permission',
+          message: '이 플랜에 접근할 권한이 없습니다. 참여를 요청하시겠습니까?',
+        });
+        return;
+      }
+
+      // 기타 오류는 에러 모달 표시
+      setAccessStatus('denied');
+      setModalState({ isOpen: true, type: 'error', message: '접근 권한을 확인하는 중 오류가 발생했습니다.' });
     }
   }, [planId, userId, navigate, fetchMyRole]);
 

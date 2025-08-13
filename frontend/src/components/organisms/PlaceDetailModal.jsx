@@ -28,18 +28,11 @@ const PlaceDetailModal = () => {
   // 모달이 열리거나 선택 장소가 바뀔 때 서버 북마크 동기화
   // loadBookmarks는 내부에서 안전하게 planId를 해석합니다.
   useEffect(() => {
-    if (!isPlaceDetailModalOpen || !place) return;
+    if (!isPlaceDetailModalOpen) return;
     if (loadBookmarks) {
-      console.debug('[PlaceDetailModal] syncing bookmarks from server. planId=', planId, 'place=', {
-        name: place?.placeName || place?.name,
-        googlePlaceId: place?.googlePlaceId || place?.place_id,
-        address: place?.address || place?.formatted_address,
-        lat: place?.latitude,
-        lng: place?.longitude,
-      });
       loadBookmarks(planId);
     }
-  }, [isPlaceDetailModalOpen, planId, place, loadBookmarks]);
+  }, [isPlaceDetailModalOpen, planId, loadBookmarks]);
 
 
   // 3. 모달 위치를 화면 중앙으로 고정
@@ -104,10 +97,7 @@ const PlaceDetailModal = () => {
         await toggleBookmark(place, planId);
       }
     } finally {
-      // 액션 후 서버 상태 재조회(저우선 동기화)
-      startTransition(() => {
-        loadBookmarks?.(planId);
-      });
+      // 불필요한 즉시 재요청을 제거하여 토글 반응성 향상
     }
   };
 

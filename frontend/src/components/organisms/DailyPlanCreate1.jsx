@@ -713,6 +713,22 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const target = e.currentTarget;
     const dropPosition = target.getAttribute('data-drop-position');
     const toCount = dailyPlans?.[targetDayIndex]?.places?.length || 0;
+    
+    // 동일 일차 내 인접 드롭은 순서 변화가 없으므로 취소 처리
+    // 예: 2번을 3번의 상단(top)으로 드롭하거나, 3번을 2번의 하단(bottom)으로 드롭
+    if (sourceDayIndex === targetDayIndex) {
+      if (dropPosition === 'top' && targetPlaceIndex === sourcePlaceIndex + 1) {
+        console.log('✅ 인접 상단 드롭 - 순서 변화 없음, 취소');
+        handlePlaceDragEnd(e);
+        return;
+      }
+      if (dropPosition === 'bottom' && targetPlaceIndex === sourcePlaceIndex - 1) {
+        console.log('✅ 인접 하단 드롭 - 순서 변화 없음, 취소');
+        handlePlaceDragEnd(e);
+        return;
+      }
+    }
+
     // 기본 1-based 계산: top= i+1, bottom= i+2
     let modifiedOrder1b = (dropPosition === 'bottom') ? (targetPlaceIndex + 2) : (targetPlaceIndex + 1);
     

@@ -9,8 +9,7 @@ import Card from "../organisms/Card";
 import { useAuthStore } from "../../store/useAuthStore";
 import { getPlanList } from "../../apis/planList";
 import { deletePlan } from "../../apis/planDelete";
-import "./MyPage.css";
-import { getMyProfile } from "../../apis/updateProfile";
+ 
 
 
 const MyPage = () => {
@@ -96,28 +95,6 @@ const MyPage = () => {
   useEffect(() => {
     fetchPlans();
   }, [fetchPlans]);
-
-  // 내 프로필 조회 → 스토어 동기화 (단일 소스 유지)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await getMyProfile();
-        const body = res?.body ?? res;
-        const name = body?.userName || body?.name || "";
-        const image = body?.profileImage || body?.profileImageUrl || body?.imageUrl || "";
-        if (!cancelled) {
-          updateProfile(name, image);
-        }
-      } catch (e) {
-        // 조용히 무시: 스토어의 기존 값 사용
-        console.error("마이프로필 조회 실패:", e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [updateProfile]);
 
   // 화면 크기 변경 감지
   useEffect(() => {

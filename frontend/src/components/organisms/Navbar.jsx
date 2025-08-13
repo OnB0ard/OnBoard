@@ -76,6 +76,12 @@ const Navbar = () => {
     // 랜딩 페이지로 이동
     navigate('/');
     setShowLogoutModal(false);
+    // 토스트 표시
+    window.dispatchEvent(
+      new CustomEvent('app:toast', {
+        detail: { message: '로그아웃 되었습니다!', type: 'success', duration: 2000 },
+      })
+    );
   };
 
   const handleLogoutCancel = () => {

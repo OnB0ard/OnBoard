@@ -49,6 +49,9 @@ export const useGoogleLogin = () => {
 
             console.log("로그인 성공! 사용자 상태 저장 완료");
             console.log(data);
+
+            // Show toast
+            window.dispatchEvent(new CustomEvent('app:toast', { detail: { message: '로그인 되었습니다!', type: 'success', duration: 2000 } }));
           } else {
             console.error("서버 응답 에러:", response);
           }

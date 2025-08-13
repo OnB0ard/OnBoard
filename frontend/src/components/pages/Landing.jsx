@@ -104,22 +104,22 @@ function Landing() {
     {
       title: "함께 떠날 친구를 초대해보세요",
       desc: "링크 하나로 쉽게 초대하고 실시간으로 함께 계획할 수 있어요.",
-      media: "/videos/invite.mp4", // 또는 /gifs/invite.gif
+      media: "/videos/invite.mp4",
     },
     {
-      title: "실시간 화이트보드로 계획을 자유롭게 그려보세요",
+      title: "실시간 화이트보드로 계획을 \n 자유롭게 그려보세요",
       desc: "아이디어를 마음껏 그리고, 메모하고, 지울 수 있어요.",
       media: "/videos/whiteboard.mp4",
     },
     {
-      title: "마음에 드는 장소, 가고싶은 곳을 북마크에 담아두세요",
+      title: "마음에 드는 장소, 가고싶은 곳을 \n북마크에 담아두세요",
       desc: "여행 중 가고 싶은 곳을 저장하고 함께 볼 수 있어요.",
       media: "/videos/bookmark.mp4",
     },
     {
-      title: "지도를 보며 손쉽게 일정을 추가할 수 있어요",
+      title: "지도를 보며 손쉽게 일정을 \n 추가할 수 있어요",
       desc: "드래그 앤 드롭으로 일정을 완성할 수 있어요.",
-      media: "/videos/map.mp4",
+      media: "/videos/dailyplan.mp4",
     },
   ];
 
@@ -132,9 +132,7 @@ function Landing() {
         {/* Hero Section */}
         <FullpageSection>
           <div className="hero-section">
-            <video autoPlay loop muted playsInline className="hero-bg">
-              <source src="/videos/airplane.mp4" type="video/mp4" />
-            </video>
+            <img src="/gif/airplane.gif" alt="" className="hero-bg" />
             <div className="hero-overlay"></div>
 
             <div className="hero-content">
@@ -167,7 +165,7 @@ function Landing() {
         {/* 기능별 시연 섹션 */}
         {features.map((f, idx) => (
           <FullpageSection key={idx}>
-            <div className="feature-showcase">
+            <div className={`feature-showcase ${idx % 2 ? 'reverse' : ''} ${idx === 0 ? 'invite' : ''} ${idx === 2 ? 'bookmark' : ''}`}>
               <motion.div
                 className="feature-text"
                 initial={{ opacity: 0, x: -50 }}
@@ -176,6 +174,13 @@ function Landing() {
               >
                 <h2>{f.title}</h2>
                 <p>{f.desc}</p>
+                {idx === 0 && (
+                  <img
+                    src="/images/invite.png"
+                    alt="초대 아이콘"
+                    className="feature-icon"
+                  />
+                )}
               </motion.div>
               <motion.div
                 className="feature-media"

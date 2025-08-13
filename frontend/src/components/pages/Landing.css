@@ -219,37 +219,100 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3rem;
-  padding: 2rem;
-  max-width: 1000px;
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
+/* Zigzag (alternate) layout */
+.feature-showcase.reverse {
+  flex-direction: row-reverse;
+}
+
 .feature-text {
-  flex: 1;
+  flex: 0.8; /* bias slightly smaller than media */
   text-align: left;
+  max-width: 520px;
 }
 
 .feature-text h2 {
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 1rem;
+  white-space: pre-line; /* render \n as line breaks */
+}
+
+/* Bookmark section: only break at explicit \n, avoid other wrapping */
+.feature-showcase.bookmark .feature-text h2 {
+  white-space: pre; /* respects \n, no auto-wrap */
 }
 
 .feature-text p {
-  font-size: 1rem;
+  font-size: 18px;
   color: #555;
 }
 
+/* Invite section: make description single line */
+.feature-showcase.invite .feature-text p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feature-text .feature-icon,
+.feature-icon {
+  width: 500px;
+  height: auto;
+  margin-top: 0.75rem;   /* add space from text */
+  margin-bottom: 0.5rem;
+  max-width: 100%;
+}
+
 .feature-media {
-  flex: 1;
+  flex: 1.2;
   display: flex;
   justify-content: center;
+  overflow: hidden;          /* crop inner media */
+  border-radius: 9px;        /* rounded corners on container */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
 .feature-media video,
 .feature-media img {
+  width: 100%;
   max-width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  min-width: 500px;
+  max-height: 70vh;
+  border-radius: 0;          /* radius handled by container */
+  box-shadow: none;          /* shadow handled by container */
+  object-fit: cover;         /* keep content fill */
+  transform: scale(1.02);    /* subtle crop on all sides */
+  transform-origin: center;
+  /* reduce edge artifacts */
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Crop inner edge of media relative to layout to avoid visible seams */
+.feature-showcase:not(.reverse) .feature-media video,
+.feature-showcase:not(.reverse) .feature-media img {
+  /* media on the right: crop right edge */
+  clip-path: inset(0 2px 0 0);
+  -webkit-clip-path: inset(0 2px 0 0);
+}
+
+.feature-showcase.reverse .feature-media video,
+.feature-showcase.reverse .feature-media img {
+  /* media on the left: crop left edge */
+  clip-path: inset(0 0 0 2px);
+  -webkit-clip-path: inset(0 0 0 2px);
+}
+
+/* Avoid overlap with right-side dot controller on wide screens */
+@media (min-width: 1024px) {
+  .feature-showcase {
+    padding-right: 80px; /* reserve space for .dot-controller (right:20px + size) */
+    gap: 5rem;        /* increase column spacing on desktop */
+  }
 }

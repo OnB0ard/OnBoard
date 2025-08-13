@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, startTransition } from 'react';
 import { usePlaceDetailsStore, useBookmarkStore } from '../../store/mapStore';
 import useDailyPlanStore from '@/store/useDailyPlanStore';
 import StarRating from '../atoms/StarRating';
@@ -15,7 +15,6 @@ const PlaceDetailModal = () => {
   const loadBookmarks = useBookmarkStore((state) => state.loadBookmarks);
   const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
   // 서버에서 받아온 북마크 목록에 구독하여, 목록이 갱신되면 모달이 다시 렌더링되도록 함
-  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
   const planId = useDailyPlanStore((state) => state.planId || state.currentPlanId);
   
   const modalRef = useRef(null);
@@ -42,12 +41,6 @@ const PlaceDetailModal = () => {
     }
   }, [isPlaceDetailModalOpen, planId, place, loadBookmarks]);
 
-  // 북마크 목록이 갱신될 때 진단 로그
-  useEffect(() => {
-    if (!isPlaceDetailModalOpen || !place) return;
-    console.debug('[PlaceDetailModal] bookmarkedPlaces updated len=', bookmarkedPlaces?.length,
-      'isBookmarked=', isPlaceBookmarked);
-  }, [bookmarkedPlaces, isPlaceDetailModalOpen, place, isPlaceBookmarked]);
 
   // 3. 모달 위치를 화면 중앙으로 고정
   const safePositionStyle = useMemo(() => ({
@@ -74,6 +67,9 @@ const PlaceDetailModal = () => {
   const handleToggleBookmark = async () => {
     if (!place) return;
     try {
+      // 핸들러 내에서만 스토어 스냅샷을 읽어 목록 접근 (모달 리렌더 방지)
+      const { bookmarkedPlaces } = useBookmarkStore.getState();
+      const list = bookmarkedPlaces || [];
       if (isPlaceBookmarked) {
         // 서버 동기화된 목록에서 일치 항목을 찾아 제거
         const cName = (place.placeName || place.name || '').trim().toLowerCase();
@@ -82,7 +78,7 @@ const PlaceDetailModal = () => {
         const cLat = typeof place.latitude === 'number' ? place.latitude : null;
         const cLng = typeof place.longitude === 'number' ? place.longitude : null;
         const eps = 1e-4;
-        const match = bookmarkedPlaces.find((p) => {
+        const match = list.find((p) => {
           const pName = (p.placeName || p.name || '').trim().toLowerCase();
           const pGid = p.googlePlaceId || p.place_id || null;
           const pBid = p.bookmarkId || p.id || p.placeId || null;
@@ -108,8 +104,10 @@ const PlaceDetailModal = () => {
         await toggleBookmark(place, planId);
       }
     } finally {
-      // 액션 후 서버 상태 재조회로 모달 상태를 즉시 동기화
-      loadBookmarks?.(planId);
+      // 액션 후 서버 상태 재조회(저우선 동기화)
+      startTransition(() => {
+        loadBookmarks?.(planId);
+      });
     }
   };
 

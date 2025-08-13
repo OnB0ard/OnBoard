@@ -2,6 +2,7 @@ import React, { Fragment, useEffect, useState } from 'react';
 
 import DailyPlaceBlock from './DailyPlaceBlock';
 import { Button } from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 const DailyScheduleBlock = ({
   day,
@@ -38,13 +39,23 @@ const DailyScheduleBlock = ({
   // IME(한글 등) 조합 입력에서 버벅임 방지를 위한 로컬 상태
   const [title, setTitle] = useState(day.title || '');
   const [isComposing, setIsComposing] = useState(false);
+  const MAX_TITLE_LEN = 15; // 일차 제목 최대 길이
+  const [isCollapsed, setIsCollapsed] = useState(false); // 장소 리스트 접기/펼치기 상태
 
   // 외부 day.title 변경 시(다른 곳에서 수정되었을 때) 조합 중이 아니면 동기화
   useEffect(() => {
     if (!isComposing) {
-      setTitle(day.title || '');
+      const synced = (day.title || '').slice(0, MAX_TITLE_LEN);
+      setTitle(synced);
     }
   }, [day.title, isComposing]);
+
+  // 어떤 경로로든 title이 15자를 넘으면 즉시 보정
+  useEffect(() => {
+    if ((title || '').length > MAX_TITLE_LEN) {
+      setTitle((title || '').slice(0, MAX_TITLE_LEN));
+    }
+  }, [title]);
 
   // 일차 클릭 핸들러 (드래그와 구분)
   const handleDayClick = (e) => {
@@ -82,39 +93,99 @@ const DailyScheduleBlock = ({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       onDragLeave={onDragLeave}
-      onClick={handleDayClick}
-      style={{ cursor: 'pointer' }}
+      style={{}}
     >
       <div className="day-header">
+        <span className="day-title inline-block border border-gray-200 bg-gray-50 rounded-lg px-2 py-1 mr-2">
         <input
           type="text"
           value={title}
+          maxLength={MAX_TITLE_LEN}
+          onInput={(e) => {
+            const v = (e.target.value || '').slice(0, MAX_TITLE_LEN);
+            if (v !== title) setTitle(v);
+          }}
+          onKeyDown={(e) => {
+            if (isComposing) return; // 조합 중에는 차단하지 않음
+            const controlKey = e.ctrlKey || e.metaKey || e.altKey;
+            const isNavOrEditKey = [
+              'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'
+            ].includes(e.key);
+            if (!controlKey && !isNavOrEditKey && (title || '').length >= MAX_TITLE_LEN) {
+              e.preventDefault();
+            }
+          }}
+          onPaste={(e) => {
+            const paste = (e.clipboardData?.getData('text') || '');
+            if (!paste) return;
+            const selectionStart = e.currentTarget.selectionStart ?? (title || '').length;
+            const selectionEnd = e.currentTarget.selectionEnd ?? selectionStart;
+            const current = title || '';
+            const nextRaw = current.slice(0, selectionStart) + paste + current.slice(selectionEnd);
+            const next = nextRaw.slice(0, MAX_TITLE_LEN);
+            if (next !== nextRaw) {
+              e.preventDefault();
+              setTitle(next);
+              if (!isComposing) {
+                onUpdateTitle(day.id, next);
+              }
+            }
+          }}
           onChange={(e) => {
-            setTitle(e.target.value);
+            const newValue = (e.target.value || '').slice(0, MAX_TITLE_LEN);
+            setTitle(newValue);
             if (!isComposing) {
-              onUpdateTitle(day.id, e.target.value);
+              onUpdateTitle(day.id, newValue);
             }
           }}
           onCompositionStart={() => setIsComposing(true)}
+          onCompositionUpdate={(e) => {
+            // 조합 중에도 표시값이 15자를 넘지 않도록 즉시 보정
+            const composingValue = (e.target.value || '').slice(0, MAX_TITLE_LEN);
+            if (composingValue !== title) {
+              setTitle(composingValue);
+            }
+          }}
           onCompositionEnd={(e) => {
             setIsComposing(false);
-            onUpdateTitle(day.id, e.target.value);
+            const composedValue = (e.target.value || '').slice(0, MAX_TITLE_LEN);
+            setTitle(composedValue);
+            onUpdateTitle(day.id, composedValue);
           }}
           onBlur={() => {
-            if (title !== day.title) {
-              onUpdateTitle(day.id, title);
+            const finalValue = (title || '').slice(0, MAX_TITLE_LEN);
+            if (finalValue !== day.title) {
+              setTitle(finalValue);
+              onUpdateTitle(day.id, finalValue);
             }
           }}
           className="day-title-input"
         />
+        </span>
+          <button
+            onClick={() => setIsCollapsed((v) => !v)}
+            className="border-none bg-transparent rounded-md mr-2 cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center px-3 h-11"
+            aria-label={isCollapsed ? '장소 목록 펼치기' : '장소 목록 접기'}
+          >
+            <Icon type={isCollapsed ? "chevron-down" : "chevron-up"} />
+          </button>
+          <button
+            onClick={() => onDayClick(dayIndex)}
+            className="border-none bg-transparent rounded-md mr-2 cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
+            aria-label="일차 위치를 지도에서 보기"
+          >
+            <Icon type="map" />
+          </button>
+        <span>
         <button
           onClick={() => onRemoveDay(day.id)}
           className="remove-day-button"
         >
           삭제
         </button>
+        </span>
       </div>
-
+      {!isCollapsed && (
       <div className="places-container">
         {/* 첫 번째 장소 위 드롭 존 */}
         {places.length > 0 && (
@@ -172,9 +243,10 @@ const DailyScheduleBlock = ({
           className="add-place-button"
           onClick={(e) => onAddPlaceClick(e, dayIndex)}
         >
-          +
+          북마크 열기
         </Button>
       </div>
+      )}
     </div>
   );
 };

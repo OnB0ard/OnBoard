@@ -11,4 +11,5 @@ public class MousePositionDTO {
     private String userName;
     private double x;
     private double y;
+    private Long userId;
 }

@@ -36,6 +36,8 @@ export function usePlaceBlockSync({ planId, accessToken, wsUrl = 'https://i13a50
           if (!objectInfo || !whiteBoardPlace) break;
           const position = { x: objectInfo.x, y: objectInfo.y };
           const place = {
+            // 서버의 화이트보드 오브젝트 PK를 로컬 블록 id로 사용해 동기화 일관성 유지
+            id: whiteBoardObjectId,
             placeId: placeId,
             googlePlaceId: whiteBoardPlace.googlePlaceId,
             placeName: whiteBoardPlace.placeName,

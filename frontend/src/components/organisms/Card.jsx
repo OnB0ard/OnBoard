@@ -197,112 +197,125 @@ const Card = ({
 
         {/* 버튼 영역 */}
         <div className="flex justify-end gap-2 pt-2 mt-auto">
-          {userStatus !== 'APPROVED' ? (
-            <div className="text-gray-500 font-semibold py-2 px-4">
-              승인 대기 중
-            </div>
-          ) : (
-            <>
-              {/* 참여자 보기 팝오버 */}
-              <Popover.Root 
-                open={isParticipantOpen} 
-                onOpenChange={(open) => {
-                  if (open) {
-                    fetchParticipants(id); // 서버에서 최신 참여자 정보 가져오기
-                  }
-                  toggleParticipantPopover(id);
-                }}
-              >
-                                 <Popover.Trigger asChild>
-                   <button 
-                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] border border-gray-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100/60"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     참여자 보기
-                   </button>
-                 </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content 
-                    side="top" 
-                    align="center" 
-                    sideOffset={8} 
-                    className="z-[9999]"
-                    style={{ 
-                      position: 'fixed !important',
-                      transform: 'none !important',
-                      transition: 'none !important',
-                      top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
-                      left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
-                      width: '288px !important',
-                      height: 'auto !important',
-                      pointerEvents: 'auto !important',
-                      inset: 'auto !important',
-                      margin: '0 !important',
-                      padding: '0 !important',
-                      zIndex: '9999 !important'
+          {(() => {
+            if (userStatus == 'PENDING') {
+              return (
+                <div className="text-gray-500 font-semibold py-2 px-4">
+                  승인 대기 중
+                </div>
+              );
+            } 
+            else if (userStatus == 'APPROVED') {
+              return (
+                <>
+                  {/* 참여자 보기 팝오버 */}
+                  <Popover.Root 
+                    open={isParticipantOpen} 
+                    onOpenChange={(open) => {
+                      if (open) {
+                        fetchParticipants(id); // 서버에서 최신 참여자 정보 가져오기
+                      }
+                      toggleParticipantPopover(id);
                     }}
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                    onCloseAutoFocus={(e) => e.preventDefault()}
-                    onEscapeKeyDown={(e) => e.preventDefault()}
-                    onPointerDownCapture={(e) => e.stopPropagation()}
                   >
-                    <ViewParticipantModal 
-                      planId={id}
-                      isOpen={isParticipantOpen}
-                      onClose={() => toggleParticipantPopover(id)}
-                      onRequestConfirm={onRequestConfirm}
-                      hideManageActions={hideManageActions}
-                    />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
+                                     <Popover.Trigger asChild>
+                       <button 
+                         className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] border border-gray-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100/60"
+                         onClick={(e) => e.stopPropagation()}
+                       >
+                         참여자 보기
+                       </button>
+                     </Popover.Trigger>
+                    <Popover.Portal>
+                      <Popover.Content 
+                        side="top" 
+                        align="center" 
+                        sideOffset={8} 
+                        className="z-[9999]"
+                        style={{ 
+                          position: 'fixed !important',
+                          transform: 'none !important',
+                          transition: 'none !important',
+                          top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
+                          left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
+                          width: '288px !important',
+                          height: 'auto !important',
+                          pointerEvents: 'auto !important',
+                          inset: 'auto !important',
+                          margin: '0 !important',
+                          padding: '0 !important',
+                          zIndex: '9999 !important'
+                        }}
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                        onEscapeKeyDown={(e) => e.preventDefault()}
+                        onPointerDownCapture={(e) => e.stopPropagation()}
+                      >
+                        <ViewParticipantModal 
+                          planId={id}
+                          isOpen={isParticipantOpen}
+                          onClose={() => toggleParticipantPopover(id)}
+                          onRequestConfirm={onRequestConfirm}
+                          hideManageActions={hideManageActions}
+                        />
+                      </Popover.Content>
+                    </Popover.Portal>
+                  </Popover.Root>
 
-              {/* 공유하기 팝오버 */}
-              <Popover.Root open={isShareOpen} onOpenChange={() => toggleSharePopover(id)}>
-                                 <Popover.Trigger asChild>
-                   <button 
-                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] bg-slate-700 text-white shadow-sm hover:bg-slate-600"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     공유하기
-                   </button>
-                 </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content 
-                    side="top" 
-                    align="center" 
-                    sideOffset={8} 
-                    className="z-[99999]"
-                    style={{ 
-                      position: 'fixed !important',
-                      transform: 'none !important',
-                      transition: 'none !important',
-                      top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
-                      left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
-                      width: '288px !important',
-                      height: 'auto !important',
-                      pointerEvents: 'auto !important',
-                      inset: 'auto !important',
-                      margin: '0 !important',
-                      padding: '0 !important',
-                      zIndex: '99999 !important'
-                    }}
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                    onCloseAutoFocus={(e) => e.preventDefault()}
-                    onEscapeKeyDown={(e) => e.preventDefault()}
-                    onPointerDownCapture={(e) => e.stopPropagation()}
-                  >
-                    <ShareModal 
-                      open={isShareOpen} 
-                      onOpenChange={() => toggleSharePopover(id)} 
-                      planId={id}
-                      onCopySuccess={() => { if (typeof onShowToast === 'function') onShowToast(); }}
-                    />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            </>
-          )}
+                  {/* 공유하기 팝오버 */}
+                  <Popover.Root open={isShareOpen} onOpenChange={() => toggleSharePopover(id)}>
+                                     <Popover.Trigger asChild>
+                       <button 
+                         className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] bg-slate-700 text-white shadow-sm hover:bg-slate-600"
+                         onClick={(e) => e.stopPropagation()}
+                       >
+                         공유하기
+                       </button>
+                     </Popover.Trigger>
+                    <Popover.Portal>
+                      <Popover.Content 
+                        side="top" 
+                        align="center" 
+                        sideOffset={8} 
+                        className="z-[99999]"
+                        style={{ 
+                          position: 'fixed !important',
+                          transform: 'none !important',
+                          transition: 'none !important',
+                          top: modalPosition ? `${modalPosition.top}px !important` : '50vh',
+                          left: modalPosition ? `${modalPosition.left}px !important` : '50vw',
+                          width: '288px !important',
+                          height: 'auto !important',
+                          pointerEvents: 'auto !important',
+                          inset: 'auto !important',
+                          margin: '0 !important',
+                          padding: '0 !important',
+                          zIndex: '99999 !important'
+                        }}
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                        onEscapeKeyDown={(e) => e.preventDefault()}
+                        onPointerDownCapture={(e) => e.stopPropagation()}
+                      >
+                        <ShareModal 
+                          open={isShareOpen} 
+                          onOpenChange={() => toggleSharePopover(id)} 
+                          planId={id}
+                          onCopySuccess={() => { if (typeof onShowToast === 'function') onShowToast(); }}
+                        />
+                      </Popover.Content>
+                    </Popover.Portal>
+                  </Popover.Root>
+                </>
+              );
+            }
+            else {
+              return (
+                <div className="text-gray-500 font-semibold py-2 px-4">
+                </div>
+              );
+            }
+          })()}
         </div>
       
       

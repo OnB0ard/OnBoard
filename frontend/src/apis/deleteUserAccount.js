@@ -5,11 +5,11 @@ import apiClient from "@/apis/apiClient";
  * @param {number} userId - 탈퇴할 사용자의 ID
  * @returns {Promise<Object>} API 응답 데이터
  */
-export const deleteUserAccount = async (userId) => {
+export const deleteUserAccount = async () => {
   try {
-    console.log("🔍 [deleteUserAccount] userId:", userId);
+    console.log("🔍 [deleteUserAccount]");
     
-    const response = await apiClient.delete(`user/${userId}`);
+    const response = await apiClient.delete(`user/`);
     
     console.log("✅ 회원 탈퇴 성공:", response.data);
     return response.data;

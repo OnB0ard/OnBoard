@@ -1,5 +1,6 @@
 package com.ssafy.backend.notification.service;
 
+import com.ssafy.backend.common.util.S3Util;
 import com.ssafy.backend.notification.dto.NotificationResponseDTO;
 import com.ssafy.backend.notification.entity.Notification;
 import com.ssafy.backend.notification.exception.NotificationAccessDeniedException;
@@ -20,11 +21,11 @@ import java.util.List;
 public class NotificationService {
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
+    private final S3Util s3Util;
     @Transactional
-    public void create(Long receiverUserId, String message,String userImgUrl) {
+    public void create(Long receiverUserId, String message) {
         User receiver = userRepository.getReferenceById(receiverUserId);
         notificationRepository.save(Notification.builder()
-                .userImgUrl(userImgUrl)
                 .user(receiver)
                 .message(message)
                 .build());
@@ -37,7 +38,7 @@ public class NotificationService {
                 .map(n -> NotificationResponseDTO.builder()
                         .notificationId(n.getNotificationId())
                         .message(n.getMessage())
-                        .userImgUrl(n.getUser().getProfileImage()) // User의 프로필 이미지
+                        .userImgUrl(s3Util.getUrl(n.getUser().getProfileImage())) // User의 프로필 이미지
                         .isRead(n.isRead()) // 알림 읽음 여부
                         .build()
                 )

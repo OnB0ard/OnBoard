@@ -63,7 +63,23 @@ const PlanMemoModal = ({ isOpen, onClose, memo = '', onSave, placeName = '', day
       
       let x = position.x || 100;
       let y = position.y || 100;
+      // 살짝 위쪽으로 띄우기 위한 오프셋
+      const initialLift = 100; // px
+      y -= initialLift;
       
+      // 일정짜기 모달(DailyPlanCreate)의 경계 안에서 하단을 넘지 않도록 제한
+      const dailyPlanEl = document.querySelector('.daily-plan-modal');
+      const dailyPlanRect = dailyPlanEl ? dailyPlanEl.getBoundingClientRect() : null;
+      if (dailyPlanRect) {
+        const bottomLimit = dailyPlanRect.bottom - 63; // 여백을 늘려 조금 더 위에 배치
+        const topLimit = dailyPlanRect.top + 20; // 상단도 너무 붙지 않도록 여백
+        // 하단 제한: 메모 모달의 바닥이 일정짜기 모달의 바닥을 넘지 않게
+        if (y + modalHeight > bottomLimit) {
+          y = Math.max(topLimit, bottomLimit - modalHeight);
+        }
+        // 좌우는 기존 로직에서 처리
+      }
+
       // 화면 밖으로 나가지 않도록 조정 (더 큰 여백 적용)
       x = Math.max(50, Math.min(screenWidth - modalWidth - 50, x));
       y = Math.max(50, Math.min(screenHeight - modalHeight - 50, y));

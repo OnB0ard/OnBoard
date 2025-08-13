@@ -32,3 +32,14 @@ export const updateUserProfile = async ({ userId, profileData, imageFile }) => {
     throw error;
   }
 };
+
+export const getMyProfile = async () => {
+  try {
+    const response = await apiClient.get("user/retrieve");
+    console.log("✅ 프로필 조회 성공:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ 프로필 조회 실패:", error.response?.data || error.message);
+    throw error;
+  }
+};

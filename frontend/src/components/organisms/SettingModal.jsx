@@ -57,6 +57,7 @@ const SettingModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false); 
   const [isEditing, setIsEditing] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showWithdrawSuccessModal, setShowWithdrawSuccessModal] = useState(false);
   const fileInputRef = useRef(null);
 
   const userId = useAuthStore((state) => state.userId);
@@ -171,7 +172,14 @@ const handleSave = async () => {
       // SSR 등 window 미존재 환경 방어
     }
 
-    alert("프로필이 저장되었습니다.");
+    // 저장 성공 토스트 노출 (3초)
+    try {
+      window.dispatchEvent(
+        new CustomEvent('app:toast', {
+          detail: { message: '프로필이 저장되었습니다!', type: 'success', duration: 3000 },
+        })
+      );
+    } catch (_) {}
     onClose();
   } catch (error) {
     console.error("❌ 프로필 저장 실패:", error);
@@ -185,6 +193,7 @@ const handleWithdraw = () => {
   setShowWithdrawModal(true);
 };
 
+
 const handleWithdrawConfirm = async () => {
   try {
     setLoading(true);
@@ -196,15 +205,8 @@ const handleWithdrawConfirm = async () => {
     // 백엔드 API 호출
     await deleteUserAccount(userId);
     
-    // 로컬 상태 정리
-    clearAuth();
-    localStorage.removeItem('landingActiveIndex');
-    
-    alert("회원 탈퇴가 완료되었습니다.");
-    onClose();
-    
-    // 랜딩 페이지로 이동
-    window.location.href = '/';
+    // 성공 모달 표시 (알림/즉시 이동 대신)
+    setShowWithdrawSuccessModal(true);
   } catch (error) {
     console.error("회원 탈퇴 실패:", error);
     alert("회원 탈퇴 중 오류가 발생했습니다.");
@@ -235,7 +237,16 @@ const handleWithdrawCancel = () => {
 
         <div className="modal-avatar-section">
           <Avatar className="modal-avatar">
-            <AvatarImage src={previewUrl} alt="Profile" />
+            <AvatarImage 
+              src={previewUrl} 
+              alt="Profile" 
+              onError={(e) => {
+                const fallback = '/images/profile_default.png';
+                if (e.currentTarget.src.indexOf(fallback) === -1) {
+                  e.currentTarget.src = fallback;
+                }
+              }}
+            />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <button className="modal-photo-button" onClick={handlePhotoClick}>
@@ -329,6 +340,46 @@ const handleWithdrawCancel = () => {
                 onClick={handleWithdrawConfirm}
               >
                 탈퇴
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 회원 탈퇴 완료 모달 */}
+      {showWithdrawSuccessModal && (
+        <div className="withdraw-modal__backdrop">
+          <div className="withdraw-modal">
+            <div className="withdraw-modal__header">
+              <div className="withdraw-modal__icon">
+                🥹
+              </div>
+              <h2 className="withdraw-modal__title">회원 탈퇴가 완료되었어요</h2>
+            </div>
+            <div className="withdraw-modal__content">
+              <p className="withdraw-modal__message">
+                다시 만날 날을 기다릴게요 :)
+              </p>
+            </div>
+            <div className="withdraw-modal__footer">
+              <Button 
+                background="dark"
+                textColor="white"
+                border="none"
+                className="shadow-sm"
+                onClick={() => {
+                  try {
+                    // refresh 방지 플래그 설정 (페이지 내 세션에만 유지)
+                    sessionStorage.setItem('no-refresh', '1');
+                    clearAuth();
+                    // 완전한 로그아웃을 위해 persisted auth까지 제거
+                    localStorage.removeItem('auth-storage');
+                    localStorage.removeItem('landingActiveIndex');
+                  } catch (_) {}
+                  // 히스토리 대체로 뒤로가기로 돌아오지 않도록 처리
+                  window.location.replace('/');
+                }}
+              >
+                홈으로 가기
               </Button>
             </div>
           </div>

@@ -40,7 +40,7 @@ const useDayMarkersStore = create((set, get) => ({
       name: place.name,
       latitude: place.latitude,
       longitude: place.longitude,
-      primaryCategory: place.primaryCategory || '기타'
+      primaryCategory: place.primaryCategory || place.category || '기타'
     })));
     
     // PlaceBlock 마커 숨기기
@@ -53,7 +53,7 @@ const useDayMarkersStore = create((set, get) => ({
       dayMarkers: validPlaces.map(place => ({
         id: place.id || `day-${dayIndex}-${place.name}`,
         position: { lat: place.latitude, lng: place.longitude },
-        type: place.primaryCategory || '기타',
+        type: place.primaryCategory || place.category || '기타',
         name: place.name,
         dayIndex: dayIndex,
         color: markerColor, // 마커 색상 추가

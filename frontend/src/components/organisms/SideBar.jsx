@@ -111,6 +111,8 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
                 memo: p.memo || '',
                 placeId: p.placeId,
                 googlePlaceId: p.googlePlaceId,
+                category: p.category,
+                primaryCategory: p.category,
                 indexOrder: p.indexOrder,
               })),
           }));

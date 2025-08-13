@@ -10,16 +10,18 @@ import { useStompDaySchedule } from '@/hooks/useStompDaySchedule';
 import { useStompDayPlace } from '@/hooks/useStompDayPlace';
 import { getPlaceDetail } from '@/apis/placeDetail';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAutoScroll } from '@/hooks/daily-plan/useAutoScroll';
 
 import './DailyPlanCreate1.css';
 
 const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, planId }) => {
   const modalRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  const autoScrollIntervalRef = useRef(null);
   const lastLoadedPlanIdRef = useRef(null);
   const saveCacheTimeoutRef = useRef(null);
   const accessToken = useAuthStore((s) => s.accessToken);
+  // Auto scroll hook 분리 적용
+  const { startAutoScroll, stopAutoScroll, handleAutoScroll } = useAutoScroll(scrollContainerRef);
   
   // Zustand 스토어에서 상태와 액션들 가져오기
   const {
@@ -308,51 +310,6 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     }
   }, [isOpen, closeBookmarkModal, closeMemoModal]);
 
-  // === 자동 스크롤 기능 ===
-  const startAutoScroll = (direction, speed = 1) => {
-    if (autoScrollIntervalRef.current) return; // 이미 스크롤 중이면 무시
-    
-    autoScrollIntervalRef.current = setInterval(() => {
-      if (!scrollContainerRef.current) return;
-      
-      const scrollAmount = direction === 'up' ? -5 * speed : 5 * speed;
-      scrollContainerRef.current.scrollTop += scrollAmount;
-    }, 16); // 60fps로 부드러운 스크롤
-  };
-
-  const stopAutoScroll = () => {
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
-  };
-
-  const handleAutoScroll = (e) => {
-    if (!scrollContainerRef.current) return;
-    
-    const container = scrollContainerRef.current;
-    const rect = container.getBoundingClientRect();
-    const mouseY = e.clientY;
-    const scrollZone = 50; // 상단/하단 50px 영역에서 스크롤 트리거
-    
-    // 상단 스크롤 영역
-    if (mouseY < rect.top + scrollZone) {
-      const distance = rect.top + scrollZone - mouseY;
-      const speed = Math.min(distance / scrollZone * 3, 3); // 최대 3배속
-      startAutoScroll('up', speed);
-    }
-    // 하단 스크롤 영역
-    else if (mouseY > rect.bottom - scrollZone) {
-      const distance = mouseY - (rect.bottom - scrollZone);
-      const speed = Math.min(distance / scrollZone * 3, 3); // 최대 3배속
-      startAutoScroll('down', speed);
-    }
-    // 스크롤 영역 밖
-    else {
-      stopAutoScroll();
-    }
-  };
-
   // normalizePlaceData는 이제 스토어에서 제공됨
 
   // --- Day Drag & Drop 핸들러 ---
@@ -386,43 +343,8 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       console.log(`드래그 오버: 일차 ${dayIndex}, 위치: ${isTopHalf ? '상단' : '하단'}`);
     }
     
-    // 자동 스크롤 처리
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const rect = container.getBoundingClientRect();
-      const mouseY = e.clientY;
-      const scrollThreshold = 50;
-      
-      // 상단 경계 근처에서 위로 스크롤
-      if (mouseY - rect.top < scrollThreshold) {
-        const distance = scrollThreshold - (mouseY - rect.top);
-        const speed = Math.min(distance / scrollThreshold * 3, 3);
-        
-        if (!autoScrollIntervalRef.current) {
-          autoScrollIntervalRef.current = setInterval(() => {
-            container.scrollTop -= speed;
-          }, 16);
-        }
-      }
-      // 하단 경계 근처에서 아래로 스크롤
-      else if (rect.bottom - mouseY < scrollThreshold) {
-        const distance = scrollThreshold - (rect.bottom - mouseY);
-        const speed = Math.min(distance / scrollThreshold * 3, 3);
-        
-        if (!autoScrollIntervalRef.current) {
-          autoScrollIntervalRef.current = setInterval(() => {
-            container.scrollTop += speed;
-          }, 16);
-        }
-      }
-      // 경계 밖에서는 자동 스크롤 중지
-      else {
-        if (autoScrollIntervalRef.current) {
-          clearInterval(autoScrollIntervalRef.current);
-          autoScrollIntervalRef.current = null;
-        }
-      }
-    }
+    // 자동 스크롤 처리 (hook)
+    handleAutoScroll(e);
   };
 
   const handleDayDrop = (e, dayIndex) => {
@@ -431,11 +353,8 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     console.log('일차 드롭 이벤트:', { dayIndex });
     
     // 자동 스크롤 중지
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
-    
+    stopAutoScroll();
+  
     const handleDayDragLeave = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -445,10 +364,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       target.removeAttribute('data-drop-position');
       
       // 자동 스크롤 중지
-      if (autoScrollIntervalRef.current) {
-        clearInterval(autoScrollIntervalRef.current);
-        autoScrollIntervalRef.current = null;
-      }
+      stopAutoScroll();
     };
     
     // 먼저 JSON 데이터 확인 (일차 드래그)
@@ -562,10 +478,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     });
     
     // 자동 스크롤 중단
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
+    stopAutoScroll();
     
     clearDragState();
   };
@@ -800,6 +713,22 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     const target = e.currentTarget;
     const dropPosition = target.getAttribute('data-drop-position');
     const toCount = dailyPlans?.[targetDayIndex]?.places?.length || 0;
+    
+    // 동일 일차 내 인접 드롭은 순서 변화가 없으므로 취소 처리
+    // 예: 2번을 3번의 상단(top)으로 드롭하거나, 3번을 2번의 하단(bottom)으로 드롭
+    if (sourceDayIndex === targetDayIndex) {
+      if (dropPosition === 'top' && targetPlaceIndex === sourcePlaceIndex + 1) {
+        console.log('✅ 인접 상단 드롭 - 순서 변화 없음, 취소');
+        handlePlaceDragEnd(e);
+        return;
+      }
+      if (dropPosition === 'bottom' && targetPlaceIndex === sourcePlaceIndex - 1) {
+        console.log('✅ 인접 하단 드롭 - 순서 변화 없음, 취소');
+        handlePlaceDragEnd(e);
+        return;
+      }
+    }
+
     // 기본 1-based 계산: top= i+1, bottom= i+2
     let modifiedOrder1b = (dropPosition === 'bottom') ? (targetPlaceIndex + 2) : (targetPlaceIndex + 1);
     
@@ -848,10 +777,7 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     });
     
     // 자동 스크롤 중단 및 이벤트 리스너 제거
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
+    stopAutoScroll();
     document.removeEventListener('dragover', handleAutoScroll);
     
     // 드래그 상태 초기화
@@ -900,6 +826,13 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     e.preventDefault();
     e.stopPropagation();
     
+    // 기존 DailyPlaceBlock 이동 중에는 드롭 존 포커스 효과를 비활성화
+    if (draggedPlaceId) {
+      e.dataTransfer.dropEffect = 'none';
+      console.log('⏭️ DailyPlaceBlock 이동 중 - 드롭 존 활성화 건너뜀');
+      return;
+    }
+
     // 북마크 장소(application/json) 또는 페이지 PlaceBlock(text/plain) 허용
     const hasJsonData = e.dataTransfer.types.includes('application/json');
     const hasTextData = e.dataTransfer.types.includes('text/plain');
@@ -934,6 +867,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     // 드롭 존 시각적 피드백 제거
     e.currentTarget.classList.remove('drop-zone-active');
     
+    // 기존 DailyPlaceBlock 이동 중에는 드롭 존 드롭을 무시
+    if (draggedPlaceId) {
+      console.log('⏭️ DailyPlaceBlock 이동 중 - 드롭 존 드롭 무시');
+      return;
+    }
+
     try {
       // 1. 북마크/기존 장소 (application/json) 처리
       let dragDataStr = e.dataTransfer.getData('application/json');

@@ -44,11 +44,16 @@ export const useGoogleLogin = () => {
               // refreshToken: data.refreshToken,
             });
 
-            // apiClient에 토큰 getter 설정
-            setAccessTokenGetter(() => data.accessToken);
+            // apiClient 토큰 getter는 항상 스토어를 읽도록 유지
+            setAccessTokenGetter(() => useAuthStore.getState().accessToken);
+            // 이전 로그아웃/탈퇴에서 설정한 no-refresh 플래그 해제
+            try { sessionStorage.removeItem('no-refresh'); } catch (_) {}
 
             console.log("로그인 성공! 사용자 상태 저장 완료");
             console.log(data);
+
+            // Show toast
+            window.dispatchEvent(new CustomEvent('app:toast', { detail: { message: '로그인 되었습니다!', type: 'success', duration: 2000 } }));
           } else {
             console.error("서버 응답 에러:", response);
           }

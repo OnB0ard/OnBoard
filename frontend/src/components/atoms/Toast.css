@@ -1,6 +1,6 @@
 .toast-container {
   position: fixed;
-  top: 16px;
+  top: 40px; /* 살짝 아래로 이동 */
   left: 50%;
   transform: translateX(-50%);
   display: flex;

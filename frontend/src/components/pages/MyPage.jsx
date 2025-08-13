@@ -32,7 +32,7 @@ const MyPage = () => {
   const [profileTick, setProfileTick] = useState(0);
 
   // 프로필 이미지 URL 생성 (이미지 파일이 있는 경우)
-  const displayProfileImage = profileImage || "/default-profile.png";
+  const displayProfileImage = profileImage || "/images/profile_default.png";
 
   // 화면 크기별 카드 개수 계산 함수
   const getCardsPerPage = () => {
@@ -249,6 +249,12 @@ const MyPage = () => {
                   key={displayProfileImage}
                   src={displayProfileImage}
                   alt="Profile"
+                  onError={(e) => {
+                    const fallback = '/images/profile_default.png';
+                    if (e.currentTarget.src.indexOf(fallback) === -1) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                 />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>

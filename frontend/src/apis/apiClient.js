@@ -69,6 +69,15 @@ apiClient.interceptors.response.use(
 
     // 401만 처리, 무한루프 방지
     if (response.status === 401 && !originalRequest._retry) {
+      // 명시적 로그아웃/탈퇴 직후에는 refresh를 시도하지 않음
+      try {
+        if (sessionStorage.getItem('no-refresh') === '1') {
+          const { clearAuth } = useAuthStore.getState();
+          clearAuth();
+          return Promise.reject(error);
+        }
+      } catch (_) {}
+
       originalRequest._retry = true;
 
       // 동시에 여러 401 발생 시 첫 번째 요청만 refresh 호출
@@ -81,8 +90,8 @@ apiClient.interceptors.response.use(
           const { setAuth } = useAuthStore.getState();
           setAuth({ accessToken: newToken });
 
-          // 2) apiClient가 읽을 getter 최신화
-          setAccessTokenGetter(() => newToken);
+          // 2) apiClient가 읽을 getter는 항상 스토어를 읽도록 유지
+          setAccessTokenGetter(() => useAuthStore.getState().accessToken);
 
           isRefreshing = false;
           onRefreshed(newToken);
@@ -91,6 +100,8 @@ apiClient.interceptors.response.use(
           // 갱신 실패 → 인증 제거(선택)
           const { clearAuth } = useAuthStore.getState();
           clearAuth();
+          // getter도 스토어를 바라보도록 복원
+          setAccessTokenGetter(() => useAuthStore.getState().accessToken);
           return Promise.reject(e);
         }
       }

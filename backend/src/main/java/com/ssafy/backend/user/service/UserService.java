@@ -2,13 +2,16 @@ package com.ssafy.backend.user.service;
 
 import com.ssafy.backend.common.exception.S3UploadFailedException;
 import com.ssafy.backend.common.util.S3Util;
+import com.ssafy.backend.plan.entity.Plan;
 import com.ssafy.backend.plan.exception.UserNotExistException;
-import com.ssafy.backend.security.dto.JwtUserInfo;
+import com.ssafy.backend.plan.repository.PlanRepository;
+import com.ssafy.backend.plan.repository.UserPlanRepository;
 import com.ssafy.backend.user.dto.request.ModifyProfileRequestDTO;
 import com.ssafy.backend.user.dto.response.ModifyProfileResponseDTO;
 import com.ssafy.backend.user.dto.response.RetrieveProfileResponseDTO;
 import com.ssafy.backend.user.entity.User;
-import com.ssafy.backend.user.exception.NotYourAccountException;
+import com.ssafy.backend.user.entity.UserPlan;
+import com.ssafy.backend.user.entity.UserType;
 import com.ssafy.backend.user.repository.UserRepository;
 import com.ssafy.backend.user.util.ImageValidatorUtil;
 import lombok.RequiredArgsConstructor;
@@ -18,14 +21,18 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
+    private final UserPlanRepository userPlanRepository;
     private final S3Util s3Util;
     private final ImageValidatorUtil imageValidatorUtil;
+    private final PlanRepository planRepository;
 
     @Transactional
     public ModifyProfileResponseDTO modifyProfile(Long userId, @RequestPart ModifyProfileRequestDTO modifyProfileRequestDTO, @RequestPart MultipartFile image) throws IOException {
@@ -64,13 +71,28 @@ public class UserService {
     }
 
     @Transactional
-    public boolean deleteUser(JwtUserInfo jwtUserInfo, Long userId) {
-        if(jwtUserInfo.getUserId() != userId){
-            throw new NotYourAccountException("본인 계정이 아닙니다.");
+    public boolean deleteUser(Long userId) {
+        // User 곧 삭제됩니다. user 관련 모든 행 들은 LOCK
+        User user = userRepository.lockUser(userId)
+                .orElseThrow(() -> new UserNotExistException("존재하지 않는 사용자입니다."));
+
+        // 내가 Creator인 plan방 Id
+        List<Long> planIds = userPlanRepository.findCreatorPlanIdsByUserId(userId);
+
+        for (Long planId : planIds) {
+            // plan Lock
+            Plan plan = planRepository.lockPlan(planId);
+
+            // USERPLAN 역시 LOCK
+            Optional<UserPlan> candidate = userPlanRepository.findCandidate(planId);
+
+            if (candidate.isEmpty()) {
+                planRepository.deleteById(planId);
+                continue;
+            }
+
+            candidate.get().setUserType(UserType.CREATOR);
         }
-        User user = validateUserExistence(userId);
-
-
 
         String imageKey = user.getProfileImage();
         if (imageKey != null && !imageKey.isEmpty() && !imageKey.equals("placeholder.png")) {

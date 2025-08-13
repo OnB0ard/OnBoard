@@ -328,9 +328,6 @@ const handleGlobalMouseUp = () => {
   };
 
   // 접근 제어 조건부 렌더링
-  if (accessStatus === 'loading') {
-    return <div>Loading...</div>;
-  }
 
   // ...
   if (accessStatus !== 'approved') {

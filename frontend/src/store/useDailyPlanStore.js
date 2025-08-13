@@ -1,9 +1,8 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 
 const useDailyPlanStore = create(
-  devtools(
-    persist((set, get) => ({
+  devtools((set, get) => ({
       // === 기본 상태 ===
       dailyPlans: [],
       planId: null, // 현재 편집 중인 계획 ID (뷰)
@@ -464,12 +463,8 @@ const useDailyPlanStore = create(
         dragOverIndex: null,
         draggedDayIndex: null
       })
-    }),
-    {
-      name: 'daily-plan-per-plan',
-      partialize: (state) => ({ plansByPlanId: state.plansByPlanId, activePlanId: state.activePlanId }),
-    }
-  ))
+    })
+  )
 );
 
 export default useDailyPlanStore;

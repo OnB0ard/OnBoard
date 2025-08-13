@@ -18,7 +18,6 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
   const modalRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const lastLoadedPlanIdRef = useRef(null);
-  const saveCacheTimeoutRef = useRef(null);
   const accessToken = useAuthStore((s) => s.accessToken);
   // Auto scroll hook 분리 적용
   const { startAutoScroll, stopAutoScroll, handleAutoScroll } = useAutoScroll(scrollContainerRef);
@@ -277,39 +276,12 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
     setPlanId(planId);
     console.log('📋 planId 변경 감지 및 로드:', planId);
     clearDayMarkers();
-    // 1) 로컬 캐시 우선 로드
-    try {
-      const cached = localStorage.getItem(`plan-schedules:${planId}`);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          setDailyPlans(parsed);
-          console.log('🗂️ 로컬 캐시 일정 로드 완료');
-        }
-      }
-    } catch (e) {
-      console.warn('로컬 캐시 로드 실패:', e);
-    }
-    // REST 기반 서버 일정 불러오기 제거됨
+    // 로컬 캐시 제거됨: 서버/WS 흐름만 사용
     lastLoadedPlanIdRef.current = planId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId, setPlanId])
 
-  // 로컬 캐시에 항상 최신 일정 저장 (가벼운 디바운스)
-  useEffect(() => {
-    if (!planId) return;
-    if (saveCacheTimeoutRef.current) clearTimeout(saveCacheTimeoutRef.current);
-    saveCacheTimeoutRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(`plan-schedules:${planId}`, JSON.stringify(dailyPlans));
-      } catch (e) {
-        console.warn('캐시 저장 실패:', e);
-      }
-    }, 400);
-    return () => {
-      if (saveCacheTimeoutRef.current) clearTimeout(saveCacheTimeoutRef.current);
-    };
-  }, [dailyPlans, planId]);
+  // 로컬 캐시 저장 로직 제거됨
 
   useEffect(() => {
     if (!isOpen) {
@@ -737,22 +709,24 @@ const DailyPlanCreate1 = ({ isOpen, onClose, bookmarkedPlaces = [], position, pl
       }
     }
 
-    // 기본 1-based 계산: top= i+1, bottom= i+2
-    let modifiedOrder1b = (dropPosition === 'bottom') ? (targetPlaceIndex + 2) : (targetPlaceIndex + 1);
-    
-    // 동일 일차 이동이면 최대값은 현재 개수(toCount),
-    // 다른 일차로 이동이면 드롭 후 개수가 1 증가하므로 최대값은 toCount + 1
+    // 제거 후 기준의 0-based 삽입 인덱스 계산
+    let insertIndex0 = (dropPosition === 'bottom') ? (targetPlaceIndex + 1) : targetPlaceIndex;
     const withinSameDay = (dailyPlans?.[sourceDayIndex]?.id === dailyPlans?.[targetDayIndex]?.id);
-    const maxOrder = withinSameDay ? toCount : (toCount + 1);
-    modifiedOrder1b = Math.max(1, Math.min(modifiedOrder1b, maxOrder));
-    
-    // 같은 위치로의 이동 취소 체크 (0-based로 역변환 후 비교)
-    const finalTargetPlaceIndex = Math.max(0, modifiedOrder1b - 1);
-    if (sourceDayIndex === targetDayIndex && sourcePlaceIndex === finalTargetPlaceIndex) {
+    if (withinSameDay && sourcePlaceIndex < insertIndex0) insertIndex0 -= 1;
+
+    // 경계 클램프
+    const toCountNow = dailyPlans?.[targetDayIndex]?.places?.length || 0;
+    const maxLenAfter = withinSameDay ? toCountNow : (toCountNow + 1);
+    insertIndex0 = Math.max(0, Math.min(insertIndex0, maxLenAfter - 1));
+
+    // 같은 위치면 취소
+    if (withinSameDay && sourcePlaceIndex === insertIndex0) {
       console.log('❌ 같은 위치로 드롭 - 취소');
       handlePlaceDragEnd(e);
       return;
     }
+
+    const modifiedOrder1b = insertIndex0 + 1;
 
     console.log('🔄 장소 위치 이동 실행 (WS)');
     const fromDayId = dailyPlans[sourceDayIndex]?.id;

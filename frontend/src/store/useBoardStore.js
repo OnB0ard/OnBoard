@@ -142,7 +142,6 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
-
   // shape 추가
   addShape: (shape) => {
     const updated = [...get().shapes, shape];
@@ -156,23 +155,38 @@ export const useBoardStore = create((set, get) => ({
     set({lines: updated});
   },
 
-  // MouseUp하면 해당 마지막 points를 반영하고 saveHistory
-  updateLastLinePoints: (points) => {
-    const lines = [...get().lines];
-    const last = { ...lines.pop(), points };
-    lines.push(last);
+  //id기반 업데이트
+  updateLinePointsByIdTemp: (id, points) => {
+    const lines = get().lines.map(l => (l.id === id ? { ...l, points } : l));
+    set({ lines });
+  },
+  //특정 라인 id 포인트 갱신(임시)
+  commitLinePointsById: (id, points) => {
+    const lines = get().lines.map(l => (l.id === id ? { ...l, points } : l));
     get().saveHistory(get().shapes, lines);
-    // set({lines});
   },
+  //특정 라인 id 포인트 갱신(커밋)
+  addTempLine: (line) => {
+    set({ lines: [...get().lines, line] }); // 히스토리 X
+  },
+
+  // // MouseUp하면 해당 마지막 points를 반영하고 saveHistory
+  // updateLastLinePoints: (points) => {
+  //   const lines = [...get().lines];
+  //   const last = { ...lines.pop(), points };
+  //   lines.push(last);
+  //   get().saveHistory(get().shapes, lines);
+  //   // set({lines});
+  // },
   
-  // MouseMove하는 동안의 매 x,y points 반영
-  updateLastLinePointsTemp: (points) => {
-    const lines = [...get().lines];
-    const last = { ...lines.pop(), points };
-    lines.push(last);
-    // get().saveHistory(get().shapes, lines);
-    set({lines});
-  },
+  // // MouseMove하는 동안의 매 x,y points 반영
+  // updateLastLinePointsTemp: (points) => {
+  //   const lines = [...get().lines];
+  //   const last = { ...lines.pop(), points };
+  //   lines.push(last);
+  //   // get().saveHistory(get().shapes, lines);
+  //   set({lines});
+  // },
 
   removeShapeById: (id) => {
     const shape = get().shapes.find((s) => s.id === id);

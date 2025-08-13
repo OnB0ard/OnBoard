@@ -19,6 +19,7 @@ import { useInitialWhiteboardPlaces } from '../../hooks/useInitialWhiteboardPlac
 import { usePlanDayScheduleWS } from '../../hooks/usePlanDayScheduleWS';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
+import { useBoardStore } from '@/store/useBoardStore';
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -154,6 +155,13 @@ const PlanPage = () => {
     }
   }, [participantError]);
 
+  useEffect(() => {
+    return () => {
+      // 언마운트 시 보드 상태 초기화
+      useBoardStore.getState().reset();
+    };
+  }, []);
+  
   useEffect(() => {
     if (lastMapPosition) {
       setMapCenter(lastMapPosition);

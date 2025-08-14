@@ -16,7 +16,7 @@ import "./ViewParticipantModal.css";
 // hostName: 방장 닉네임(카드 기준)
 // onRequestConfirm: 상위에서 확인 모달을 띄우기 위한 콜백
 // hideManageActions: 방장 위임/강퇴 버튼 숨김 여부 (마이페이지 카드에서 사용)
-const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm, hideManageActions = false }) => {
+const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm, hideManageActions, hideParticipantActions }) => {
 
   const modalRef = useRef(null);
   const {
@@ -152,7 +152,7 @@ const ViewParticipantModal = ({ planId, isOpen, onClose, onRequestConfirm, hideM
               {/* {participants && p.status !== 'CREATOR' && <span className="ml-1 text-xs text-blue-400 font-bold">(참여자)</span>} */}
               {p.userStatus === 'PENDING' && <span className="ml-1 text-xs text-yellow-500 font-bold">(대기중)</span>}
             </span>
-            {isCreator && p.userStatus === 'PENDING' && (
+            {isCreator && p.userStatus === 'PENDING' && !hideParticipantActions && (
               <>
                 <button
                   className="ml-1 p-1 rounded-full bg-green-100 hover:bg-green-200 text-green-600 transition"

@@ -9,6 +9,7 @@ import { useStompWebSocket } from "@/hooks/useStompWebSocket";
 import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
 import { useParams } from "react-router-dom";
 import { useMouseStomp } from "@/hooks/useMouseWebSocket";
+import { createPortal } from "react-dom";
 
 //커서 색상(순서)
 const COLORS = ["blue", "purple","yellow", "green","red", "orange" ];
@@ -839,7 +840,24 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
         </Layer>
       </Stage>
 
-      {renderCursors(users, String(myUserId), userOrder)}
+
+      {/* 커서 오버레이: 뷰포트 고정 + 클립 */}
+    {typeof window !== "undefined" &&
+      createPortal(
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+            zIndex: 9999, // Stage 위로
+          }}
+        >
+          {renderCursors(users, String(myUserId), userOrder)}
+        </div>,
+        document.body
+      )
+    }
     </>
   );
 };

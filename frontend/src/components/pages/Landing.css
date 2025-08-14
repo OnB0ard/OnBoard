@@ -251,13 +251,21 @@
 .feature-text p {
   font-size: 18px;
   color: #555;
+  white-space: pre-line; /* render \n as line breaks */
+  line-height: 1.6;
 }
 
-/* Invite section: make description single line */
+/* Invite section: force single line */
 .feature-showcase.invite .feature-text p {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Whiteboard & Dailyplan: each \n is a new line, no wrapping within a line */
+.feature-showcase.whiteboard .feature-text p,
+.feature-showcase.dailyplan .feature-text p {
+  white-space: pre;
 }
 
 .feature-text .feature-icon,

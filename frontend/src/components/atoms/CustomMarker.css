@@ -1,0 +1,39 @@
+.custom-marker {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+  transition: transform 0.2s ease-in-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pin svg {
+  transform: rotate(45deg);
+}
+
+.custom-marker:hover .pin {
+    transform: rotate(-45deg) scale(1.1);
+}
+
+/* Optional: Style for content inside the marker */
+.marker-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}

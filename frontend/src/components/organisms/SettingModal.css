@@ -1,0 +1,244 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-container {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  padding: 2rem 1.5rem;
+  width: 80%;
+  max-width: 380px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.modal-avatar-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+
+
+.modal-avatar {
+  width: 150px;
+  height: 150px;
+  border: 2px solid #aca8b6; 
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.modal-photo-button {
+  background-color: #ffffff;
+  border: 2px solid #aca8b6; 
+  border-radius: 50%;
+  padding: 0.5rem;
+  cursor: pointer;
+
+  position: absolute;
+  bottom: 0.5rem;
+  right: calc(10% - 55px * -1 + 0.5rem); /* 아바타 중심에서 오른쪽으로 75px */
+}
+
+
+
+.modal-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 6rem; 
+  font-size: 7px;
+}
+
+.input-with-icon {
+  position: relative;
+  width: 100%;
+}
+
+.custom-input {
+  border-bottom: 1px solid #ccc;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  padding-right: 2rem;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* Make placeholder text slightly smaller than input text */
+.custom-input::placeholder {
+  font-size: 0.85rem; /* smaller than 1rem */
+  color: #999;        /* optional: softer color */
+  opacity: 1;         /* consistent rendering */
+}
+/* Cross-browser placeholders (mostly for older engines) */
+.custom-input::-webkit-input-placeholder { font-size: 0.85rem; }
+.custom-input::-moz-placeholder { font-size: 0.85rem; }
+.custom-input:-ms-input-placeholder { font-size: 0.85rem; }
+.custom-input::-ms-input-placeholder { font-size: 0.85rem; }
+
+.input-icon {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+}
+
+/* 버튼 영역 좌우 정렬 */
+.modal-actions {
+  display: flex;
+  justify-content:flex-end;
+  align-items: center;
+}
+
+/* 기존 보라색 버튼 */
+.custom-purple-button {
+  background-color: #4F378A !important;
+  color: white !important;
+}
+
+/* 새로운 흰 배경 보라 글씨 버튼 */
+.custom-outline-button {
+  background-color: white !important;
+  color: #4F378A !important;
+  border: 1px solid #4F378A !important;
+  margin-right: 7px;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .modal-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .modal-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* 회원 탈퇴 모달 스타일 */
+.withdraw-modal__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.withdraw-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.withdraw-modal__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.withdraw-modal__icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  margin-bottom: 0.75rem;
+}
+
+.withdraw-modal__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+}
+
+.withdraw-modal__content {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.withdraw-modal__message {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.withdraw-modal__submessage {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.withdraw-modal__footer {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

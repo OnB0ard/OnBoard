@@ -24,17 +24,22 @@ public class UserAuthController {
     @Value("${jwt.refresh-token.expiration}")
     private int refreshTokenMaxAge;
 
+    @Value("${frontend.domain}")
+    private String frontendDomain;
+
+
     @PostMapping("/login")
     @PreAuthorize("permitAll()")
     public CommonResponse<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
+        System.out.println("Zz");
         LoginResponseDTO userInfo = userAuthService.login(loginRequestDTO);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", userInfo.getRefreshToken())
-                .domain("http://localhost:5173/")
-                .httpOnly(true)
-                .secure(true)
-                .path("")
+//                .domain("70.12.247.38")
+                .httpOnly(true) 
+                .secure(false)
+                .path("/")
                 .maxAge(refreshTokenMaxAge) // 30 days
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         return CommonResponse.<LoginResponseDTO>builder()
@@ -48,12 +53,12 @@ public class UserAuthController {
     public CommonResponse<SuccessResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
         // 쿠키 삭제를 위한 ResponseCookie 생성
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .domain("http://localhost:5173/")
+                .domain("2a3e46f54cc9.ngrok-free.app")
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(0) // 쿠키 삭제
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         return CommonResponse.<SuccessResponseDTO>builder()

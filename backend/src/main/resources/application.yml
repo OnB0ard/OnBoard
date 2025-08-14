@@ -38,6 +38,18 @@ server:
 jwt:
   secret: ${JWT_SECRET}
   access-token:
-    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600}  # JWT 액세스 토큰 만료 시간 (초 단위)
+    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:60}  # JWT 액세스 토큰 만료 시간 (초 단위)
   refresh-token:
     expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}  # JWT 리프레시 토큰 만료 시간 (초 단위)
+
+frontend:
+  domain: ${FRONTEND_DOMAIN:localhost}  # 프론트엔드 DOMAIN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # 또는 '*'로 전체 오픈
+  endpoint:
+    health:
+      show-details: always

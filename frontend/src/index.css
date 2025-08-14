@@ -1,5 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -110,11 +115,23 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* index.css 또는 App.jsx 내부의 글로벌 스타일 정의에 추가 */
+#modal-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 9999;              
+  /* pointer-events: none;     */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Poppins', sans-serif;
   }
 }

@@ -1,0 +1,95 @@
+// 북마크 모음집 
+import React, { useEffect, useRef } from 'react';
+import { useBookmarkStore } from '@/store/mapStore';
+import StarRating from '@/components/atoms/StarRating';
+import PlaceImage from '@/components/atoms/PlaceImage';
+import './Bookmark.css';
+import {createPortal} from 'react-dom';
+
+const Bookmark = ({ isOpen, onClose, onPlaceClick, position }) => {
+  const popupRef = useRef(null);
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
+  const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div 
+      className="bookmark-popup" 
+      ref={popupRef}
+      style={position ? { top: `${position.y}px`, left: `${position.x}px` } : {}}
+    >
+      <div className="bookmark-popup-container">
+        <div className="bookmark-popup-header">
+          <h2 className="bookmark-popup-title">북마크된 장소</h2>
+          <button onClick={onClose} className="bookmark-popup-close">✕</button>
+        </div>
+        <div className="bookmark-popup-content">
+          {bookmarkedPlaces.length === 0 ? (
+            <div className="empty-state">
+              <p>저장된 장소가 없습니다.</p>
+            </div>
+          ) : (
+            <div className="bookmark-list">
+              {bookmarkedPlaces.map((place) => (
+                <div 
+                  key={place.bookmarkId || place.id || place.googlePlaceId || place.place_id} 
+                  className="bookmark-item"
+                  onClick={() => onPlaceClick?.(place)}
+                >
+                  {/* 왼쪽: 텍스트 정보 */}
+                  <div className="bookmark-item-content">
+                    {/* 제목 */}
+                    <h3 className="bookmark-item-title">{place.placeName || place.name}</h3>
+                    
+                    {/* 별점, 리뷰 수, */}
+                    <div className="bookmark-item-rating">
+                      <StarRating rating={place.rating} reviewCount={place.ratingCount || place.reviewCount} />
+                    </div>
+                    
+                    
+                    {/* 주소 */}
+                    <p className="bookmark-item-address">{place.address || place.formatted_address}</p>
+                  </div>
+                  
+                  {/* 오른쪽: 이미지 */}
+                  <div className="bookmark-item-image">
+                    <PlaceImage 
+                      imageUrl={place.googleImg?.[0] || place.imageUrl}
+                      isBookmarked={true} // 북마크 페이지에서는 항상 북마크된 상태
+                      onBookmarkClick={(e) => {
+                        e.stopPropagation();
+                        // planId는 스토어 내부에서 자동 해석(_resolvePlanId)됩니다.
+                        toggleBookmark(place);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.getElementById('modal-root')
+  );
+};
+
+export default Bookmark;

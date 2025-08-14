@@ -1,0 +1,31 @@
+/* ShareModal.css */
+.toast-message {
+  position: fixed;
+  top: 80px; /* PlanList 상단 헤더 아래쪽으로 약간 내림 */
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px) scale(0.98);
+  background-color: #ffffff;
+  color: black;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  z-index: 100000; /* 모달(99999)보다 높게 설정 */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 650ms cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0s linear 650ms; /* 숨김은 트랜지션 후 적용 */
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  will-change: opacity, transform;
+  pointer-events: none; /* 클릭 방해 X */
+}
+
+.toast-message.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transition: opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 650ms cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0s;
+}

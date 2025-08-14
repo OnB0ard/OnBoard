@@ -8,9 +8,23 @@
   align-items: center;
   justify-content: space-between;
   background-color: transparent;    /* 투명 배경 */
-  backdrop-filter: blur(4px);
+  /* backdrop-filter: blur(4px); */
   height: 50px;
   padding: 0 20px;
+  transition: all 0.3s ease; /* 부드러운 전환 효과 */
+}
+
+/* 스크롤 시 적용되는 스타일 */
+.Header.scrolled {
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Landing 페이지 첫 번째 섹션에서의 스타일 */
+.Header.landing-page {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .left, .center, .right {
@@ -33,17 +47,190 @@
 .right {
   flex-basis: 35%;
   flex-direction: row;
-  align-items: flex-end;
-  gap: 50px; /* temp 간 간격 */
+  align-items: center; /* 수직 가운데 정렬 */
+  gap: 5%; /* temp 간 간격 */
+  margin-top: 0; /* 아래쪽으로 쳐지는 현상 제거 */
 }
 
-/* 텍스트 스타일 */
-.Home {
+.home {
   font-weight: bold;
   color: #333;
+  font-size: 24px;
+  transition: color 0.3s ease;
+}
+
+.home:hover {
+  cursor: pointer;
 }
 
 .temp {
-  color: #0000FF;
+  font-weight: bold;
+  color: #333;
   font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.temp:hover {
+  cursor: pointer;
+}
+
+/* Landing 페이지에서 사용할 흰색 텍스트 스타일 */
+.landing-text {
+  color: white !important;
+}
+
+.landing-text:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 스크롤 시 사용할 어두운 텍스트 스타일 */
+.scrolled-text {
+  color: #333 !important;
+}
+
+.scrolled-text:hover {
+  color: #666 !important;
+}
+
+/* 로그아웃 모달 스타일 */
+.logout-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999; /* 가장 높은 z-index로 설정 */
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.logout-modal {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  width: 100%;
+  max-width: 350px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Poppins', sans-serif;
+  animation: slideIn 0.3s ease-out;
+  transform-origin: center;
+  z-index: 9999;
+}
+
+.logout-modal__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 1.5rem 0.5em 1.5rem;
+  /* background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); */
+  color: #DC2626;
+  border-radius: 12px 12px 0 0;
+}
+
+.logout-modal__icon {
+  width: 40px;
+  height: 40px;
+  background-color: rgba(220, 38, 38, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  color: #DC2626;
+}
+
+.logout-modal__content {
+  padding: 1rem 1.5rem;
+  margin-top: 0;
+  text-align: center;
+}
+
+.logout-modal__message {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.logout-modal__footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  justify-content: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+  .logout-modal {
+    max-width: 90vw;
+    margin: 0 1rem;
+  }
+  
+  .logout-modal__header {
+    padding: 1.25rem 1rem 0.75rem 1rem;
+  }
+  
+  .logout-modal__content {
+    padding: 0.75rem 1rem;
+  }
+  
+  .logout-modal__footer {
+    padding: 0 1rem 1.25rem 1rem;
+    flex-direction: column;
+  }
+}
+
+.icon-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  top: 2.5px; /* 살짝 아래로 */
+}
+
+/* 숫자 뱃지 */
+.icon-badge__dot {
+  position: absolute;
+  top: -2px;      /* 아이콘 우측 상단 살짝 바깥으로 */
+  right: -5px;
+  min-width: 16px;
+  height: 15px;
+  padding: 0 1px;
+  border-radius: 9999px;
+  background: #ef4444;   /* 빨강 */
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* box-shadow: 0 0 0 2px #fff; 겹침 방지용 외곽선(배경색에 맞춰 조정) */
 }

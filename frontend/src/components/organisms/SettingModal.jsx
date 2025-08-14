@@ -1,0 +1,406 @@
+import React, { useState, useRef, useEffect } from "react";
+import "./SettingModal.css";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Input } from "../atoms/Input";
+import { Button } from "../atoms/Button";
+import Icon from "../atoms/Icon";
+import { updateUserProfile, getMyProfile } from "../../apis/updateProfile"; 
+import { deleteUserAccount } from "../../apis/deleteUserAccount";
+import { useAuthStore } from "../../store/useAuthStore"; // zustand store import
+
+// 이미지 압축 함수
+const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // 원본 비율 유지하면서 크기 조정
+      let { width, height } = img;
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // 이미지 그리기
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // 압축된 이미지를 Blob으로 변환
+      canvas.toBlob((blob) => {
+        // 원본 파일명 유지하면서 새로운 File 객체 생성
+        const compressedFile = new File([blob], file.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+        resolve(compressedFile);
+      }, 'image/jpeg', quality);
+    };
+    
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+const SettingModal = ({ isOpen, onClose }) => {
+  const [previewUrl, setPreviewUrl] = useState("/default-profile.png");
+  const [imageFile, setImageFile] = useState(null);
+  const [nickname, setNickname] = useState("");
+  const [loading, setLoading] = useState(false); 
+  const [isEditing, setIsEditing] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showWithdrawSuccessModal, setShowWithdrawSuccessModal] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const userId = useAuthStore((state) => state.userId);
+  const userName = useAuthStore((state) => state.userName);
+  const profileImage = useAuthStore((state) => state.profileImage);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  // 모달이 열릴 때 스토어 값으로 초기화 (단일 소스: zustand)
+  useEffect(() => {
+    if (!isOpen) return;
+    setLoading(true);
+    // API 호출 없이 현재 스토어 값을 그대로 사용
+    const name = userName ?? "";
+    const imageUrl = profileImage || "/images/profile_default.png";
+    setNickname(name);
+    setPreviewUrl(imageUrl);
+    setImageFile(null);
+    setIsEditing(false);
+    setLoading(false);
+  }, [isOpen, userName, profileImage]);
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // 파일 타입 검증 (jpeg, png, webp만 허용)
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        alert("지원하지 않는 이미지 형식입니다. jpg, png만 업로드할 수 있어요.");
+        event.target.value = "";
+        return;
+      }
+      
+      try {
+        // 파일 크기가 1MB 이상이면 압축
+        let processedFile = file;
+        if (file.size > 1024 * 1024) { // 1MB
+          console.log('프로필 이미지 압축 시작:', file.name, file.size);
+          processedFile = await compressImage(file);
+          console.log('프로필 이미지 압축 완료:', processedFile.name, processedFile.size);
+        }
+        
+        // 압축 후에도 5MB를 초과하면 경고
+        if (processedFile.size > 5 * 1024 * 1024) {
+          alert("압축 후에도 파일 크기가 5MB를 초과합니다. 더 작은 이미지를 선택해주세요.");
+          event.target.value = "";
+          return;
+        }
+        
+        setPreviewUrl(URL.createObjectURL(processedFile));
+        setImageFile(processedFile);
+      } catch (error) {
+        console.error('이미지 처리 중 오류:', error);
+        alert("이미지 처리 중 오류가 발생했습니다.");
+        event.target.value = "";
+      }
+    }
+  };
+
+
+
+const handleSave = async () => {
+  if (!nickname.trim()) {
+    alert("닉네임을 입력해주세요.");
+    return;
+  }
+
+  const imageModified = imageFile !== null;
+
+  try {
+    setLoading(true);
+
+    console.log("📦 전송할 nickname:", nickname);
+    console.log("📦 imageModified:", imageModified);
+    console.log("📦 imageFile:", imageFile);
+    console.log("📦 userId from zustand:", userId);
+
+    const response = await updateUserProfile({
+      userId,
+      profileData: {
+        name: nickname.trim(),
+        imageModified,
+      },
+      imageFile,
+    });
+    if (response?.accessToken) {
+    useAuthStore.getState().setAuth({ accessToken: response.accessToken });
+    }
+
+    // 서버 최종 상태 재조회로 스토어 최신화
+    try {
+      const profRes = await getMyProfile();
+      const body = profRes?.body ?? profRes;
+      const serverName = body?.userName || body?.name || nickname.trim();
+      const serverImage = body?.profileImage || body?.profileImageUrl || body?.imageUrl || profileImage;
+      updateProfile(serverName, serverImage);
+    } catch (_) {
+      // 조회 실패 시, 기존 응답/로컬 기반으로 보수적 업데이트
+      let nextImageUrl = (response && (response.imageUrl || response?.data?.imageUrl))
+        || (imageFile ? URL.createObjectURL(imageFile) : profileImage);
+      if (nextImageUrl) {
+        const isHttp = /^https?:\/\//.test(nextImageUrl);
+        const alreadyHasBust = /[?&]t=\d+/.test(nextImageUrl);
+        if (isHttp && !alreadyHasBust) {
+          const sep = nextImageUrl.includes('?') ? '&' : '?';
+          nextImageUrl = `${nextImageUrl}${sep}t=${Date.now()}`;
+        }
+      }
+      updateProfile(nickname.trim(), nextImageUrl);
+    }
+    // 전체 앱(특히 MyPage) 강제 리렌더를 위한 커스텀 이벤트 디스패치
+    try {
+      window.dispatchEvent(new CustomEvent('profile-updated'));
+    } catch (_) {
+      // SSR 등 window 미존재 환경 방어
+    }
+
+    // 저장 성공 토스트 노출 (3초)
+    try {
+      window.dispatchEvent(
+        new CustomEvent('app:toast', {
+          detail: { message: '프로필이 저장되었습니다!', type: 'success', duration: 3000 },
+        })
+      );
+    } catch (_) {
+      // SSR 등 window 미존재 환경 방어
+    }
+    onClose();
+  } catch (error) {
+    console.error("❌ 프로필 저장 실패:", error);
+    alert("저장 중 오류가 발생했습니다.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleWithdraw = () => {
+  setShowWithdrawModal(true);
+};
+
+
+const handleWithdrawConfirm = async () => {
+  try {
+    setLoading(true);
+    setShowWithdrawModal(false);
+    
+    // 회원 탈퇴 처리
+    console.log("회원 탈퇴 처리:", userId);
+    
+    // 백엔드 API 호출
+    await deleteUserAccount(userId);
+    
+    // 성공 모달 표시 (알림/즉시 이동 대신)
+    setShowWithdrawSuccessModal(true);
+  } catch (error) {
+    console.error("회원 탈퇴 실패:", error);
+    alert("회원 탈퇴 중 오류가 발생했습니다.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleWithdrawCancel = () => {
+  setShowWithdrawModal(false);
+};
+
+
+
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="modal-close" onClick={onClose}>
+          <Icon type="xmark" />
+        </button>
+
+        <div className="modal-header">
+          {/* <h2>프로필 설정</h2> */}
+        </div>
+
+        <div className="modal-avatar-section">
+          <Avatar className="modal-avatar">
+            <AvatarImage 
+              src={previewUrl} 
+              alt="Profile" 
+              onError={(e) => {
+                const fallback = '/images/profile_default.png';
+                if (e.currentTarget.src.indexOf(fallback) === -1) {
+                  e.currentTarget.src = fallback;
+                }
+              }}
+            />
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
+          <button className="modal-photo-button" onClick={handlePhotoClick}>
+            <Icon type="photo" />
+          </button>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+        </div>
+
+        <div className="modal-inputs">
+          <div className="input-with-icon">
+            <Input
+              placeholder="닉네임을 입력하세요 (최대 10자)"
+              size="full"
+              className="custom-input"
+              value={nickname}
+              maxLength={10}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNickname(val.length <= 10 ? val : val.slice(0, 10));
+              }}
+              disabled={!isEditing}
+            />
+            <span className="input-icon" onClick={()=>setIsEditing(true)}>
+              <Icon type="pen" />
+            </span>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <Button
+            className="custom-outline-button"
+            textColor="red"
+            size="md"
+            shape="pill"
+            onClick={handleWithdraw}
+            disabled={loading}
+          >
+            회원 탈퇴
+          </Button>
+          <Button
+            className="custom-purple-button"
+            textColor="white"
+            size="md"
+            shape="pill"
+            onClick={handleSave}
+            disabled={loading}
+          >
+            {loading ? "저장 중..." : "저장"}
+          </Button>
+        </div>
+      </div>
+      
+      {/* 회원 탈퇴 확인 모달 */}
+      {showWithdrawModal && (
+        <div className="withdraw-modal__backdrop">
+          <div className="withdraw-modal">
+            <div className="withdraw-modal__header">
+              <div className="withdraw-modal__icon">
+                <Icon type="sign-out" />
+              </div>
+              <h2 className="withdraw-modal__title">회원 탈퇴</h2>
+            </div>
+            
+            <div className="withdraw-modal__content">
+              <p className="withdraw-modal__message">
+                정말로 회원 탈퇴하시겠습니까?
+              </p>
+              <p className="withdraw-modal__submessage">
+                탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
+              </p>
+            </div>
+
+            <div className="withdraw-modal__footer">
+              <Button 
+                background="white"
+                textColor="black"
+                border="gray"
+                onClick={handleWithdrawCancel}
+              >
+                취소
+              </Button>
+              <Button 
+                background="red"
+                textColor="white"
+                onClick={handleWithdrawConfirm}
+              >
+                탈퇴
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 회원 탈퇴 완료 모달 */}
+      {showWithdrawSuccessModal && (
+        <div className="withdraw-modal__backdrop">
+          <div className="withdraw-modal">
+            <div className="withdraw-modal__header">
+              <div className="withdraw-modal__icon">
+                🥹
+              </div>
+              <h2 className="withdraw-modal__title">회원 탈퇴가 완료되었어요</h2>
+            </div>
+            <div className="withdraw-modal__content">
+              <p className="withdraw-modal__message">
+                다시 만날 날을 기다릴게요 :)
+              </p>
+            </div>
+            <div className="withdraw-modal__footer">
+              <Button 
+                background="dark"
+                textColor="white"
+                border="none"
+                className="shadow-sm"
+                onClick={() => {
+                  try {
+                    // refresh 방지 플래그 설정 (페이지 내 세션에만 유지)
+                    sessionStorage.setItem('no-refresh', '1');
+                    clearAuth();
+                    // 완전한 로그아웃을 위해 persisted auth까지 제거
+                    localStorage.removeItem('auth-storage');
+                    localStorage.removeItem('landingActiveIndex');
+                  } catch (_) {
+                    // SSR 등 window 미존재 환경 방어
+                  }
+                  // 히스토리 대체로 뒤로가기로 돌아오지 않도록 처리
+                  window.location.replace('/');
+                }}
+              >
+                홈으로 가기
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SettingModal;

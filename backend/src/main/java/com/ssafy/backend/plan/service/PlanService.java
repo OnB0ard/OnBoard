@@ -100,10 +100,10 @@ public class PlanService {
             throw new UserCannotApproveException("참여자에게는 업데이트할 권한이 없습니다.");
         }
 
-        imageValidatorUtil.checkFileExtension(image);
-
         String imageKey = plan.getPlanImage();
         if (updatePlanReq.isImageModified()) {
+
+            imageValidatorUtil.checkFileExtension(image);
 
             // 기존 이미지가 있으면 삭제
             if (imageKey != null && !imageKey.isEmpty()) {

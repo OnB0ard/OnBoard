@@ -164,10 +164,21 @@ const DailyScheduleBlock = ({
         </span>
           <button
             onClick={() => setIsCollapsed((v) => !v)}
-            className="border-none bg-transparent rounded-md cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center px-3 h-11"
+
+            className="border-none bg-transparent rounded-md mr-2 cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
+            style={{ marginLeft: 9 }}
             aria-label={isCollapsed ? '장소 목록 펼치기' : '장소 목록 접기'}
           >
-            <Icon type={isCollapsed ? "chevron-down" : "chevron-up"} />
+            <img
+              src="/images/arrow.png"
+              alt={isCollapsed ? '펼치기 아이콘' : '접기 아이콘'}
+              style={{
+                width: 13,
+                height: 12,
+                transform: isCollapsed ? 'none' : 'scaleY(-1)',
+                transition: 'transform 150ms ease-in-out'
+              }}
+            />
           </button>
           <button
             onClick={() => onDayClick(dayIndex)}

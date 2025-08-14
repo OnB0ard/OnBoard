@@ -102,13 +102,13 @@ function Landing() {
 
   const features = [
     {
-      title: "함께 떠날 친구를 초대해보세요",
+      title: "방을 만들고, \n함께 떠날 친구를 초대해보세요",
       desc: "링크 하나로 쉽게 초대하고 실시간으로 함께 계획할 수 있어요.",
       media: "/videos/invite.mp4",
     },
     {
       title: "실시간 화이트보드로 계획을 \n 자유롭게 그려보세요",
-      desc: "아이디어를 마음껏 그리고, 메모하고, 지울 수 있어요.",
+      desc: "아이디어를 마음껏 그리고, 메모하고, 지울 수 있어요. \n드래그 앤 드롭으로 장소 블록을 자유롭게 이동시킬 수 있어요",
       media: "/videos/whiteboard.mp4",
     },
     {
@@ -118,7 +118,7 @@ function Landing() {
     },
     {
       title: "지도를 보며 손쉽게 일정을 \n 추가할 수 있어요",
-      desc: "드래그 앤 드롭으로 일정을 완성할 수 있어요.",
+      desc: "드래그 앤 드롭으로 일정을 완성할 수 있어요. \n일정에 메모를 추가하여 더욱 세세하게 계획을 세워보세요.",
       media: "/videos/dailyplan.mp4",
     },
   ];
@@ -165,7 +165,7 @@ function Landing() {
         {/* 기능별 시연 섹션 */}
         {features.map((f, idx) => (
           <FullpageSection key={idx}>
-            <div className={`feature-showcase ${idx % 2 ? 'reverse' : ''} ${idx === 0 ? 'invite' : ''} ${idx === 2 ? 'bookmark' : ''}`}>
+            <div className={`feature-showcase ${idx % 2 ? 'reverse' : ''} ${idx === 0 ? 'invite' : ''} ${idx === 1 ? 'whiteboard' : ''} ${idx === 2 ? 'bookmark' : ''} ${idx === 3 ? 'dailyplan' : ''}`}>
               <motion.div
                 className="feature-text"
                 initial={{ opacity: 0, x: -50 }}

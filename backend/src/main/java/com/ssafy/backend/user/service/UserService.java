@@ -40,12 +40,10 @@ public class UserService {
     public ModifyProfileResponseDTO modifyProfile(Long userId, @RequestPart ModifyProfileRequestDTO modifyProfileRequestDTO, @RequestPart MultipartFile image) throws IOException {
         User user = validateUserExistence(userId);
 
+        imageValidatorUtil.checkFileExtension(image);
+
         String imageKey = user.getProfileImage();
         if (modifyProfileRequestDTO.isImageModified()) {
-            if (image != null && !image.isEmpty())
-            {
-                imageValidatorUtil.checkFileExtension(image);
-            }
 
             // 기존 이미지가 있으면 삭제
             if (imageKey != null && !imageKey.isEmpty()) {

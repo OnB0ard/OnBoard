@@ -94,6 +94,13 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+    // 허용되는 이미지 타입 체크 (jpeg, png만 허용)
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('지원하지 않는 이미지 형식입니다. jpg, png만 업로드할 수 있어요.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     try {
       // 1MB 이상만 압축 시도 (스토어에서도 1MB 이상 압축하므로 중복 방지 효과)
       const finalFile = file.size > 1024 * 1024
@@ -206,7 +213,7 @@ function PlanPostModal({ onClose, onSubmit, mode = 'create', initialData = null 
               <Icon type="camera" /> 대표이미지
             </label>
             {renderImageSection()}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" onChange={handleImageUpload} className="hidden" />
           </div>
 
           <div className="space-y-1">

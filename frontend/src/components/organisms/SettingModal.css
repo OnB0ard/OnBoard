@@ -85,6 +85,7 @@
   flex-direction: column;
   gap: 1rem;
   margin-bottom: 6rem; 
+  font-size: 7px;
 }
 
 .input-with-icon {
@@ -100,6 +101,18 @@
   text-align: center;
   font-size: 1rem;
 }
+
+/* Make placeholder text slightly smaller than input text */
+.custom-input::placeholder {
+  font-size: 0.85rem; /* smaller than 1rem */
+  color: #999;        /* optional: softer color */
+  opacity: 1;         /* consistent rendering */
+}
+/* Cross-browser placeholders (mostly for older engines) */
+.custom-input::-webkit-input-placeholder { font-size: 0.85rem; }
+.custom-input::-moz-placeholder { font-size: 0.85rem; }
+.custom-input:-ms-input-placeholder { font-size: 0.85rem; }
+.custom-input::-ms-input-placeholder { font-size: 0.85rem; }
 
 .input-icon {
   position: absolute;

@@ -495,29 +495,29 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
     }
   };
 
-  const handleMouseMove = () => {
-    // ERASER: 이동 중 지속 삭제
+  useEffect(() => {
+  const handleWindowMouseMove = (e) => {
+     const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.container().getBoundingClientRect();
+    const pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    // ERASER
     if (internalShapeType === 'eraser' && isErasing.current) {
-      const pos = stageRef.current?.getPointerPosition();
-      if (pos) eraseAtPointer(pos);
+      eraseAtPointer(pointer);
       return;
     }
-
-    // PEN: 로컬 임시 라인 업데이트 (서버 전송 없음)
-    if (!isDrawing.current || internalShapeType !== 'pen') return;
-    const pos = stageRef.current?.getPointerPosition();
-    if (!pos) return;
-
-    const id = tempLineIdRef.current;
-    if (!id) return;
-    const me = lines.find((l) => l.id === id);
-    if (!me) return;
-
-    const newPoints = [...me.points, pos.x, pos.y];
-    updateLinePointsByIdTemp(id, newPoints); // ✨ 특정 id만 갱신
+    // PEN
+    if (internalShapeType === 'pen' && isDrawing.current) {
+      const id = tempLineIdRef.current;
+      if (!id) return;
+      const me = lines.find(l => l.id === id);
+      if (!me) return;
+      updateLinePointsByIdTemp(id, [...me.points, pointer.x, pointer.y]);
+    }
   };
 
-  const handleMouseUp = () => {
+  const handleWindowMouseUp = (e) => {
     // ERASER 종료
     if (internalShapeType === 'eraser') {
       isErasing.current = false;
@@ -551,8 +551,14 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
       return;
     }
 
-    const end = stageRef.current?.getPointerPosition();
+    // const end = stageRef.current?.getPointerPosition();
+    // const start = startPosRef.current;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.container().getBoundingClientRect();
+    const end = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const start = startPosRef.current;
+    
     if (!end || !start) {
       startPosRef.current = null;
       return;
@@ -600,6 +606,15 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
 
     startPosRef.current = null;
   };
+   window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+
+}, [internalShapeType, lines, shapeType]);
 
   // 텍스트 편집 오버레이
   const beginEditText = (shape) => {
@@ -682,8 +697,8 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
         width={stageW}
         height={stageH}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        // onMouseMove={handleMouseMove}
+        // onMouseUp={handleMouseUp}
         ref={stageRef}
         style={{ position: 'absolute', zIndex: 0 }}
       >

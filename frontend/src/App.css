@@ -1,3 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap');
+
+/* Global font: Poppins */
+html, body {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Ensure form controls inherit the font */
+input, button, textarea, select {
+  font-family: inherit;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;

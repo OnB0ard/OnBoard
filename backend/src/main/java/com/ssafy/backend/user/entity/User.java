@@ -1,6 +1,7 @@
 package com.ssafy.backend.user.entity;
 
 import com.ssafy.backend.common.entity.DateEntity;
+import com.ssafy.backend.notification.entity.Notification;
 import com.ssafy.backend.security.entity.Token;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,4 +31,7 @@ public class User extends DateEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Token> tokens;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notification> notifications;
 }

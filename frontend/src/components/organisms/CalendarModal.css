@@ -1,0 +1,149 @@
+/* CalendarModal 스타일 - PlanPostModal과 일관성 유지 */
+.calendar-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.4); /* PlanPostModal과 동일한 배경 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.calendar-modal__container {
+  background-color: white;
+  border-radius: 0.375rem; /* PlanPostModal과 동일 */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); /* PlanPostModal과 동일 */
+  padding: 0.875rem; /* PlanPostModal과 동일 */
+  width: auto;
+  max-width: none;
+  font-family: 'Poppins', sans-serif; /* PlanPostModal과 동일 */
+}
+
+.calendar-modal__header {
+  margin-bottom: 0.75rem; /* PlanPostModal과 동일 */
+}
+
+.calendar-modal__title {
+  font-size: 0.875rem; /* PlanPostModal과 동일 */
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.calendar-modal__date-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem; /* PlanPostModal subtitle과 비슷한 크기 */
+}
+
+.calendar-modal__date-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calendar-modal__date-label {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.calendar-modal__date-value {
+  font-weight: 500;
+  color: #2563eb;
+  font-size: 0.75rem;
+}
+
+.calendar-modal__calendar {
+  margin-bottom: 1.5rem;
+  /* 달력 컴포넌트의 자연스러운 크기를 유지 */
+  display: inline-block;
+}
+
+/* 에러 메시지 (버튼 위) */
+.calendar-modal__error {
+  color: #dc2626; /* red-600 */
+  font-size: 0.75rem;
+  margin-top: -0.5rem; /* 달력과 간격 좁힘 */
+  margin-bottom: 0.5rem; /* 버튼과 간격 */
+  align-self: flex-end; /* 오른쪽 정렬 (content가 flex-end) */
+}
+
+/* 달력과 버튼을 포함하는 전체 레이아웃 */
+.calendar-modal__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* 오른쪽 정렬 */
+}
+
+.calendar-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem; /* PlanPostModal과 동일 */
+  margin-top: 1rem; /* PlanPostModal과 동일 */
+  align-self: flex-end;
+}
+
+/* 버튼 스타일링 - 크기 증가 */
+.calendar-modal__footer button {
+  height: 2rem; /* 1.75rem에서 증가 */
+  padding: 0.4rem 1rem; /* 패딩 증가 */
+  font-size: 0.75rem; /* 폰트 약간 증가 */
+  min-height: auto;
+}
+
+/* 반응형 디자인 - PlanPostModal과 일관성 유지 */
+/* 태블릿 크기 (768px 이하) */
+@media (max-width: 768px) {
+  .calendar-modal__backdrop {
+    padding: 0.5rem;
+  }
+  
+  .calendar-modal__container {
+    padding: 1rem;
+    border-radius: 0.525rem;
+  }
+  
+  .calendar-modal__title {
+    font-size: 0.9375rem;
+  }
+  
+  .calendar-modal__footer button {
+    height: 2.2rem; /* 태블릿에서 더 크게 */
+    padding: 0.45rem 1.1rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* 모바일 크기 (480px 이하) */
+@media (max-width: 480px) {
+  .calendar-modal__backdrop {
+    padding: 0.25rem;
+    align-items: flex-start;
+    padding-top: 1.5rem;
+  }
+  
+  .calendar-modal__container {
+    padding: 1.25rem;
+    border-radius: 0.6125rem;
+  }
+  
+  .calendar-modal__title {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  
+  .calendar-modal__footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  
+  .calendar-modal__footer button {
+    width: 100%;
+    height: 2.5rem; /* 모바일에서 더 크게 */
+    padding: 0.5rem 1rem; /* 패딩 증가 */
+    font-size: 0.875rem; /* 폰트 증가 */
+  }
+}

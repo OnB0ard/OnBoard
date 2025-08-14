@@ -1,0 +1,266 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
+import Icon from '../atoms/Icon';
+import SearchBar from './SearchBar';
+import PlaceResult from './PlaceResult';
+import PlaceDetailModal from './PlaceDetailModal';
+import { useMapCoreStore, useSearchStore, usePlaceDetailsStore, useBookmarkStore } from '../../store/mapStore';
+import './AutocompleteSearchModal.css';
+import {createPortal} from 'react-dom';
+
+/**
+ * Google 지도 장소 검색 및 자동완성 기능을 제공하는 모달 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 속성
+ * @param {boolean} props.isOpen - 모달의 열림/닫힘 상태
+ * @param {function} props.onClose - 모달을 닫는 함수
+ */
+const AutocompleteSearchModal = ({ isOpen, onClose, position }) => {
+  // Map Core functionality
+  const panToPlace = useMapCoreStore((state) => state.panToPlace);
+  const mapInstance = useMapCoreStore((state) => state.mapInstance);
+  const placesService = useMapCoreStore((state) => state.placesService);
+  const setPlacesService = useMapCoreStore((state) => state.setPlacesService);
+  
+  // Search functionality
+  const inputValue = useSearchStore((state) => state.inputValue);
+  const searchResults = useSearchStore((state) => state.searchResults);
+  const isSearching = useSearchStore((state) => state.isSearching);
+  const hasSearched = useSearchStore((state) => state.hasSearched);
+  const autocompletePredictions = useSearchStore((state) => state.autocompletePredictions);
+  const setInputValue = useSearchStore((state) => state.setInputValue);
+  const performTextSearch = useSearchStore((state) => state.performTextSearch);
+  const fetchAutocompletePredictions = useSearchStore((state) => state.fetchAutocompletePredictions);
+  const clearSearch = useSearchStore((state) => state.clearSearch);
+  
+  // Place details functionality
+  const handlePlaceSelection = usePlaceDetailsStore((state) => state.handlePlaceSelection);
+  
+  // Bookmark functionality
+  const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
+  const isBookmarked = useBookmarkStore((state) => state.isBookmarked);
+  const setActivePlanId = useBookmarkStore((state) => state.setActivePlanId);
+  // 북마크 상태 변경 시 즉시 리렌더 트리거
+  const bookmarkedPlaces = useBookmarkStore((state) => state.bookmarkedPlaces);
+
+  // PlaceDetailModal 상태 관리
+  const [showPlaceDetail, setShowPlaceDetail] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [placeDetailPosition, setPlaceDetailPosition] = useState({ x: 0, y: 0 });
+  const [isAutocompleteClicked, setIsAutocompleteClicked] = useState(false);
+  const [searchBarWidth, setSearchBarWidth] = useState(0);
+
+
+
+  const placesLib = useMapsLibrary('places');
+
+    // Places 라이브러리와 지도 인스턴스가 준비되면 PlacesService를 생성하고 전역 상태에 저장합니다.
+  useEffect(() => {
+    if (placesLib && mapInstance && !placesService) {
+      const service = new placesLib.PlacesService(mapInstance);
+      setPlacesService(service);
+    }
+  }, [placesLib, mapInstance, placesService, setPlacesService]);
+
+    // DOM 요소에 직접 접근하기 위한 Ref
+  const inputRef = useRef(null); // 검색 입력창 Ref
+  const modalRef = useRef(null); // 모달 컨텐츠 영역 Ref
+  const searchBarRef = useRef(null); // 검색창 컨테이너 Ref
+
+    // 모달을 닫을 때 호출되는 콜백 함수
+  // 검색 관련 상태를 초기화하고 부모 컴포넌트의 onClose 함수를 호출합니다.
+  const handleClose = useCallback(() => {
+    clearSearch();
+    setShowPlaceDetail(false); // PlaceDetailModal 닫기
+    if (onClose) {
+      onClose();
+      clearSearch(); // 모달이 닫힐 때 검색 관련 상태 초기화
+    }
+  }, [clearSearch, onClose]);
+
+    // 모달 외부를 클릭했을 때 모달을 닫는 기능을 처리하는 Hook
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // 클릭된 위치가 검색 모달 내부나 상세 정보 모달 내부가 아닐 경우에만 닫기
+      const isOutsideSearchModal = modalRef.current && !modalRef.current.contains(event.target);
+      const isOutsideDetailModal = !event.target.closest('.place-detail-modal-content');
+
+      if (isOutsideSearchModal && isOutsideDetailModal) {
+        handleClose();
+      }
+    };
+
+    // 모달이 열려 있을 때만 이벤트 리스너를 추가합니다.
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // 컴포넌트가 언마운트될 때 이벤트 리스너를 정리합니다.
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, handleClose]);
+
+    // 모달이 열릴 때 검색창에 자동으로 포커스를 주는 Hook
+  useEffect(() => {
+        if (isOpen && inputRef.current) {
+      if (searchBarRef.current) {
+        setSearchBarWidth(searchBarRef.current.offsetWidth);
+      }
+      // 모달이 완전히 표시된 후 포커스를 주기 위해 약간의 지연을 줍니다.
+      setTimeout(() => inputRef.current.focus(), 100);
+      // 모달이 열릴 때 자동완성 상태 초기화
+      clearSearch();
+    }
+  }, [isOpen, clearSearch]);
+
+    // 검색창에서 키보드 입력을 처리하는 함수
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // 폼 제출 방지
+      performTextSearch(); // 텍스트 검색 실행
+    } else if (e.key === 'Escape') {
+      handleClose(); // 모달 닫기
+    }
+  };
+
+    // 자동완성 추천 목록의 항목을 클릭했을 때 실행되는 함수
+  const handlePredictionClick = (prediction) => {
+    // 입력 값을 선택된 항목으로 설정합니다.
+    setInputValue(prediction.description);
+    // 설정된 값으로 즉시 텍스트 검색을 실행합니다.
+    // performTextSearch는 내부적으로 inputValue를 사용하므로, setInputValue 이후에 호출해야 합니다.
+    // 비동기 상태 업데이트 문제를 피하기 위해, performTextSearch가 최신 값을 사용하도록 합니다.
+    useSearchStore.setState({ inputValue: prediction.description });
+    performTextSearch();
+  };
+
+  const handlePredictionClickWithEvent = async (e, prediction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    await handlePredictionClick(prediction);
+  };
+
+  // 장소 상세보기 모달 열기
+  // 장소 상세보기 모달 열기
+  const handlePlaceClick = async (place) => {
+    console.log("AutocompleteSearchModal에서 장소 선택 시도:", place);
+    if (!place || !place.place_id) {
+      console.error("handlePlaceClick에 유효한 장소 정보가 전달되지 않았습니다.");
+      return;
+    }
+
+    try {
+      // 1. place_id로 장소의 전체 상세 정보를 가져옵니다.
+      const placeDetails = await handlePlaceSelection(place.place_id);
+      console.log("handlePlaceSelection에서 반환된 상세 정보:", placeDetails);
+
+      if (placeDetails) {
+        // 2. 가져온 상세 정보로 지도를 이동하고 모달을 엽니다.
+        panToPlace(placeDetails);
+
+        const position = { x: 405, y: 80 };
+        setPlaceDetailPosition(position);
+        setSelectedPlace(placeDetails); // 상세 정보로 상태 업데이트
+        setShowPlaceDetail(true);
+      } else {
+        console.error('handlePlaceSelection이 상세 정보를 반환하지 않았습니다.');
+      }
+    } catch (error) {
+      console.error('장소 상세 정보를 가져오거나 모달을 여는 중 오류 발생:', error);
+    }
+  };
+
+  useEffect(() => {
+    // PlanPage에서 열리므로 현재 URL의 planId를 사용할 수 있으면 설정
+    try {
+      const path = window.location.pathname;
+      const match = path.match(/plan\/(\d+|[\w-]+)/i);
+      if (match) setActivePlanId(match[1]);
+    } catch (_) {
+      // ignore
+    }
+  }, [setActivePlanId]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <>
+      <div 
+        className="autocomplete-search-modal" 
+        ref={modalRef}
+        style={position ? { top: `${position.y}px`, left: `${position.x}px` } : {}}
+      >
+
+        <div className="autocomplete-search-container">
+          <div className="autocomplete-search-searchbar" ref={searchBarRef}>
+            <SearchBar
+              ref={inputRef}
+              type="mapsearch"
+              placeholder="장소나 주소를 검색하세요"
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                fetchAutocompletePredictions(e.target.value);
+              }}
+              onKeyDown={handleKeyDown}
+              onSearch={performTextSearch}
+            />
+            {autocompletePredictions.length > 0 && !hasSearched && (
+              <ul className="autocomplete-predictions-list" style={{ width: searchBarWidth > 0 ? `${searchBarWidth}px` : 'auto' }}>
+                {autocompletePredictions.map((prediction) => (
+                  <li
+                    key={prediction.place_id}
+                    className="autocomplete-prediction-item"
+                    onClick={() => handlePredictionClick(prediction)}
+                  >
+                    <Icon type="location" />
+                    <div className="prediction-text">
+                      <span className="prediction-main-text">{prediction.structured_formatting.main_text}</span>
+                      <span className="prediction-secondary-text">{prediction.structured_formatting.secondary_text}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="autocomplete-search-content">
+            {isSearching ? (
+              <div className="search-empty"><p>검색 중...</p></div>
+            ) : hasSearched ? (
+              searchResults.length > 0 ? (
+                <PlaceResult 
+                  places={searchResults.map(place => ({
+                    ...place,
+                    isBookmarked: isBookmarked(place.place_id)
+                  }))}
+                  onPlaceClick={(place) => handlePlaceClick(place)}
+                  onBookmarkClick={(place) => toggleBookmark(place)}
+                  onDragStart={(e, place) => {
+                    console.log("AutocompleteSearchModal에서 드래그 시작:", place);
+                  }}
+                />
+              ) : (
+                <div className="search-empty"><p>검색 결과가 없습니다.</p></div>
+              )
+            ) : (
+              <div className="search-help">
+                {/* <p>장소를 검색하거나 키워드를 입력하세요.</p> */}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {showPlaceDetail && (
+        <PlaceDetailModal
+          place={selectedPlace}
+          onClose={() => setShowPlaceDetail(false)}
+        />
+      )}
+    </>,
+    document.getElementById('modal-root')
+  );
+};
+
+export default AutocompleteSearchModal;

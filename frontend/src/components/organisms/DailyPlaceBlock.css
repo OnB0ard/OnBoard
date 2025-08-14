@@ -1,0 +1,275 @@
+.daily-place-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: grab;
+  min-height: 80px;
+  overflow: visible; /* 드롭다운이 잘리지 않도록 설정 */
+  position: relative;
+  user-select: none;
+}
+
+.daily-place-block:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.daily-place-block:active {
+  cursor: grabbing;
+}
+
+/* 장소 드래그 중일 때의 스타일 */
+.daily-place-block.dragging {
+  opacity: 0.7;
+  transform: rotate(3deg) scale(1.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  border: 2px solid #3b82f6;
+  z-index: 1000;
+  cursor: grabbing;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 장소 드래그 오버 시의 스타일 */
+.daily-place-block.drag-over-place {
+  border: 2px solid #3b82f6;
+  background-color: #eff6ff;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  position: relative;
+}
+
+/* 상단 드롭 인디케이터 - 장소 상단에 삽입 */
+.daily-place-block.drag-over-place[data-drop-position="top"]::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 상단 드롭 인디케이터 화살표 */
+.daily-place-block.drag-over-place[data-drop-position="top"]::after {
+  content: '▼';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #3b82f6;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
+}
+
+/* 하단 드롭 인디케이터 - 장소 하단에 삽입 */
+.daily-place-block.drag-over-place[data-drop-position="bottom"]::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #059669, #10b981);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  animation: dropIndicatorPulse 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* 하단 드롭 인디케이터 화살표 */
+.daily-place-block.drag-over-place[data-drop-position="bottom"]::after {
+  content: '▲';
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #10b981;
+  font-size: 10px;
+  font-weight: bold;
+  animation: dropArrowBounce 1s ease-in-out infinite;
+  z-index: 11;
+}
+
+/* 드롭다운이 열렸을 때는 호버 시 transform 효과를 비활성화 */
+.daily-place-block.dropdown-open:hover {
+  transform: none;
+}
+
+/* 드롭다운이 열려있을 때는 호버 효과 비활성화 */
+.daily-place-block.dropdown-open {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: none;
+}
+
+/* 드롭다운이 열려있을 때는 드래그 비활성화 */
+.daily-place-block.dropdown-open {
+  cursor: default;
+  pointer-events: auto;
+}
+
+.daily-place-block.dropdown-open * {
+  pointer-events: auto;
+}
+
+.daily-place-block.dropdown-open:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: none;
+}
+
+.daily-place-block-image {
+  flex-shrink: 0;
+}
+
+.daily-place-block-thumbnail {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.daily-place-block-content {
+  flex: 1;
+  min-width: 0;
+  overflow: visible; /* 드롭다운이 잘리지 않도록 visible로 변경 */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.daily-place-block-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 0;
+}
+
+.daily-place-block-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px; /* 최대 너비 설정 */
+}
+
+.daily-place-block-rating {
+  flex-shrink: 0;
+}
+
+.daily-place-block-address {
+  font-size: 10px;
+  color: #6b7280;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px; /* 최대 너비 설정 */
+}
+
+.daily-place-block-memo {
+  margin-top: 4px;
+}
+
+/* 항상 보이는 메모 인디케이터 */
+.daily-place-block-memo-indicator {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 메모가 없을 때 플레이스홀더 스타일 */
+.memo-placeholder {
+  font-size: 10px;
+  color: #6b7280; /* 더 연한 텍스트 색상 */
+  background-color: #F3F4F6; /* 연한 배경 */
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 0;
+  display: inline-block;
+}
+
+.memo-text {
+  font-size: 10px;
+  color: #4d4d4d;
+  background-color: #E1EAFD;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px; /* 최대 너비 설정 */
+}
+
+.daily-place-block-memo-indicator:hover .memo-text,
+.daily-place-block-memo-indicator:hover .memo-placeholder {
+  filter: brightness(0.97);
+}
+
+.daily-place-block-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* 드롭다운 트리거 버튼 스타일 */
+.daily-place-block-actions .card-dropdown-trigger {
+  font-size: 15px;
+  font-weight: bold;
+  color: #6b7280;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.daily-place-block-actions .card-dropdown-trigger:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* 기존 메모 버튼만 숨김 */
+.memo-button {
+  display: none;
+}
+
+/* 삭제(X) 버튼 스타일 */
+.daily-place-block-remove {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #6b7280;
+  background-color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.daily-place-block-remove:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.daily-place-block-remove:active {
+  transform: scale(0.96);
+}

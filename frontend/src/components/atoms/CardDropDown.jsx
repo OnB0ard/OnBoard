@@ -1,0 +1,80 @@
+import React, { useState, useRef, useEffect } from 'react';
+import './CardDropDown.css';
+
+const CardDropDown = ({ children, items }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // 드롭다운이 열렸을 때 부모 요소의 호버 효과 방지
+  useEffect(() => {
+    if (isOpen) {
+      // 부모 블록에 클래스 추가
+      const parentBlock = dropdownRef.current?.closest('.daily-place-block');
+      if (parentBlock) {
+        parentBlock.classList.add('dropdown-open');
+      }
+    } else {
+      // 부모 블록에서 클래스 제거
+      const parentBlock = dropdownRef.current?.closest('.daily-place-block');
+      if (parentBlock) {
+        parentBlock.classList.remove('dropdown-open');
+      }
+    }
+  }, [isOpen]);
+
+  const handleItemClick = (item) => {
+    if (item.onClick) {
+      item.onClick();
+    }
+    setIsOpen(false);
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div className="card-dropdown" ref={dropdownRef}>
+      <button
+        className="card-dropdown-trigger"
+        onClick={handleToggle}
+      >
+        {children}
+      </button>
+      
+      {isOpen && (
+        <div className="card-dropdown-menu">
+          {items.map((item, index) => (
+            <button
+              key={index}
+              className={`card-dropdown-item ${item.className || ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleItemClick(item);
+              }}
+            >
+              {item.icon && <span className="dropdown-item-icon">{item.icon}</span>}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CardDropDown;

@@ -9,6 +9,7 @@ import { useStompWebSocket } from "@/hooks/useStompWebSocket";
 import { getWhiteBoardObjects } from '../../apis/whiteBoardApi';
 import { useParams } from "react-router-dom";
 import { useMouseStomp } from "@/hooks/useMouseWebSocket";
+import { createPortal} from "react-dom";
 
 //커서 색상(순서)
 const COLORS = ["blue", "purple","yellow", "green","red", "orange" ];
@@ -145,23 +146,27 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
   const tempLineIdRef = useRef(null);
 
   const {
-    shapes,
-    lines,
-    selectedId,
-    isEditingTextId,
-    shapeType,
-    color,
-    addShapeFromSocket,
-    updateLastLinePoints,
-    updateLastLinePointsTemp,
-    addLine,
-    updateShapeFieldsCommit,
-    setSelectedId,
-    setShapeType,
-    setColor,
-    removeShapeById,
-    replaceAllFromServer,
-  } = useBoardStore();
+  shapes,
+  lines,
+  selectedId,
+  isEditingTextId,
+  shapeType,
+  color,
+  addShapeFromSocket,
+  // ✨ last-기반 함수는 더 이상 사용하지 않음
+  // updateLastLinePoints,
+  // updateLastLinePointsTemp,
+  addLine, // 서버 커밋 수신 시 확정 라인 추가 용도로 유지
+  addTempLine, // ✨ 추가
+  updateLinePointsByIdTemp, // ✨ 추가
+  commitLinePointsById, // ✨ 추가
+  updateShapeFieldsCommit,
+  setSelectedId,
+  setShapeType,
+  setColor,
+  removeShapeById,
+  replaceAllFromServer,
+} = useBoardStore();
 
   //커서
   const userName = useAuthStore((s) => s.userName);
@@ -487,32 +492,33 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
         lineCap: 'round',
         lineJoin: 'round'
       };
-      addLine(newLine);
+      addTempLine(newLine);
     }
   };
 
-  const handleMouseMove = () => {
-    // ERASER: 이동 중 지속 삭제
+  useEffect(() => {
+  const handleWindowMouseMove = (e) => {
+     const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.container().getBoundingClientRect();
+    const pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    // ERASER
     if (internalShapeType === 'eraser' && isErasing.current) {
-      const pos = stageRef.current?.getPointerPosition();
-      if (pos) eraseAtPointer(pos);
+      eraseAtPointer(pointer);
       return;
     }
-
-    // PEN: 로컬 임시 라인 업데이트 (서버 전송 없음)
-    if (!isDrawing.current || internalShapeType !== 'pen') return;
-    const pos = stageRef.current?.getPointerPosition();
-    if (!pos) return;
-
-    const currentLines = [...lines];
-    const lastLine = currentLines[currentLines.length - 1];
-    if (!lastLine) return;
-
-    const newPoints = [...lastLine.points, pos.x, pos.y];
-    updateLastLinePointsTemp(newPoints);
+    // PEN
+    if (internalShapeType === 'pen' && isDrawing.current) {
+      const id = tempLineIdRef.current;
+      if (!id) return;
+      const me = lines.find(l => l.id === id);
+      if (!me) return;
+      updateLinePointsByIdTemp(id, [...me.points, pointer.x, pointer.y]);
+    }
   };
 
-  const handleMouseUp = () => {
+  const handleWindowMouseUp = (e) => {
     // ERASER 종료
     if (internalShapeType === 'eraser') {
       isErasing.current = false;
@@ -520,19 +526,22 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
       return;
     }
 
-    // PEN 종료: 서버에만 최종 저장 요청 보내고, 서버 응답 오면 temp 교체
+    // PEN 종료: 내 임시 라인(id)만 커밋 + 서버 전송
     if (internalShapeType === 'pen') {
       isDrawing.current = false;
-      const currentLines = [...lines];
-      const lastLine = currentLines[currentLines.length - 1];
-      if (lastLine) {
-        updateLastLinePoints(lastLine.points);
+
+      const id = tempLineIdRef.current;
+      const me = id ? lines.find((l) => l.id === id) : null;
+      if (me && me.points?.length) {
+        // 로컬 커밋(히스토리 저장) — 필요 없다면 이 줄은 지워도 동작은 함
+        commitLinePointsById(id, me.points);
+
+        // 서버에 최종 커밋 전송
         sendMessage('MODIFY_LINE', {
-          // userId: myUserId, (서버가 세션에서 채우기 때문에 보낼 필요 X)
-          x: lastLine.points[0],
-          y: lastLine.points[1],
-          points: lastLine.points,
-          stroke: lastLine.stroke
+          x: me.points[0],
+          y: me.points[1],
+          points: me.points,
+          stroke: me.stroke,
         });
       }
       return;
@@ -543,8 +552,14 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
       return;
     }
 
-    const end = stageRef.current?.getPointerPosition();
+    // const end = stageRef.current?.getPointerPosition();
+    // const start = startPosRef.current;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.container().getBoundingClientRect();
+    const end = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const start = startPosRef.current;
+    
     if (!end || !start) {
       startPosRef.current = null;
       return;
@@ -592,6 +607,15 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
 
     startPosRef.current = null;
   };
+   window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+
+}, [internalShapeType, lines, shapeType]);
 
   // 텍스트 편집 오버레이
   const beginEditText = (shape) => {
@@ -674,8 +698,8 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
         width={stageW}
         height={stageH}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        // onMouseMove={handleMouseMove}
+        // onMouseUp={handleMouseUp}
         ref={stageRef}
         style={{ position: 'absolute', zIndex: 0 }}
       >
@@ -815,8 +839,25 @@ const WhiteBoard = ({ planId: planIdProp, viewportSize }) => {
           <Transformer ref={trRef} />
         </Layer>
       </Stage>
+      
 
-      {renderCursors(users, String(myUserId), userOrder)}
+      {/* 커서 오버레이: 뷰포트 고정 + 클립 */}
+    {typeof window !== "undefined" &&
+      createPortal(
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+            zIndex: 9999, // Stage 위로
+          }}
+        >
+          {renderCursors(users, String(myUserId), userOrder)}
+        </div>,
+        document.body
+      )
+    }
     </>
   );
 };

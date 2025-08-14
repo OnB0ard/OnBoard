@@ -19,6 +19,7 @@ import { useInitialWhiteboardPlaces } from '../../hooks/useInitialWhiteboardPlac
 import { usePlanDayScheduleWS } from '../../hooks/usePlanDayScheduleWS';
 import useBookmarkStore from '../../store/mapStore/useBookmarkStore';
 import { usePlaceBlockSync } from '../../hooks/usePlaceBlockSync';
+import { useBoardStore } from '@/store/useBoardStore';
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -136,6 +137,8 @@ const PlanPage = () => {
   const mapRef = useRef(null);
   const whiteBoardRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const dragBlockSizeRef = useRef({ width: 0, height: 0 });
+  const placeLayerRef = useRef(null);
 
   // Bookmark WS sender 주입은 usePlanBookmarkWS 훅에서 처리됩니다.
 
@@ -154,6 +157,13 @@ const PlanPage = () => {
     }
   }, [participantError]);
 
+  useEffect(() => {
+    return () => {
+      // 언마운트 시 보드 상태 초기화
+      useBoardStore.getState().reset();
+    };
+  }, []);
+  
   useEffect(() => {
     if (lastMapPosition) {
       setMapCenter(lastMapPosition);
@@ -218,33 +228,45 @@ const rect = e.currentTarget.getBoundingClientRect();
 const offsetX = e.clientX - rect.left;
 const offsetY = e.clientY - rect.top + 50;
     
-// 오프셋을 ref에 저장
+// 블록 크기와 오프셋을 ref에 저장
+dragBlockSizeRef.current = { width: rect.width, height: rect.height };
 dragOffsetRef.current = { x: offsetX, y: offsetY };
 };
 
 // 전역 마우스 이벤트 리스너 추가 (끌고 다니기)
 useEffect(() => {
 const handleGlobalMouseMove = (e) => {
-if (draggedBlock && !isDailyPlanModalOpen) {
-const newX = e.clientX - dragOffsetRef.current.x;
-const newY = e.clientY - dragOffsetRef.current.y;
-updatePlaceBlockPosition(draggedBlock.id, { x: newX, y: newY }, numericPlanId);
-        
-// WebSocket으로 PlaceBlock 이동 알림 (flat x,y)
-const movePayload = {
-  whiteBoardId: numericPlanId,
-  type: 'PLACE',
-  whiteBoardObjectId: Number(draggedBlock.id),
-  x: newX,
-  y: newY,
-};
-console.groupCollapsed('[PlaceBlock][SEND] MOVE');
-console.log('planId (numeric):', numericPlanId, 'payload:', movePayload);
-console.groupEnd();
-sendPlaceBlockMessage('MOVE', movePayload);
-// 레거시 호환 전송 (선택):
-// sendPlaceBlockMessage('PLACEBLOCK_MOVED', { id: draggedBlock.id, position: { x: newX, y: newY } });
-}
+  if (draggedBlock && !isDailyPlanModalOpen) {
+    // 기본 좌표 계산
+    let newX = e.clientX - dragOffsetRef.current.x;
+    let newY = e.clientY - dragOffsetRef.current.y;
+
+    // 컨테이너 크기와 블록 크기 기반으로 클램핑
+    const layerEl = placeLayerRef.current;
+    const rect = layerEl ? layerEl.getBoundingClientRect() : null;
+    const W = rect?.width ?? window.innerWidth;
+    const H = rect?.height ?? window.innerHeight;
+    const bw = dragBlockSizeRef.current.width || 0;
+    const bh = dragBlockSizeRef.current.height || 0;
+
+    const clampedX = Math.max(0, Math.min(newX, Math.max(0, W - bw)));
+    const clampedY = Math.max(0, Math.min(newY, Math.max(0, H - bh)));
+
+    updatePlaceBlockPosition(draggedBlock.id, { x: clampedX, y: clampedY }, numericPlanId);
+
+    // WebSocket으로 PlaceBlock 이동 알림 (flat x,y)
+    const movePayload = {
+      whiteBoardId: numericPlanId,
+      type: 'PLACE',
+      whiteBoardObjectId: Number(draggedBlock.id),
+      x: clampedX,
+      y: clampedY,
+    };
+    console.groupCollapsed('[PlaceBlock][SEND] MOVE');
+    console.log('planId (numeric):', numericPlanId, 'payload:', movePayload);
+    console.groupEnd();
+    sendPlaceBlockMessage('MOVE', movePayload);
+  }
 };
 
 const handleGlobalMouseUp = () => {
@@ -419,28 +441,39 @@ const handleGlobalMouseUp = () => {
         </MapContainer>
       )}
       
-      {/* 화이트보드의 PlaceBlock들 */}
-      {placeBlocks.map((block) => (
-        <div
-          key={block.id}
-          style={{
-            position: 'absolute',
-            left: block.position.x,
-            top: block.position.y,
-            zIndex: draggedBlock?.id === block.id ? 2000 : 1000,
-            cursor: 'grab'
-          }}
-          onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
-        >
-          <PlaceBlock
-            place={block}
-            onRemove={(id) => handleRemove(id)}
-            onEdit={() => {}}
-            onMouseDown={handleMouseDown}
-            isDailyPlanModalOpen={isDailyPlanModalOpen}
-          />
-        </div>
-      ))}
+      {/* 화이트보드의 PlaceBlock 레이어 (맵과 유사한 전용 컨테이너) */}
+      <div
+        ref={placeLayerRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1500,
+          pointerEvents: 'none',
+        }}
+      >
+        {placeBlocks.map((block) => (
+          <div
+            key={block.id}
+            style={{
+              position: 'absolute',
+              left: block.position.x,
+              top: block.position.y,
+              zIndex: draggedBlock?.id === block.id ? 2000 : 1000,
+              cursor: 'grab',
+              pointerEvents: 'auto',
+            }}
+            onClick={() => panToPlace(block)} // PlaceBlock 클릭 시 마커 표시 및 지도 이동
+          >
+            <PlaceBlock
+              place={block}
+              onRemove={(id) => handleRemove(id)}
+              onEdit={() => {}}
+              onMouseDown={handleMouseDown}
+              isDailyPlanModalOpen={isDailyPlanModalOpen}
+            />
+          </div>
+        ))}
+      </div>
       
       {/* 장소 상세 모달: 스토어 상태에 따라 표시 */}
       <PlaceDetailModal />

@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";
 import Icon from "../atoms/Icon";
-import { updateUserProfile } from "../../apis/updateProfile"; 
+import { updateUserProfile, getMyProfile } from "../../apis/updateProfile"; 
 import { deleteUserAccount } from "../../apis/deleteUserAccount";
 import { useAuthStore } from "../../store/useAuthStore"; // zustand store import
 
@@ -154,20 +154,27 @@ const handleSave = async () => {
     useAuthStore.getState().setAuth({ accessToken: response.accessToken });
     }
 
-    // Zustand store 업데이트
-    // API에서 새로운 이미지 URL을 반환하면 우선 사용, 없으면 로컬 objectURL 또는 기존 URL 사용
-    let nextImageUrl = (response && (response.imageUrl || response?.data?.imageUrl))
-      || (imageFile ? URL.createObjectURL(imageFile) : profileImage);
-    // 캐시버스터는 http(s) URL에만 적용 (blob:/data:에는 붙이면 안 됨)
-    if (nextImageUrl) {
-      const isHttp = /^https?:\/\//.test(nextImageUrl);
-      const alreadyHasBust = /[?&]t=\d+/.test(nextImageUrl);
-      if (isHttp && !alreadyHasBust) {
-        const sep = nextImageUrl.includes('?') ? '&' : '?';
-        nextImageUrl = `${nextImageUrl}${sep}t=${Date.now()}`;
+    // 서버 최종 상태 재조회로 스토어 최신화
+    try {
+      const profRes = await getMyProfile();
+      const body = profRes?.body ?? profRes;
+      const serverName = body?.userName || body?.name || nickname.trim();
+      const serverImage = body?.profileImage || body?.profileImageUrl || body?.imageUrl || profileImage;
+      updateProfile(serverName, serverImage);
+    } catch (_) {
+      // 조회 실패 시, 기존 응답/로컬 기반으로 보수적 업데이트
+      let nextImageUrl = (response && (response.imageUrl || response?.data?.imageUrl))
+        || (imageFile ? URL.createObjectURL(imageFile) : profileImage);
+      if (nextImageUrl) {
+        const isHttp = /^https?:\/\//.test(nextImageUrl);
+        const alreadyHasBust = /[?&]t=\d+/.test(nextImageUrl);
+        if (isHttp && !alreadyHasBust) {
+          const sep = nextImageUrl.includes('?') ? '&' : '?';
+          nextImageUrl = `${nextImageUrl}${sep}t=${Date.now()}`;
+        }
       }
+      updateProfile(nickname.trim(), nextImageUrl);
     }
-    updateProfile(nickname.trim(), nextImageUrl);
     // 전체 앱(특히 MyPage) 강제 리렌더를 위한 커스텀 이벤트 디스패치
     try {
       window.dispatchEvent(new CustomEvent('profile-updated'));

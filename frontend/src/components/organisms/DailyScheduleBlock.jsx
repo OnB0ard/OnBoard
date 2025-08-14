@@ -164,6 +164,7 @@ const DailyScheduleBlock = ({
         </span>
           <button
             onClick={() => setIsCollapsed((v) => !v)}
+
             className="border-none bg-transparent rounded-md mr-2 cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
             style={{ marginLeft: 9 }}
             aria-label={isCollapsed ? '장소 목록 펼치기' : '장소 목록 접기'}
@@ -181,7 +182,7 @@ const DailyScheduleBlock = ({
           </button>
           <button
             onClick={() => onDayClick(dayIndex)}
-            className="border-none bg-transparent rounded-md mr-2 cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
+            className="border-none bg-transparent rounded-md cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
             aria-label="일차 위치를 지도에서 보기"
           >
             <Icon type="map" />

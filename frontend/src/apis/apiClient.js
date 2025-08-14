@@ -23,8 +23,10 @@ const refreshClient = axios.create({
   withCredentials: true, // 반드시 쿠키 포함
 });
 
+const REFRESH_PATH = import.meta.env.VITE_REFRESH_PATH || "user/refresh"; 
+
 async function requestNewAccessToken() {
-  const res = await refreshClient.get("refresh");
+  const res = await refreshClient.get(REFRESH_PATH);
   const payload = res?.data;
   const token = payload?.body?.accessToken || payload?.accessToken;
   if (!token) throw new Error("No accessToken in refresh response");
@@ -35,9 +37,19 @@ async function requestNewAccessToken() {
 apiClient.interceptors.request.use(
   (config) => {
     // 로그인 후 localStorage에 저장된 토큰 가져오기 (보안적으로 좋지 않다고 하여 Zustand 사용하여 store에 저장하는 방식으로 수정)
-    // const token = localStorage.getItem('accessToken');
-
-    const token = accessTokenGetter(); // Zustand로부터 토큰 가져오기
+    // Zustand persist는 'auth-storage' 키에 JSON으로 저장합니다. 여기서 accessToken을 파싱합니다.
+    const token = (() => {
+      try {
+        const raw = localStorage.getItem('auth-storage');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        // persist 구조: { state: {...}, version: n }
+        const persistedState = parsed?.state ?? parsed;
+        return persistedState?.accessToken || null;
+      } catch (_) {
+        return null;
+      }
+    })();
     
     // 토큰이 있으면 헤더에 자동으로 추가
     if (token) {

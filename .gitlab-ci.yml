@@ -16,7 +16,7 @@ variables:
   AWS_SECRET_KEY: $AWS_SECRET_KEY
   AWS_REGION: ap-northeast-2
   AWS_S3_BUCKET: $AWS_S3_BUCKET
-  JWT_ACCESS_TOKEN_EXPIRATION: 3600
+  JWT_ACCESS_TOKEN_EXPIRATION: 60
   JWT_REFRESH_TOKEN_EXPIRATION: 604800
   JWT_SECRET: $JWT_SECRET
   DEPLOY_DIR: /home/ubuntu/deploy
@@ -59,7 +59,7 @@ deploy:
     - echo "AWS_SECRET_KEY=$AWS_SECRET_KEY" >> ./backend/.deploy/docker/.env
     - echo "AWS_REGION=ap-northeast-2" >> ./backend/.deploy/docker/.env
     - echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> ./backend/.deploy/docker/.env
-    - echo "JWT_ACCESS_TOKEN_EXPIRATION=3600" >> ./backend/.deploy/docker/.env
+    - echo "JWT_ACCESS_TOKEN_EXPIRATION=60" >> ./backend/.deploy/docker/.env
     - echo "JWT_REFRESH_TOKEN_EXPIRATION=604800" >> ./backend/.deploy/docker/.env
     - echo "JWT_SECRET=$JWT_SECRET" >> ./backend/.deploy/docker/.env
     - chmod +x ./backend/.deploy/deploy.sh

@@ -19,6 +19,7 @@ import com.ssafy.backend.user.entity.UserPlan;
 import com.ssafy.backend.user.entity.UserStatus;
 import com.ssafy.backend.user.entity.UserType;
 import com.ssafy.backend.user.repository.UserRepository;
+import com.ssafy.backend.user.util.ImageValidatorUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final UserPlanRepository userPlanRepository;
     private final UserRepository userRepository;
+    private final ImageValidatorUtil imageValidatorUtil;
 
     @Transactional
     public CreatePlanResponseDTO createPlan(Long userId, CreatePlanRequestDTO createPlanRequestDTO, MultipartFile image) throws IOException {
@@ -42,6 +44,7 @@ public class PlanService {
 
         String imageKey = null;
         if (image != null && !image.isEmpty()) {
+            imageValidatorUtil.checkFileExtension(image);
 
             String fileName = "plans/" + System.currentTimeMillis() + "_" + image.getOriginalFilename();
             boolean uploaded = s3Util.putObject(fileName, image.getInputStream(), image.getContentType());
@@ -100,6 +103,11 @@ public class PlanService {
 
         String imageKey = plan.getPlanImage();
         if (updatePlanReq.isImageModified()) {
+            if (image != null && !image.isEmpty())
+            {
+                imageValidatorUtil.checkFileExtension(image);
+            }
+
             // 기존 이미지가 있으면 삭제
             if (imageKey != null && !imageKey.isEmpty()) {
                 s3Util.deleteObject(imageKey);

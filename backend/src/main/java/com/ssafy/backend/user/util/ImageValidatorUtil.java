@@ -19,7 +19,7 @@ public class ImageValidatorUtil {
 
     public void checkFileExtension(MultipartFile file) {
         try (InputStream is = file.getInputStream()) {
-            if (file.getSize() < 16) {
+            if (file.getSize() < 2048) {
                 throw new IllegalFileExtensionException("이미지 파일이 너무 작거나 손상되었습니다.");
             }
 

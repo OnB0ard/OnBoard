@@ -164,7 +164,7 @@ const DailyScheduleBlock = ({
         </span>
           <button
             onClick={() => setIsCollapsed((v) => !v)}
-            className="border-none bg-transparent rounded-md cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
+            className="border-none bg-transparent rounded-md cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center px-3 h-11"
             aria-label={isCollapsed ? '장소 목록 펼치기' : '장소 목록 접기'}
           >
             <Icon type={isCollapsed ? "chevron-down" : "chevron-up"} />

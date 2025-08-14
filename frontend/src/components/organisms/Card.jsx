@@ -24,6 +24,7 @@ const Card = ({
   onRequestConfirm,
   hideManageActions = false,
   onShowToast,
+  hideParticipantActions = false,
 }) => {
   const {
     participantOpenId,
@@ -218,7 +219,7 @@ const Card = ({
                       toggleParticipantPopover(id);
                     }}
                   >
-                                     <Popover.Trigger asChild>
+                    <Popover.Trigger asChild>
                        <button 
                          className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] border border-gray-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100/60"
                          onClick={(e) => e.stopPropagation()}
@@ -257,6 +258,7 @@ const Card = ({
                           onClose={() => toggleParticipantPopover(id)}
                           onRequestConfirm={onRequestConfirm}
                           hideManageActions={hideManageActions}
+                          hideParticipantActions={hideParticipantActions}
                         />
                       </Popover.Content>
                     </Popover.Portal>
@@ -264,7 +266,7 @@ const Card = ({
 
                   {/* 공유하기 팝오버 */}
                   <Popover.Root open={isShareOpen} onOpenChange={() => toggleSharePopover(id)}>
-                                     <Popover.Trigger asChild>
+                    <Popover.Trigger asChild>
                        <button 
                          className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 font-['Poppins'] bg-slate-700 text-white shadow-sm hover:bg-slate-600"
                          onClick={(e) => e.stopPropagation()}

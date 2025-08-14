@@ -6,6 +6,7 @@ import com.ssafy.backend.security.dto.JwtUserInfo;
 import com.ssafy.backend.user.dto.request.ModifyProfileRequestDTO;
 import com.ssafy.backend.user.dto.response.LoginResponseDTO;
 import com.ssafy.backend.user.dto.response.ModifyProfileResponseDTO;
+import com.ssafy.backend.user.dto.response.RetrieveProfileResponseDTO;
 import com.ssafy.backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,15 +23,20 @@ import java.io.IOException;
 public class UserController {
     private final UserService userService;
 
-    @PutMapping("/{userId}")
+    @PutMapping()
     public CommonResponse<ModifyProfileResponseDTO> modifyProfile(
             @AuthenticationPrincipal JwtUserInfo jwtUserInfo, @RequestPart ModifyProfileRequestDTO modifyProfileRequestDTO, @RequestPart(value = "image",required = false) MultipartFile image) throws IOException {
-        ModifyProfileResponseDTO modifyProfile = userService.modifyProfile(jwtUserInfo.getUserId(), modifyProfileRequestDTO,image);
+        ModifyProfileResponseDTO modifyProfile = userService.modifyProfile(jwtUserInfo.getUserId(), modifyProfileRequestDTO, image);
         return new CommonResponse<>(modifyProfile, HttpStatus.OK);
     }
 
-    @DeleteMapping("/{userId}")
-    public CommonResponse<SuccessResponseDTO> deleteUser(@AuthenticationPrincipal JwtUserInfo jwtUserInfo, @PathVariable Long userId) {
-        return new CommonResponse<>(new SuccessResponseDTO(userService.deleteUser(jwtUserInfo, userId)), HttpStatus.OK);
+    @DeleteMapping()
+    public CommonResponse<SuccessResponseDTO> deleteUser(@AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(userService.deleteUser(jwtUserInfo.getUserId())), HttpStatus.OK);
+    }
+    @GetMapping("/retrieve")
+    public CommonResponse<RetrieveProfileResponseDTO> getUserProfile(@AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        RetrieveProfileResponseDTO profile = userService.getUserProfile(jwtUserInfo.getUserId());
+        return new CommonResponse<>(profile, HttpStatus.OK);
     }
 }

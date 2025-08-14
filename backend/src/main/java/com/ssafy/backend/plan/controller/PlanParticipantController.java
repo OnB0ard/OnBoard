@@ -2,7 +2,9 @@ package com.ssafy.backend.plan.controller;
 
 import com.ssafy.backend.common.dto.response.CommonResponse;
 import com.ssafy.backend.common.dto.response.SuccessResponseDTO;
-import com.ssafy.backend.plan.dto.response.PlanParticipantListResponseDTO;
+import com.ssafy.backend.plan.dto.request.UserIdRequestDTO;
+import com.ssafy.backend.plan.dto.response.PlanParticipantUserListResponseDTO;
+import com.ssafy.backend.plan.dto.response.UserInformationResponseDTO;
 import com.ssafy.backend.plan.service.PlanParticipantService;
 import com.ssafy.backend.security.dto.JwtUserInfo;
 import lombok.RequiredArgsConstructor;
@@ -23,22 +25,33 @@ public class PlanParticipantController {
     }
 
     @PostMapping("/{planId}/approve")
-    public CommonResponse<SuccessResponseDTO> approveRequest(@PathVariable("planId") Long planId, @RequestBody Long userId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.approveRequest(planId, userId, jwtUserInfo)), HttpStatus.OK);
+    public CommonResponse<SuccessResponseDTO> approveRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.approveRequest(planId, userIdRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
 
     @PostMapping("/{planId}/deny")
-    public CommonResponse<SuccessResponseDTO> denyRequest(@PathVariable("planId") Long planId, @RequestBody Long userId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.denyRequest(planId, userId, jwtUserInfo)), HttpStatus.OK);
+    public CommonResponse<SuccessResponseDTO> denyRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.denyRequest(planId, userIdRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
 
     @GetMapping("/{planId}/userList")
-    public CommonResponse<PlanParticipantListResponseDTO> getUserList(@PathVariable("planId") Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+    public CommonResponse<PlanParticipantUserListResponseDTO> getUserList(@PathVariable("planId") Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
         return new CommonResponse<>(planParticipantService.getUserList(planId, jwtUserInfo), HttpStatus.OK);
     }
 
-    @PostMapping("{planId}/delegate")
-    public CommonResponse<SuccessResponseDTO> delegateRequest(@PathVariable("planId") Long planId, @RequestBody Long userId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
-        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.delegateRequest(planId, userId, jwtUserInfo)), HttpStatus.OK);
+    @PostMapping("/{planId}/delegate")
+    public CommonResponse<SuccessResponseDTO> delegateRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.delegateRequest(planId, userIdRequestDTO, jwtUserInfo)), HttpStatus.OK);
     }
+
+    @GetMapping("/{planId}/userStatus")
+    public CommonResponse<UserInformationResponseDTO> getUserInformation(@PathVariable Long planId, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(planParticipantService.getUserInformation(planId, jwtUserInfo.getUserId()), HttpStatus.OK);
+    }
+
+    @PostMapping("/{planId}/resign")
+    public CommonResponse<SuccessResponseDTO> resignRequest(@PathVariable("planId") Long planId, @RequestBody UserIdRequestDTO userIdRequestDTO, @AuthenticationPrincipal JwtUserInfo jwtUserInfo) {
+        return new CommonResponse<>(new SuccessResponseDTO(planParticipantService.resignRequest(planId, userIdRequestDTO, jwtUserInfo.getUserId())), HttpStatus.OK);
+    }
+
 }

@@ -9,29 +9,17 @@ import static com.ssafy.backend.plan.entity.QPlan.plan;
 import static com.ssafy.backend.user.entity.QUserPlan.userPlan;
 
 import com.ssafy.backend.user.entity.User;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class PlanQueryRepositoryImpl implements PlanQueryRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
-
-    @Override
-    public List<Plan> findByWriter(Long userId){
-        QUser qUser = QUser.user;
-        QUserPlan qUserPlan = QUserPlan.userPlan;
-        QPlan qPlan = QPlan.plan;
-
-        return jpaQueryFactory
-                .selectFrom(qPlan)
-                .join(qPlan.userPlans, qUserPlan).fetchJoin()
-                .join(qUserPlan.user, qUser).fetchJoin()
-                .where(qUser.userId.eq(userId))
-                .fetch();
-    }
     @Override
     public List<Plan> findPlansByUser(User user) {
         return jpaQueryFactory
@@ -40,5 +28,13 @@ public class PlanQueryRepositoryImpl implements PlanQueryRepository {
                 .join(userPlan.plan, plan)
                 .where(userPlan.user.eq(user))
                 .fetch();
+    }
+
+    public Plan lockPlan(Long planId) {
+        QPlan p = QPlan.plan;
+        return jpaQueryFactory.selectFrom(p)
+                .where(p.planId.eq(planId))
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .fetchOne();
     }
 }

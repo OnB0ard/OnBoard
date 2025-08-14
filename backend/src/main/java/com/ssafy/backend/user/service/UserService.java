@@ -42,6 +42,11 @@ public class UserService {
 
         String imageKey = user.getProfileImage();
         if (modifyProfileRequestDTO.isImageModified()) {
+            if (image != null && !image.isEmpty())
+            {
+                imageValidatorUtil.checkFileExtension(image);
+            }
+
             // 기존 이미지가 있으면 삭제
             if (imageKey != null && !imageKey.isEmpty()) {
                 s3Util.deleteObject(imageKey);
@@ -51,8 +56,6 @@ public class UserService {
             // 새 이미지가 들어온 경우 업로드
             if (image != null && !image.isEmpty()) {
                 String newFileName = "users/" + System.currentTimeMillis() + "_" + image.getOriginalFilename();
-
-                imageValidatorUtil.checkFileExtension(image);
 
                 boolean uploaded = s3Util.putObject(newFileName, image.getInputStream(), image.getContentType());
 

@@ -28,7 +28,7 @@ public class UserExceptionHandler {
     @ExceptionHandler(IllegalFileExtensionException.class)
     public CommonResponse<ErrorBody> IllegalFileExtensionException(IllegalFileExtensionException e, HttpServletRequest request) {
         log.warn("USER-003> 요청 URI: " + request.getRequestURI() + ", 에러 메세지: " + e.getMessage());
-        return new CommonResponse<>(new ErrorBody("USER-003", "이미지 파일의 확장자는 PNG, JPEG 형식만 가능합니다."),
+        return new CommonResponse<>(new ErrorBody("USER-003", "이미지 파일이 잘못된 형식이거나 존재하지 않습니다."),
                 HttpStatus.BAD_REQUEST);
     }
 }

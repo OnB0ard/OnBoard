@@ -91,10 +91,9 @@ const SettingModal = ({ isOpen, onClose }) => {
       const allowedTypes = [
         'image/jpeg',
         'image/png',
-        'image/webp',
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert("지원하지 않는 이미지 형식입니다. jpg, png, webp만 업로드할 수 있어요.");
+        alert("지원하지 않는 이미지 형식입니다. jpg, png만 업로드할 수 있어요.");
         event.target.value = "";
         return;
       }
@@ -277,7 +276,7 @@ const handleWithdrawCancel = () => {
         <div className="modal-inputs">
           <div className="input-with-icon">
             <Input
-              placeholder="닉네임"
+              placeholder="닉네임을 입력하세요 (최대 10자)"
               size="full"
               className="custom-input"
               value={nickname}

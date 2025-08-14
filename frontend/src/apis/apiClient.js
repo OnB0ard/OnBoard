@@ -23,8 +23,10 @@ const refreshClient = axios.create({
   withCredentials: true, // 반드시 쿠키 포함
 });
 
+const REFRESH_PATH = import.meta.env.VITE_REFRESH_PATH || "user/refresh"; 
+
 async function requestNewAccessToken() {
-  const res = await refreshClient.get("refresh");
+  const res = await refreshClient.get(REFRESH_PATH);
   const payload = res?.data;
   const token = payload?.body?.accessToken || payload?.accessToken;
   if (!token) throw new Error("No accessToken in refresh response");

@@ -38,6 +38,7 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       onDailyPlanModalToggle(false);
     }
     setIsDailyPlanModalOpen(false);
+    setIsTotalScheduleModalOpen(false);
   };
 
   const handleBookmarkPlaceClick = async (place) => {

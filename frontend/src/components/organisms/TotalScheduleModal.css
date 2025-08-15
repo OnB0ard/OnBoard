@@ -1,0 +1,384 @@
+.total-schedule-modal {
+  position: fixed;
+  width: 88vw;
+  height: 80vh;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border: 1px solid #e5e7eb;
+  overflow: auto; /* modal 자체가 스크롤되도록 */
+  z-index: 1600;
+  animation: slideInFromSidebar 0.3s ease-out;
+  will-change: transform, opacity;
+}
+
+@keyframes slideInFromSidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.total-schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  background-color: #f9fafb;
+}
+
+.total-schedule-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.total-schedule-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.total-schedule-body {
+  padding: 16px;
+  overflow: visible; /* 컨테이너에서 스크롤 처리 */
+}
+
+.total-schedule-empty {
+  padding: 24px;
+  color: #666;
+  text-align: center;
+}
+
+/* --- Schedule Card (Option A) --- */
+.total-schedule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.total-schedule-card.clickable:hover,
+.total-schedule-card.clickable:focus-visible {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  outline: none;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;         /* 헤더 내부 여백 */
+  margin-bottom: 8px;          /* 본문과 간격 */
+  position: relative;          /* 아래 가상요소 기준 */
+  border-bottom: 1px solid #e5e7eb; /* 페이드 없이 명확한 구분선 */
+}
+
+/* 기존 페이드 라인은 비활성화 */
+.card-header::after {
+  content: none;
+}
+
+.card-header .left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.day-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 9999px;
+}
+
+.chip-count {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-body {
+  display: flex;
+  gap: 12px;
+  flex: 1;         /* allow body to take remaining space inside fixed-height card */
+  min-height: 0;   /* enable children to become scroll containers in flex */
+}
+
+.card-media {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.media-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #eef2f7;
+}
+
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 17px; /* 항목 간 간격 확대 */
+  flex: 1;         /* fill body */
+  min-width: 0;
+  min-height: 0;   /* required for overflow in flex child */
+  overflow-y: auto; /* scroll within the list */
+}
+
+/* ScheduleCard 내부 리스트의 스크롤바 숨김 (스크롤은 유지) */
+.total-schedule-card .preview-list {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.total-schedule-card .preview-list::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Edge (WebKit) */
+}
+
+.preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 장소 리스트 항목 구분선 (두 번째 항목부터) */
+.preview-item + .preview-item {
+  border-top: 1px solid #e5e7eb; /* 얕은 구분선 */
+  padding-top: 6px;              /* 라인과 내용 간 여백 */
+}
+
+.preview-thumb {
+  width: 40px;  /* 썸네일 확대 */
+  height: 40px; /* 썸네일 확대 */
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.preview-thumb.placeholder {
+  background: #e5e7eb;
+}
+
+.preview-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.preview-name {
+  font-size: 13px;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.category-badge {
+  padding: 2px 6px;
+  background: #f0fdf4;
+  color: #166534;
+  border-radius: 9999px;
+  font-size: 11px;
+}
+
+.preview-empty {
+  font-size: 12px;
+  color: #6b7280;
+}
+.preview-memo {
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.3;
+  max-height: 2.6em; /* 2 lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  line-clamp: 2; /* standard property for compatibility */
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 한 줄 표시용 버튼 형태 (읽기 전용) */
+.preview-memo.one-line {
+  display: inline-block;
+  max-width: 100%;
+  border: none;
+  background-color: #E1EAFD; /* DailyPlaceBlock .memo-text 배경 */
+  color: #4d4d4d;            /* DailyPlaceBlock .memo-text 텍스트 */
+  font-size: 10px;           /* DailyPlaceBlock과 동일 폰트 크기 */
+  padding: 4px 8px;          /* 배지 패딩 */
+  border-radius: 4px;        /* 배지 라운드 */
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-memo-wrapper:hover .preview-memo.one-line {
+  filter: brightness(0.97); /* DailyPlaceBlock hover와 유사 효과 */
+}
+
+.preview-memo-wrapper {
+  position: relative;
+}
+
+.memo-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 10px;                  /* 버튼과 거리 */
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.14);
+  z-index: 2000;                     /* 모달(1600)보다 높게 */
+  max-width: 360px;
+  min-width: 240px;
+  animation: memoPopoverIn 0.16s ease-out;
+}
+
+.memo-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;                         /* 컨테이너 위로 살짝 */
+  left: 16px;                         /* 버튼 중앙 대략 */
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
+  transform: rotate(45deg);
+}
+
+.memo-popover-content {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #111827;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 메모 팝오버 스크롤바 숨김 (스크롤 기능 유지) */
+.memo-popover {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.memo-popover::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Edge (WebKit) */
+}
+
+@keyframes memoPopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.total-schedule-empty.error {
+  color: #b00020;
+}
+
+.total-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 290px); /* 고정 카드 폭으로 가능한 많이 배치 */
+  gap: 16px;
+  justify-content: start; /* 남는 공간은 오른쪽으로 두고 카드 확장 방지 */
+}
+
+.total-schedule-card {
+  width: 290px; /* 카드 너비 고정: 그리드가 열 수만 늘리도록 */
+  /* 높이 정책: 최소 440px로 늘리고(기존 240px + 200px), 모달 높이에 맞춰 최대치까지 확대 */
+  height: 400px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.total-schedule-card.clickable {
+  cursor: pointer;
+}
+
+.total-schedule-card.clickable:hover {
+  background: #eef2ff; /* indigo-50 */
+  border-color: #c7d2fe; /* indigo-200 */
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.total-schedule-card.clickable:focus-visible {
+  outline: 2px solid #6366f1; /* indigo-500 */
+  outline-offset: 2px;
+}
+
+.total-schedule-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.total-schedule-card .card-sub {
+  font-size: 12px;
+  color: #6b7280;
+}

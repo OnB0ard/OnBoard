@@ -12,7 +12,7 @@
   background-color: white;
   border-radius: 12px;
   width: 450px;
-  height: calc(100vh - 100px); /* max-height에서 height로 변경하여 고정 높이 설정 */
+  height: 650px; /* max-height에서 height로 변경하여 고정 높이 설정 */
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;

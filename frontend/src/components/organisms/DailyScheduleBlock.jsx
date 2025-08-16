@@ -184,6 +184,7 @@ const DailyScheduleBlock = ({
             onClick={() => onDayClick(dayIndex)}
             className="border-none bg-transparent rounded-md cursor-pointer hover:bg-gray-100 focus:outline-none transition-colors inline-flex items-center justify-center w-11 h-11"
             aria-label="일차 위치를 지도에서 보기"
+            style={{ marginRight: 9 }}
           >
             <Icon type="map" />
           </button>

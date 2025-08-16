@@ -123,6 +123,7 @@ function Landing() {
     },
   ];
 
+
   return (
     <>
       <FullpageContainer
@@ -165,7 +166,7 @@ function Landing() {
         {/* 기능별 시연 섹션 */}
         {features.map((f, idx) => (
           <FullpageSection key={idx}>
-            <div className={`feature-showcase ${idx % 2 ? 'reverse' : ''} ${idx === 0 ? 'invite' : ''} ${idx === 1 ? 'whiteboard' : ''} ${idx === 2 ? 'bookmark' : ''} ${idx === 3 ? 'dailyplan' : ''}`}>
+            <div className={`feature-showcase ${idx % 2 ? 'reverse' : ''} ${idx === 0 ? 'invite' : ''} ${idx === 1 ? 'whiteboard' : ''} ${idx === 2 ? 'bookmark' : ''} ${idx === 3 ? 'dailyplan' : ''} ${idx === features.length - 1 ? 'last' : ''}`}>
               <motion.div
                 className="feature-text"
                 initial={{ opacity: 0, x: -50 }}
@@ -196,22 +197,25 @@ function Landing() {
                   <img src={f.media} alt={f.title} />
                 )}
               </motion.div>
+              {/* 마지막 섹션 하단 중앙: 위로 가기 화살표 버튼 */}
+              {idx === features.length - 1 && (
+                <button
+                  type="button"
+                  className="to-top-arrow"
+                  aria-label="맨 위로 이동"
+                  onClick={() => setActiveIndex(0)}
+                >
+                  <span className="chev-up" />
+                </button>
+              )}
             </div>
           </FullpageSection>
         ))}
-
-        {/* CTA */}
-        <FullpageSection>
-          <div className="cta-section">
-            <h2>지금 바로 여행을 시작하세요</h2>
-            <button className="start-btn" onClick={handleStartClick}>시작하기</button>
-          </div>
-        </FullpageSection>
       </FullpageContainer>
 
       {/* Dot Navigation */}
       <div className="dot-controller">
-        {Array.from({ length: features.length + 2 }).map((_, i) => (
+        {Array.from({ length: features.length + 1 }).map((_, i) => (
           <button
             key={i}
             type="button"
@@ -259,6 +263,8 @@ function Landing() {
           </div>
         </div>
       )}
+
+      
     </>
   );
 }

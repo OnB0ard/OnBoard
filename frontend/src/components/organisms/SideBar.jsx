@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import Icon from "../atoms/Icon";
 import AutocompleteSearchModal from "./AutocompleteSearchModal";
+import TotalScheduleModal from "./TotalScheduleModal";
 import Bookmark from "./Bookmark";
 import DailyPlanCreate1 from "./DailyPlanCreate1";
 
@@ -14,6 +15,7 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
   const [isDailyPlanModalOpen, setIsDailyPlanModalOpen] = useState(false);
+  const [isTotalScheduleModalOpen, setIsTotalScheduleModalOpen] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const isMapVisible = useMapCoreStore((state) => state.isMapVisible);
   const setIsMapVisible = useMapCoreStore((state) => state.setIsMapVisible);
@@ -36,6 +38,7 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       onDailyPlanModalToggle(false);
     }
     setIsDailyPlanModalOpen(false);
+    setIsTotalScheduleModalOpen(false);
   };
 
   const handleBookmarkPlaceClick = async (place) => {
@@ -62,6 +65,7 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
       onDailyPlanModalToggle(false);
     }
     setIsDailyPlanModalOpen(false);
+    setIsTotalScheduleModalOpen(false);
   };
 
   const handleDailyPlanClick = (e) => {
@@ -71,10 +75,24 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
     // 다른 모달들 닫기
     setIsSearchModalOpen(false);
     setIsBookmarkModalOpen(false);
+    setIsTotalScheduleModalOpen(false);
     // 부모 컴포넌트에 모달 상태 전달
     if (onDailyPlanModalToggle) {
       onDailyPlanModalToggle(!isDailyPlanModalOpen);
     }
+  };
+
+  const handleTotalScheduleClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setModalPosition({ x: rect.right + 15, y: 75 });
+    setIsTotalScheduleModalOpen((prev) => !prev);
+    // 다른 모달들 닫기
+    setIsSearchModalOpen(false);
+    setIsBookmarkModalOpen(false);
+    if (isDailyPlanModalOpen && onDailyPlanModalToggle) {
+      onDailyPlanModalToggle(false);
+    }
+    setIsDailyPlanModalOpen(false);
   };
 
   const handleMapClick = () => {
@@ -163,6 +181,15 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
         >
           <Icon type="map" />
         </button>
+
+        {/* 전체 아이콘 */}
+        <button
+          onClick={handleTotalScheduleClick}
+          className={`sidebar-icon ${isTotalScheduleModalOpen ? 'active' : ''}`}
+          title="전체 일정 조회"
+        >
+          <Icon type="total" />
+        </button>
       </div>
 
       {/* 검색 모달 */}
@@ -182,6 +209,14 @@ const SideBar = ({ onDailyPlanModalToggle, planId }) => {
         planId={planId}
       />
       </APIProvider>
+
+      {/* 전체 일정 모달 */}
+      <TotalScheduleModal
+        isOpen={isTotalScheduleModalOpen}
+        onClose={() => setIsTotalScheduleModalOpen(false)}
+        position={modalPosition}
+        planId={planId}
+      />
 
       {/* 일정 추가 모달 */}
       <DailyPlanCreate1 

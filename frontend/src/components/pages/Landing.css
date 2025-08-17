@@ -302,6 +302,61 @@
   will-change: transform;
 }
 
+/* Last feature: bottom-centered to-top arrow button */
+.feature-showcase.last { position: relative; }
+.to-top-arrow {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px;              /* invisible larger hit area */
+  background: transparent;    /* no background */
+  border: none;               /* no border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .2s ease, opacity .2s ease;
+  animation: floatArrow 1.8s ease-in-out infinite;
+}
+.to-top-arrow:hover { transform: translateX(-50%) translateY(-2px); }
+.to-top-arrow:active { transform: translateX(-50%) translateY(0); }
+.chev-up {
+  width: 22px;
+  height: 22px;
+  border-left: 5px solid rgba(255,255,255,0.98);
+  border-top: 5px solid rgba(255,255,255,0.98);
+  transform: rotate(45deg);
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35)) drop-shadow(0 0 10px rgba(255,255,255,0.35));
+}
+
+@keyframes floatArrow {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
+/* subtle pulsing halo to improve visibility on busy backgrounds */
+.to-top-arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.35);
+  opacity: 0;
+  transform: scale(0.7);
+  animation: arrowPing 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes arrowPing {
+  0% { opacity: 0.55; transform: scale(0.7); }
+  70% { opacity: 0; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
 /* Crop inner edge of media relative to layout to avoid visible seams */
 .feature-showcase:not(.reverse) .feature-media video,
 .feature-showcase:not(.reverse) .feature-media img {

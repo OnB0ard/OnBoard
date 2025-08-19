@@ -1,4 +1,4 @@
-(온보드 로고)
+![온보드로고](https://lab.ssafy.com/s13-webmobile1-sub1/S13P11A504/-/blob/master/Snipaste_2025-08-19_17-21-06-Photoroom.png?ref_type=heads)
 
 ## 📌 목차
 1. 온보드 서비스 소개
